@@ -8,6 +8,7 @@ from pytti.LossAug.DepthLoss import DepthLoss
 from infer import InferenceHelper
 
 TB_LOGDIR = 'logs' # to do: make this more easily configurable
+from loguru import logger
 from torch.utils.tensorboard import SummaryWriter
 writer = SummaryWriter(TB_LOGDIR)
 
