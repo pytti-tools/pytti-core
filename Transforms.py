@@ -161,21 +161,27 @@ def zoom_3d(img, translate = (0,0,0), rotate=0, fov = 45, near=180, far=15000, b
   R = depth_max/px
   mu = (depth_mean+depth_median)/(2*px)
   ########################################
-  logger.debug("depth range:",r,"(r) to",R,"(R)")
-  logger.debug("mu =",mu)
+  logger.debug(f"depth range: {r} (r) to {R} (R)")
+  logger.debug(f"mu = {mu}")
   translate = [parametric_eval(x, r=r, R=R, mu=mu) for x in translate]
   rotate = parametric_eval(rotate, r=r, R=R, mu=mu)
-  logger.debug('moving:',translate)
+  logger.debug(f"moving: {translate}")
   
   # where to get global_step form?
   # maybe track iterations on a centralized object?
   _dx, _dy, _dz = translate
   writer.add_scalars(
-      main_tag = 'zoom_3d',
+      main_tag = 'zoom_3d/depth',
       tag_scalar_dict = {
           'r':r,
           'R':R,
-          'mu':mu,
+          'mu':mu
+      }
+  )
+
+  writer.add_scalars(
+      main_tag = 'zoom_3d/translation',
+      tag_scalar_dict = {
           'dx':_dx,
           'dy':_dy,
           'dz':_dz
