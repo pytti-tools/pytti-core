@@ -1,15 +1,5 @@
 # would be better if Task.init() was called inside the hydra app
-USE_CLEARML = True
-try:
-    from clearml import Task
-    task = Task.init(
-        project_name="PYTTI",
-        task_name="cli test",
-        reuse_last_task_id=False
-    )
-    #task.execute_remotely(queue_name="art")
-except ImportError:
-    USE_CLEARML = False
+USE_CLEARML = False
     
 from torch.utils.tensorboard import SummaryWriter
 writer = SummaryWriter()
@@ -18,11 +8,7 @@ import os, sys
 
 # I really hate this...
 # make this a commandline arg or maybe even an environment variable
-TASK_IS_LOCAL=True
-if USE_CLEARML:
-    if not task.running_locally():
-        os.chdir('/opt/colab')
-        TASK_IS_LOCAL=False
+TASK_IS_LOCAL=False
 
 # fix path for our shitty imports.
 if TASK_IS_LOCAL:
@@ -31,28 +17,16 @@ if TASK_IS_LOCAL:
     sys.path.append(f'{cwd}/pytti')
     
 
-print(os.getcwd())
-        
-#auto_connect_arg_parser=True,
+# Instead of prepending an OUTPATH, 
+# use params.file_namespace
+#OUTPREFIX = 'foobar'
 
-# TO DO: 
-# https://github.com/allegroai/clearml/blob/master/examples/frameworks/hydra/hydra_example.py
+#OUTPATH = f"{os.getcwd()}/images_out/{OUTPREFIX}"
+OUTPATH = f"{os.getcwd()}/images_out/"
+#if not TASK_IS_LOCAL:
+#    OUTPATH = f"/opt/colab/images_out/{OUTPREFIX}"
+#OUTTERPATH = OUTPATH
 
-def outdir_from_clearml_task(task):
-    ts = task.data.created.strftime("%Y-%m-%d_%H-%M-%S")
-    path = f"{task.project}/{ts}_{task.id}"
-    return path
-
-OUTPREFIX = 'foobar'
-if USE_CLEARML:
-    OUTPREFIX = outdir_from_clearml_task(task)
-#OUTPATH = f"images_out/{OUTPREFIX}"
-#OUTTERPATH = f"/opt/projdata/{OUTPREFIX}"
-
-OUTPATH = f"{os.getcwd()}/images_out/{OUTPREFIX}"
-if not TASK_IS_LOCAL:
-    OUTPATH = f"/opt/colab/images_out/{OUTPREFIX}"
-OUTTERPATH = OUTPATH
 
 #import json
 from bunch import Bunch
@@ -154,14 +128,6 @@ def _main(cfg: DictConfig):
     else:
       try:
         params = default_params
-        # https://clear.ml/docs/latest/docs/guides/reporting/hyper_parameters/
-        if USE_CLEARML:
-            params = task.connect(params) # 
-        #writer.add_hparams(hparam_dict=params, metric_dict={})
-        # this tensorboard call does nothing. 
-        # better approach: pass parameters to script via OmegaConf/Hydra
-        # https://github.com/allegroai/clearml/blob/master/examples/frameworks/hydra/hydra_example.py
-        # uh...
         params = Bunch(params) # fuck it... # probably easier to use an argparse namesapce here
       except NameError:
         raise RuntimeError("ERROR: no parameters. Please run parameters (step 2.1).")
@@ -376,12 +342,6 @@ def _main(cfg: DictConfig):
             rec = model.dataframe[0].iloc[-1]
             print(rec)
             for k,v in rec.iteritems():
-                #task.get_logger().report_scalar(
-                #    "losses",
-                #    f"{k}",
-                #    value=v,
-                #    iteration=i
-                #    )
                 writer.add_scalar(
                     tag=f"losses/{k}",
                     scalar_value=v,
@@ -413,15 +373,7 @@ def _main(cfg: DictConfig):
           n = i//params.save_every
           filename = f"{OUTPATH}/{params.file_namespace}/{base_name}_{n}.png"
           im.save(filename)
-          ####################
-          ## DMARX
-          #task.upload_artifact(name=filename, artifact_object=filename)
-          #task.upload_artifact(name=filename, artifact_object=OUTTERPATH) # fuck that....
-        
-          #logger = task.get_logger()
-          #logger.report_media(
-          #  'images', 'pytti output', iteration=i,
-          #   local_path=filename)
+
           im_np = np.array(im)
           writer.add_image(
               tag='pytti output',
@@ -431,10 +383,6 @@ def _main(cfg: DictConfig):
               dataformats="HWC" # this was the key
           )
         
-        
-          #reuse_last_task_id=False
-          #auto_connect_arg_parser=True,
-          ####################
           if params.backups > 0:
             filename = f"backup/{params.file_namespace}/{base_name}_{n}.bak"
             torch.save(img.state_dict(), filename)
@@ -456,19 +404,20 @@ def _main(cfg: DictConfig):
               next_step_pil = zoom_2d(img, 
                                       (tx,ty), (zx,zy), theta, 
                                       border_mode = params.infill_mode, sampling_mode = params.sampling_mode)
-              ################ DMARX
+              ################
               for k,v in {'tx':tx,
                           'ty':ty,
                           'theta':theta,
                           'zx':zx,
                           'zy':zy, 
                           't':t}.items():
-                task.get_logger().report_scalar(
-                    "translation_2d",
-                    f"{k}",
-                    value=v,
-                    iteration=i
-                    )
+
+                  writer.add_scalar(
+                      tag=f"translation_2d/{k}",
+                      scalar_value=v,
+                      global_step=i
+                      )
+
               ###########################
             elif params.animation_mode == "3D":
               try:
