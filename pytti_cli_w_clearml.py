@@ -1,7 +1,8 @@
 from loguru import logger
     
+TB_LOGDIR = 'logs' # to do: make this more easily configurable
 from torch.utils.tensorboard import SummaryWriter
-writer = SummaryWriter()
+writer = SummaryWriter(TB_LOGDIR)
 
 import os, sys
 
