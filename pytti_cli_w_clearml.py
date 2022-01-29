@@ -1,5 +1,4 @@
-# would be better if Task.init() was called inside the hydra app
-USE_CLEARML = False
+from loguru import logger
     
 from torch.utils.tensorboard import SummaryWriter
 writer = SummaryWriter()
@@ -61,7 +60,7 @@ except ModuleNotFoundError:
 change_tqdm_color()
 import sys
 sys.path.append('./AdaBins')
-print(sys.path)
+logger.debug(sys.path)
 
 try:
   from pytti import Perceptor
@@ -74,7 +73,7 @@ except ModuleNotFoundError:
     #THIS IS NOT AN ERROR. This is the code that would
     #make an error if something were wrong.
     raise RuntimeError('WARNING: drive is not mounted.\nERROR: please run setup (step 1.3).')
-print("Loading pytti...")
+logger.info("Loading pytti...")
 from pytti.Image import PixelImage, RGBImage, VQGANImage
 from pytti.ImageGuide import DirectImageGuide
 from pytti.Perceptor.Embedder import HDMultiClipEmbedder
@@ -83,7 +82,7 @@ from pytti.LossAug import TVLoss, HSVLoss, OpticalFlowLoss, TargetFlowLoss
 from pytti.Transforms import zoom_2d, zoom_3d, apply_flow
 from pytti import *
 from pytti.LossAug.DepthLoss import init_AdaBins
-print("pytti loaded.")
+logger.info("pytti loaded.")
 
 import torch, gc, glob, subprocess, warnings, re, math, json
 import numpy as np
@@ -162,11 +161,11 @@ def _main(cfg: DictConfig):
 
       #load scenes
       with vram_usage_mode('Text Prompts'):
-        print('Loading prompts...')
+        logger.info('Loading prompts...')
         prompts = [[parse_prompt(embedder, p.strip()) 
                   for p in (params.scene_prefix + stage + params.scene_suffix).strip().split('|') if p.strip()]
                   for stage in params.scenes.split('||') if stage]
-        print('Prompts loaded.')
+        logger.info('Prompts loaded.')
 
       #load init image
       if params.init_image != '':
@@ -182,7 +181,7 @@ def _main(cfg: DictConfig):
 
       #video source
       if params.animation_mode == "Video Source":
-        print(f'loading {params.video_path}...')
+        logger.info(f'loading {params.video_path}...')
         video_frames = get_frames(params.video_path)
         params.pre_animation_steps = max(params.steps_per_frame, params.pre_animation_steps)
         if init_image_pil is None:
@@ -218,9 +217,10 @@ def _main(cfg: DictConfig):
 
       if init_image_pil is not None:
         if not restore:
-          print("Encoding image...")
+          logger.info("Encoding image...")
           img.encode_image(init_image_pil)
-          print("Encoded Image:")
+          logger.info("Encoded Image:")
+          # pretty sure this assumes we're in a notebook
           display.display(img.decode_image())
         #set up init image prompt
         init_augs = ['direct_init_weight']
@@ -306,7 +306,7 @@ def _main(cfg: DictConfig):
                                                     f'^(?P<pre>{re.escape(base_name)}_)(?P<index>\\d*)(?P<post>\\.bak)$')
           else: 
             filename = f'{base_name}_{restore_frame}.bak'
-          print("restoring from", filename)
+          logger.info("restoring from", filename)
           img.load_state_dict(torch.load(f'backup/{params.file_namespace}/{filename}'))
         else:#reencode
           if restore_frame == latest:
@@ -314,7 +314,7 @@ def _main(cfg: DictConfig):
                                                     f'^(?P<pre>{re.escape(base_name)}_)(?P<index>\\d*)(?P<post>\\.png)$')
           else: 
             filename = f'{base_name}_{restore_frame}.png'
-          print("restoring from", filename)
+          logger.info("restoring from", filename)
           img.encode_image(Image.open(f'{OUTPATH}/{params.file_namespace}/{filename}').convert('RGB'))
         i = restore_frame*params.save_every
       else:
@@ -337,10 +337,10 @@ def _main(cfg: DictConfig):
         if params.clear_every > 0 and i > 0 and i % params.clear_every == 0:
           display.clear_output()
         if params.display_every > 0 and i % params.display_every == 0:
-          print(f"Step {i} losses:")
+          logger.debug(f"Step {i} losses:")
           if model.dataframe:
             rec = model.dataframe[0].iloc[-1]
-            print(rec)
+            logger.debug(rec)
             for k,v in rec.iteritems():
                 writer.add_scalar(
                     tag=f"losses/{k}",
@@ -349,8 +349,8 @@ def _main(cfg: DictConfig):
                     )
 
           if params.approximate_vram_usage:
-            print("VRAM Usage:")
-            print_vram_usage()
+            logger.debug("VRAM Usage:")
+            print_vram_usage() # update this function to use logger
           display_width = int(img.image_shape[0]*params.display_scale)
           display_height = int(img.image_shape[1]*params.display_scale)
           if stage_i > 0 and params.show_graphs:
@@ -362,7 +362,7 @@ def _main(cfg: DictConfig):
             im = img.decode_image()
             display.display(im.resize((display_width, display_height), Image.LANCZOS))
           if params.show_palette and isinstance(img, PixelImage):
-            print('Palette:')
+            logger.debug('Palette:')
             display.display(img.render_pallet())
         #save
         if i > 0 and params.save_every > 0 and i % params.save_every == 0:
@@ -393,7 +393,7 @@ def _main(cfg: DictConfig):
         set_t(t)
         if i >= params.pre_animation_steps:
           if (i - params.pre_animation_steps) % params.steps_per_frame == 0:
-            print(f"Time: {t:.4f} seconds")
+            logger.debug(f"Time: {t:.4f} seconds")
             update_rotoscopers(((i - params.pre_animation_steps)//params.steps_per_frame+1)*params.frame_stride)
             if params.reset_lr_each_frame:
               model.set_optim(None)
@@ -456,7 +456,7 @@ def _main(cfg: DictConfig):
                 if j == 0:
                   mask_accum = mask_tensor.detach()
                   valid = mask_tensor.mean()
-                  print("valid pixels:", valid)
+                  logger.debug("valid pixels:", valid)
                   if params.reencode_each_frame or valid < .03:
                     if isinstance(img, PixelImage) and valid >= .03:
                       img.lock_pallet()
@@ -486,14 +486,14 @@ def _main(cfg: DictConfig):
 
       model.update = update
 
-      print(f"Settings saved to {OUTPATH}/{params.file_namespace}/{base_name}_settings.txt")
+      logger.info(f"Settings saved to {OUTPATH}/{params.file_namespace}/{base_name}_settings.txt")
       save_settings(params, f"{OUTPATH}/{params.file_namespace}/{base_name}_settings.txt")
 
       skip_prompts = i // params.steps_per_scene
       skip_steps   = i %  params.steps_per_scene
       last_scene = prompts[0] if skip_prompts == 0 else prompts[skip_prompts - 1]
       for scene in prompts[skip_prompts:]:
-        print("Running prompt:", ' | '.join(map(str,scene)))
+        logger.info("Running prompt:", ' | '.join(map(str,scene)))
         i += model.run_steps(params.steps_per_scene-skip_steps, 
                              scene, last_scene, loss_augs, 
                              interp_steps = params.interpolation_steps,
@@ -519,11 +519,11 @@ def _main(cfg: DictConfig):
           namespace = batch_list[0]['file_namespace']
           subprocess.run(['mkdir','-p',f'{OUTPATH}/{namespace}'])
           save_batch(batch_list, f'{OUTPATH}/{namespace}/{namespace}_batch settings.txt')
-          print(f"Batch settings saved to {OUTPATH}/{namespace}/{namespace}_batch settings.txt")
+          logger.info(f"Batch settings saved to {OUTPATH}/{namespace}/{namespace}_batch settings.txt")
         for settings in settings_list:
           setting_string = json.dumps(settings)
-          print("SETTINGS:")
-          print(setting_string)
+          logger.debug("SETTINGS:")
+          logger.debug(setting_string)
           params = load_settings(setting_string)
           if params.animation_mode == '3D':
             init_AdaBins()
@@ -538,7 +538,7 @@ def _main(cfg: DictConfig):
           pass
           #init_AdaBins()
         do_run()
-        print("Complete.")
+        logger.info("Complete.")
         gc.collect()
         torch.cuda.empty_cache()
     except KeyboardInterrupt:
