@@ -5,7 +5,7 @@ from torch.nn import functional as F
 from pytti.LossAug import Loss
 from pytti.Notebook import Rotoscoper
 #from pytti import *
-from pytti import DEVICE, fetch, parse
+from pytti import DEVICE, fetch, parse, vram_usage_mode
 import torch
 
 class MSELoss(Loss):
