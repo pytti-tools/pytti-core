@@ -2,7 +2,8 @@ from torch import nn
 import torch
 from PIL import Image
 from torchvision.transforms import functional as TF
-from pytti import *
+#from pytti import *
+from pytti import DEVICE, replace_grad
 
 class Loss(nn.Module):
   def __init__(self, weight, stop, name):

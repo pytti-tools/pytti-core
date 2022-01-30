@@ -9,7 +9,7 @@ else:
 from taming.models import cond_transformer, vqgan
 
 #from pytti import *
-from pytti import DEVICE
+from pytti import DEVICE, replace_grad
 import torch
 from torch.nn import functional as F
 from pytti.Image import EMAImage
