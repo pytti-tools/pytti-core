@@ -6,6 +6,7 @@ from collections import defaultdict
 import pandas as pd
 import numpy as np
 from PIL import Image as PIL_Image
+from loguru import logger
 
 DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -147,7 +148,7 @@ def reset_vram_usage():
   if not track_vram:
     return
   if usage_dict:
-    print('WARNING: VRAM tracking does not work more than once per session. Select `Runtime > Restart runtime` for accurate VRAM usage.')
+    logger.warning('WARNING: VRAM tracking does not work more than once per session. Select `Runtime > Restart runtime` for accurate VRAM usage.')
   usage_mode = 'Unknown'
   prev_usage = torch.cuda.memory_allocated(device = DEVICE)
   usage_dict = defaultdict(lambda:0)
@@ -166,7 +167,7 @@ def set_usage_mode(new_mode, force_update = False):
       current_usage = torch.cuda.memory_allocated(device = DEVICE)
       delta = current_usage - prev_usage
       if delta < 0 and usage_mode != 'Unknown':
-        print('WARNING:',usage_mode, 'has negavive delta of',delta)
+        logger.warning('WARNING:',usage_mode, 'has negavive delta of',delta)
 
       usage_dict[usage_mode] += delta
       prev_usage = current_usage
@@ -209,18 +210,18 @@ def print_vram_usage():
   usage_dict['Unknown'] = torch.cuda.memory_allocated(device = DEVICE) - total
   for k,v in usage_dict.items():
     if v < 1000:
-      print(f'{k}:',f'{v}B')
+      logger.info(f'{k}:',f'{v}B')
     elif v < 1000000:
-      print(f'{k}:',f'{v/1000:.2f}kB')
+      logger.info(f'{k}:',f'{v/1000:.2f}kB')
     elif v < 1000000000:
-      print(f'{k}:',f'{v/1000000:.2f}MB')
+      logger.info(f'{k}:',f'{v/1000000:.2f}MB')
     else:
-      print(f'{k}:',f'{v/1000000000:.2f}GB')
+      logger.info(f'{k}:',f'{v/1000000000:.2f}GB')
   
-  print('Total:',f'{total/1000000000:.2f}GB')
+  logger.info('Total:',f'{total/1000000000:.2f}GB')
   if total != 0:
     overhead = (torch.cuda.max_memory_allocated(device = DEVICE) - total)/total
-    print(f'Overhead: {overhead*100:.2f}%')
+    logger.info(f'Overhead: {overhead*100:.2f}%')
 
 def parse(string, split, defaults):
   tokens = re.split(split, string, len(defaults)-1)
