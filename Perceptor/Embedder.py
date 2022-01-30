@@ -1,6 +1,6 @@
 #from pytti import *
 import pytti
-from pytti import DEVICE, format_input
+from pytti import DEVICE, format_input, cat_with_pad
 
 import torch
 from torch import nn
