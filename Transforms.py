@@ -169,24 +169,24 @@ def zoom_3d(img, translate = (0,0,0), rotate=0, fov = 45, near=180, far=15000, b
   
   # where to get global_step form?
   # maybe track iterations on a centralized object?
-  _dx, _dy, _dz = translate
-  writer.add_scalars(
-      main_tag = 'zoom_3d/depth',
-      tag_scalar_dict = {
-          'r':r,
-          'R':R,
-          'mu':mu
-      }
-  )
+  #_dx, _dy, _dz = translate
+  #writer.add_scalars(
+  #    main_tag = 'zoom_3d/depth',
+  #    tag_scalar_dict = {
+  #        'r':r,
+  #        'R':R,
+  #        'mu':mu
+  #    }
+  #)
 
-  writer.add_scalars(
-      main_tag = 'zoom_3d/translation',
-      tag_scalar_dict = {
-          'dx':_dx,
-          'dy':_dy,
-          'dz':_dz
-      }
-  )
+  #writer.add_scalars(
+  #    main_tag = 'zoom_3d/translation',
+  #    tag_scalar_dict = {
+  #        'dx':_dx,
+  #        'dy':_dy,
+  #        'dz':_dz
+  #    }
+  #)
 
 
   ########################################
