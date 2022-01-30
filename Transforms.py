@@ -3,7 +3,8 @@ import torchvision.transforms.functional as TF
 import torch.nn.functional as F
 from PIL import Image, ImageFilter
 import numpy as np
-from pytti import *
+#from pytti import *
+from pytti import DEVICE, parametric_eval
 from pytti.LossAug.DepthLoss import DepthLoss
 from infer import InferenceHelper
 
