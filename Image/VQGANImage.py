@@ -8,7 +8,7 @@ else:
   print("DEBUG: sys.path already contains ./taming transformers")
 from taming.models import cond_transformer, vqgan
 
-from pytti import *
+from pytti import DEVICE, replace_grad, clamp_with_grad, vram_usage_mode
 import torch
 from torch.nn import functional as F
 from pytti.Image import EMAImage

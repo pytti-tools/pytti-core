@@ -48,7 +48,13 @@ from os.path import exists as path_exists
 #  drive_mounted = False
 drive_mounted = False
 try:
-  from pytti.Notebook import *
+  from pytti.Notebook import (
+    is_notebook, change_tqdm_color, get_tqdm, get_last_file,
+    get_next_file, make_hbox, load_settings, write_settings, 
+    save_settings, save_batch, CLIP_MODEL_NAMES, load_clip, 
+    get_frames, build_loss, format_params, rotoscopers, 
+    clear_rotoscopers, update_rotoscopers, Rotoscoper
+  )
 except ModuleNotFoundError:
   if drive_mounted:
     #THIS IS NOT AN ERROR. This is the code that would
@@ -81,7 +87,7 @@ from pytti.Perceptor.Embedder import HDMultiClipEmbedder
 from pytti.Perceptor.Prompt import parse_prompt
 from pytti.LossAug import TVLoss, HSVLoss, OpticalFlowLoss, TargetFlowLoss
 from pytti.Transforms import zoom_2d, zoom_3d, apply_flow
-from pytti import *
+from pytti import DEVICE, fetch, parametric_eval, set_t, vram_usage_mode, print_vram_usage, reset_vram_usage, freeze_vram_usage, vram_profiling
 from pytti.LossAug.DepthLoss import init_AdaBins
 logger.info("pytti loaded.")
 
