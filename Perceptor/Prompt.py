@@ -1,5 +1,5 @@
 #from pytti import *
-from pytti import DEVICE
+from pytti import DEVICE, format_input
 from pytti.Notebook import Rotoscoper
 import torch
 from torch import nn
