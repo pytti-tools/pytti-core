@@ -1,6 +1,5 @@
 from torch import optim, nn
 from pytti.Notebook import tqdm
-#from pytti import *
 from pytti import format_input
 import pandas as pd
 import math

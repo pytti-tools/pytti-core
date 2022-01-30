@@ -1,4 +1,3 @@
-#from pytti import *
 from pytti import DEVICE, clamp_with_grad
 import torch
 from torch import nn

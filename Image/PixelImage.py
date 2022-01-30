@@ -1,4 +1,3 @@
-#from pytti import *
 from pytti import DEVICE, named_rearrange, replace_grad, vram_usage_mode
 from pytti.Image import DifferentiableImage
 from pytti.LossAug import HSVLoss

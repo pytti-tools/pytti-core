@@ -1,11 +1,9 @@
 from pytti.LossAug import MSELoss
 import gc, torch, os, math
-from pytti import DEVICE
 from torchvision.transforms import functional as TF
 from torch.nn import functional as F
 from PIL import Image
 import copy, re
-#from pytti import *
 from pytti import DEVICE, fetch, parse, vram_usage_mode
 
 class LatentLoss(MSELoss):
