@@ -5,19 +5,20 @@ from pytti import DEVICE, vram_usage_mode
 from torchvision.transforms import functional as TF
 from torch.nn import functional as F
 from PIL import Image, ImageOps
+from loguru import logger
 
 infer_helper = None
 def init_AdaBins():
   global infer_helper
   if infer_helper is None:
     with vram_usage_mode('AdaBins'):
-      print('Loading AdaBins...')
+      logger.debug('Loading AdaBins...')
       os.chdir('AdaBins')
       try:
         infer_helper = InferenceHelper(dataset='nyu')
       finally:
         os.chdir('..')
-      print('AdaBins loaded.')
+      logger.debug('AdaBins loaded.')
 
 class DepthLoss(MSELoss):
   @torch.no_grad()
