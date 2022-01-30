@@ -1,5 +1,5 @@
 #from pytti import *
-from pytti import DEVICE
+from pytti import DEVICE, named_rearrange
 from pytti.Image import DifferentiableImage
 from pytti.LossAug import HSVLoss
 from pytti.ImageGuide import DirectImageGuide
