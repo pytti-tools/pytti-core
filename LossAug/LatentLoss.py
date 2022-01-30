@@ -5,7 +5,8 @@ from torchvision.transforms import functional as TF
 from torch.nn import functional as F
 from PIL import Image
 import copy, re
-from pytti import *
+#from pytti import *
+from pytti import fetch
 
 class LatentLoss(MSELoss):
   @torch.no_grad()
