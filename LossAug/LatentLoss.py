@@ -6,7 +6,7 @@ from torch.nn import functional as F
 from PIL import Image
 import copy, re
 #from pytti import *
-from pytti import fetch
+from pytti import DEVICE, fetch, parse
 
 class LatentLoss(MSELoss):
   @torch.no_grad()
