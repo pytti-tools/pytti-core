@@ -81,7 +81,8 @@ from pytti.Perceptor.Embedder import HDMultiClipEmbedder
 from pytti.Perceptor.Prompt import parse_prompt
 from pytti.LossAug import TVLoss, HSVLoss, OpticalFlowLoss, TargetFlowLoss
 from pytti.Transforms import zoom_2d, zoom_3d, apply_flow
-from pytti import *
+#from pytti import *
+from pytti import DEVICE, fetch, parametric_eval
 from pytti.LossAug.DepthLoss import init_AdaBins
 logger.info("pytti loaded.")
 
