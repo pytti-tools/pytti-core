@@ -82,7 +82,7 @@ from pytti.Perceptor.Prompt import parse_prompt
 from pytti.LossAug import TVLoss, HSVLoss, OpticalFlowLoss, TargetFlowLoss
 from pytti.Transforms import zoom_2d, zoom_3d, apply_flow
 #from pytti import *
-from pytti import DEVICE, fetch, parametric_eval
+from pytti import DEVICE, fetch, parametric_eval, set_t
 from pytti.LossAug.DepthLoss import init_AdaBins
 logger.info("pytti loaded.")
 
