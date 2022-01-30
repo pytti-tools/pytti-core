@@ -4,7 +4,8 @@ from torchvision.transforms import functional as TF
 from torch.nn import functional as F
 from pytti.LossAug import Loss
 from pytti.Notebook import Rotoscoper
-from pytti import *
+#from pytti import *
+from pytti import DEVICE
 import torch
 
 class MSELoss(Loss):

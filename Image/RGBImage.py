@@ -1,4 +1,5 @@
-from pytti import *
+#from pytti import *
+from pytti import DEVICE
 import torch
 from torch import nn
 from torchvision.transforms import functional as TF

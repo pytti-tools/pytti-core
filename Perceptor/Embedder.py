@@ -1,5 +1,6 @@
-from pytti import *
+#from pytti import *
 import pytti
+from pytti import DEVICE
 
 import torch
 from torch import nn
