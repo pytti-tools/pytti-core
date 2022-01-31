@@ -13,8 +13,8 @@ TASK_IS_LOCAL=False
 # fix path for our shitty imports.
 if TASK_IS_LOCAL:
     cwd = os.getcwd()
-    sys.path.append(f'{cwd}/GMA/core')
-    sys.path.append(f'{cwd}/pytti')
+    #sys.path.append(f'{cwd}/GMA/core')
+    #sys.path.append(f'{cwd}/pytti')
     
 
 # Instead of prepending an OUTPATH, 
@@ -66,7 +66,7 @@ except ModuleNotFoundError:
     raise RuntimeError('WARNING: drive is not mounted.\nERROR: please run setup (step 1.3).')
 change_tqdm_color()
 import sys
-sys.path.append('./AdaBins')
+#sys.path.append('./AdaBins')
 logger.debug(sys.path)
 
 try:
