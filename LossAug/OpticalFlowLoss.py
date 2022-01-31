@@ -15,14 +15,17 @@ import matplotlib.pyplot as plt
 from pytti.Notebook import Rotoscoper
 from torchvision.transforms import functional as TF
 
-os.chdir('GMA')
-try:
-  sys.path.append('core')
-  from network import RAFTGMA
-  from utils import flow_viz
-  from utils.utils import InputPadder
-finally:
-  os.chdir('..')
+#os.chdir('GMA')
+#try:
+#  sys.path.append('core')
+#  from network import RAFTGMA
+#  from utils import flow_viz
+#  from utils.utils import InputPadder
+#finally:
+#  os.chdir('..')
+from GMA.core.network import RAFTGMA
+from GMA.core.utils import flow_viz
+from GMA.core.utils.utils import InputPadder
 
 from pytti.Transforms import apply_flow
 from pytti import fetch, to_pil, DEVICE, vram_usage_mode
@@ -74,17 +77,24 @@ class TargetFlowLoss(MSELoss):
     self.last_step.set_(last_step)
 
   def get_loss(self, input, img, device=DEVICE):
-    os.chdir('GMA')
-    try:
-      init_GMA('checkpoints/gma-sintel.pth')
-      image1 = self.last_step
-      image2 = input
-      padder = InputPadder(image1.shape)
-      image1, image2 = padder.pad(image1, image2)
-      _, flow = GMA(image1, image2, iters=3, test_mode=True)
-      flow = flow.to(device, memory_format = torch.channels_last)
-    finally:
-      os.chdir('..')
+    #os.chdir('GMA')
+    #try:
+    #  init_GMA('checkpoints/gma-sintel.pth')
+    #  image1 = self.last_step
+    #  image2 = input
+    #  padder = InputPadder(image1.shape)
+    #  image1, image2 = padder.pad(image1, image2)
+    #  _, flow = GMA(image1, image2, iters=3, test_mode=True)
+    #  flow = flow.to(device, memory_format = torch.channels_last)
+    #finally:
+    #  os.chdir('..')
+    init_GMA('GMA/checkpoints/gma-sintel.pth')
+    image1 = self.last_step
+    image2 = input
+    padder = InputPadder(image1.shape)
+    image1, image2 = padder.pad(image1, image2)
+    _, flow = GMA(image1, image2, iters=3, test_mode=True)
+    flow = flow.to(device, memory_format = torch.channels_last)
     return super().get_loss(TF.resize(flow, self.comp.shape[-2:]), img)/self.mag
 
 
@@ -137,18 +147,26 @@ class OpticalFlowLoss(MSELoss):
   @staticmethod
   @torch.no_grad()
   def get_flow(image1, image2, device=DEVICE):
-    os.chdir('GMA')
-    try:
-      init_GMA('checkpoints/gma-sintel.pth')
-      if isinstance(image1, Image.Image):
-        image1 = TF.to_tensor(image1).unsqueeze(0).to(device)
-      if isinstance(image2, Image.Image):
-        image2 = TF.to_tensor(image2).unsqueeze(0).to(device)
-      padder = InputPadder(image1.shape)
-      image1, image2 = padder.pad(image1, image2)
-      flow_low, flow_up = GMA(image1, image2, iters=12, test_mode=True)
-    finally:
-      os.chdir('..')
+    #os.chdir('GMA')
+    #try:
+    #  init_GMA('checkpoints/gma-sintel.pth')
+    #  if isinstance(image1, Image.Image):
+    #    image1 = TF.to_tensor(image1).unsqueeze(0).to(device)
+    #  if isinstance(image2, Image.Image):
+    #    image2 = TF.to_tensor(image2).unsqueeze(0).to(device)
+    #  padder = InputPadder(image1.shape)
+    #  image1, image2 = padder.pad(image1, image2)
+    #  flow_low, flow_up = GMA(image1, image2, iters=12, test_mode=True)
+    #finally:
+    #  os.chdir('..')
+    init_GMA('GMA/checkpoints/gma-sintel.pth')
+    if isinstance(image1, Image.Image):
+      image1 = TF.to_tensor(image1).unsqueeze(0).to(device)
+    if isinstance(image2, Image.Image):
+      image2 = TF.to_tensor(image2).unsqueeze(0).to(device)
+    padder = InputPadder(image1.shape)
+    image1, image2 = padder.pad(image1, image2)
+    flow_low, flow_up = GMA(image1, image2, iters=12, test_mode=True)
     return flow_up
 
   def __init__(self, comp, weight = 0.5, stop = -math.inf, name = "direct target loss", image_shape = None):
