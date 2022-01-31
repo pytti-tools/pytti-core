@@ -1,4 +1,5 @@
-from infer import InferenceHelper
+#from infer import InferenceHelper
+from AdaBins.infer import InferenceHelper
 from pytti.LossAug import MSELoss
 import gc, torch, os, math
 from pytti import DEVICE, vram_usage_mode
@@ -13,11 +14,12 @@ def init_AdaBins():
   if infer_helper is None:
     with vram_usage_mode('AdaBins'):
       logger.debug('Loading AdaBins...')
-      os.chdir('AdaBins')
-      try:
-        infer_helper = InferenceHelper(dataset='nyu')
-      finally:
-        os.chdir('..')
+      #os.chdir('AdaBins')
+      #try:
+      #  infer_helper = InferenceHelper(dataset='nyu')
+      #finally:
+      #  os.chdir('..')
+      infer_helper = InferenceHelper(dataset='nyu')
       logger.debug('AdaBins loaded.')
 
 class DepthLoss(MSELoss):
@@ -70,11 +72,12 @@ class DepthLoss(MSELoss):
     #run the depth model (whatever that means)
     gc.collect()
     torch.cuda.empty_cache()
-    os.chdir('AdaBins')
-    try:
-      _, depth_map = infer_helper.predict_pil(depth_input)
-    finally:
-      os.chdir('..')
+    #os.chdir('AdaBins')
+    #try:
+    #  _, depth_map = infer_helper.predict_pil(depth_input)
+    #finally:
+    #  os.chdir('..')
+    _, depth_map = infer_helper.predict_pil(depth_input)
     gc.collect()
     torch.cuda.empty_cache()
 
