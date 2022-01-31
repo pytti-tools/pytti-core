@@ -67,6 +67,10 @@ except ModuleNotFoundError:
 change_tqdm_color()
 import sys
 #sys.path.append('./AdaBins')
+for p in ('GMA/core', 'AdaBins'):
+  # Adding GMA before AdaBins seems to resolve "utils" module name collision
+    if p not in sys.path:
+        sys.path.append(p)
 logger.debug(sys.path)
 
 try:
