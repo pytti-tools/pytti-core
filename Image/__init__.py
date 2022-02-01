@@ -1,4 +1,4 @@
-import torch
+import torch, copy
 from torch import nn
 import numpy as np
 from PIL import Image
@@ -22,12 +22,36 @@ class DifferentiableImage(nn.Module):
     self.pixel_format = format
     self.output_axes  = ('x', 'y', 's')
     self.lr = 0.02
+    self.latent_strength = 0
 
   def decode_training_tensor(self):
     """
     returns a decoded tensor of this image for training
     """
     return self.decode_tensor()
+
+  def get_image_tensor(self):
+    """
+    optional method: returns an [n x w_i x h_i] tensor representing the local image data
+    those data will be used for animation if afforded
+    """
+    raise NotImplementedError
+
+  def clone(self):
+    raise NotImplementedError
+
+  def get_latent_tensor(self, detach = False):
+    if detach:
+      return self.get_image_tensor().detach()
+    else:
+      return self.get_image_tensor()
+
+  def set_image_tensor(self, tensor):
+    """
+    optional method: accepts an [n x w_i x h_i] tensor representing the local image data
+    those data will be by the animation system
+    """
+    raise NotImplementedError
 
   def decode_tensor(self):
     """
@@ -54,13 +78,29 @@ class DifferentiableImage(nn.Module):
     """
     pass
 
+  def make_latent(self, pil_image):
+    try:
+      dummy = self.clone()
+    except NotImplementedError:
+      dummy = copy.deepcopy(self)
+    dummy.encode_image(pil_image)
+    return dummy.get_latent_tensor(detach = True)
+
+  @classmethod
+  def get_preferred_loss(cls):
+    from pytti.LossAug import HSVLoss
+    return HSVLoss
+
+  def image_loss(self):
+    return []
+
   def decode_image(self):
     """
     render a PIL Image version of this image
     """
     tensor = self.decode_tensor()
     tensor = named_rearrange(tensor, self.output_axes, ('y', 'x', 's'))
-    array = np.array(tensor.mul(255).clamp(0, 255).cpu().detach().numpy().astype(np.uint8))[:,:,:]
+    array = tensor.mul(255).clamp(0, 255).cpu().detach().numpy().astype(np.uint8)[:,:,:]
     return Image.fromarray(array)
 
   def forward(self):
@@ -90,7 +130,7 @@ class EMAImage(DifferentiableImage):
   def update(self):
     if not self.training:
       raise RuntimeError('update() should only be called during training')
-    self.accum *= self.decay
+    self.accum.mul_(self.decay)
     self.biased.mul_(self.decay)
     self.biased.add_((1 - self.decay) * self.tensor)
     self.average.copy_(self.biased)
