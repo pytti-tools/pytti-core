@@ -1,6 +1,8 @@
 #this library is designed for use with google colab runtimes.
 #This file defines utility functions for use with notebooks.
 
+from loguru import logger
+
 #https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
 def is_notebook():
   try:
@@ -12,7 +14,7 @@ def is_notebook():
     elif shell == 'Shell':
       return True   # Google Colab
     else:
-      print("DEGBUG: unknown shell type:",shell)
+      logger.debug("DEGBUG: unknown shell type:",shell)
       return False
   except NameError:
     return False    # Probably standard Python interpreter
@@ -90,7 +92,7 @@ def load_settings(settings_string, random_seed = True):
   params = Bunch(json.loads(settings_string))
   if random_seed or params.seed is None:
     params.seed = random.randint(-0x8000_0000_0000_0000, 0xffff_ffff_ffff_ffff)
-    print("using seed:", params.seed)
+    logger.debug("using seed:", params.seed)
   return params
 
 def write_settings(settings_dict, f):
@@ -140,9 +142,9 @@ def load_clip(params):
       Perceptor.free_clip()
       raise RuntimeError("Please select at least one CLIP model")
     Perceptor.free_clip()
-    print("Loading CLIP...")
+    logger.debug("Loading CLIP...")
     Perceptor.init_clip(CLIP_MODEL_NAMES)
-    print("CLIP loaded.")
+    logger.debug("CLIP loaded.")
 
 def get_frames(path):
   """reads the frames of the mp4 file `path` and returns them as a list of PIL images"""
@@ -150,13 +152,13 @@ def get_frames(path):
   from PIL import Image
   from os.path import exists as path_exists
   if not path_exists(path+'_converted.mp4'):
-    print(f'Converting {path}...')
+    logger.debug(f'Converting {path}...')
     subprocess.run(['ffmpeg', '-i', path, path+'_converted.mp4'])
-    print(f'Converted {path} to {path}_converted.mp4.')
-    print(f'WARNING: future runs will automatically use {path}_converted.mp4, unless you delete it.')
+    logger.debug(f'Converted {path} to {path}_converted.mp4.')
+    logger.warning(f'WARNING: future runs will automatically use {path}_converted.mp4, unless you delete it.')
   vid = imageio.get_reader(path+'_converted.mp4',  'ffmpeg')
   n_frames = vid._meta['nframes']
-  print(f'loaded {n_frames} frames. for {path}')
+  logger.info(f'loaded {n_frames} frames. for {path}')
   return vid
 
 def build_loss(weight_name, weight, name, img, pil_target):

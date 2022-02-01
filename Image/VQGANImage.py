@@ -1,14 +1,16 @@
 from os.path import exists as path_exists
 import sys, subprocess
+from loguru import logger
+
 if not path_exists('./taming-transformers'):
   raise FileNotFoundError("ERROR: taming-transformers is missing!")
 if './taming-transformers' not in sys.path:
   sys.path.append('./taming-transformers')
 else:
-  print("DEBUG: sys.path already contains ./taming transformers")
+  logger.debug("DEBUG: sys.path already contains ./taming transformers")
 from taming.models import cond_transformer, vqgan
 
-from pytti import *
+from pytti import DEVICE, replace_grad, clamp_with_grad, vram_usage_mode
 import torch
 from torch.nn import functional as F
 from pytti.Image import EMAImage
@@ -187,18 +189,18 @@ class VQGANImage(EMAImage):
     vqgan_config     = f'{model_name}.yaml'
     vqgan_checkpoint = f'{model_name}.ckpt'
     if not path_exists(vqgan_config):
-      print(f"WARNING: VQGAN config file {vqgan_config} not found. Initializing download.")
+      logger.warning(f"WARNING: VQGAN config file {vqgan_config} not found. Initializing download.")
       command = VQGAN_CONFIG_URLS[model_name][0].split(' ', 6)
       subprocess.run(command)
       if not path_exists(vqgan_config):
-        print(f"ERROR: VQGAN model {model_name} config failed to download! Please contact model host or find a new one.")
+        logger.critical(f"ERROR: VQGAN model {model_name} config failed to download! Please contact model host or find a new one.")
         raise FileNotFoundError(f"VQGAN {model_name} config not found")
     if not path_exists(vqgan_checkpoint):
-      print(f"WARNING: VQGAN checkpoint file {vqgan_checkpoint} not found. Initializing download.")
+      logger.warning(f"WARNING: VQGAN checkpoint file {vqgan_checkpoint} not found. Initializing download.")
       command = VQGAN_CHECKPOINT_URLS[model_name][0].split(' ', 6)
       subprocess.run(command)
       if not path_exists(vqgan_checkpoint):
-        print(f"ERROR: VQGAN model {model_name} checkpoint failed to download! Please contact model host or find a new one.")
+        logger.critical(f"ERROR: VQGAN model {model_name} checkpoint failed to download! Please contact model host or find a new one.")
         raise FileNotFoundError(f"VQGAN {model_name} checkpoint not found")
         
     VQGAN_MODEL, VQGAN_IS_GUMBEL = load_vqgan_model(vqgan_config, vqgan_checkpoint)

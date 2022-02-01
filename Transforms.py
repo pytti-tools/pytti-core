@@ -3,9 +3,14 @@ import torchvision.transforms.functional as TF
 import torch.nn.functional as F
 from PIL import Image, ImageFilter
 import numpy as np
-from pytti import *
+from pytti import DEVICE, parametric_eval
 from pytti.LossAug.DepthLoss import DepthLoss
 from infer import InferenceHelper
+
+TB_LOGDIR = 'logs' # to do: make this more easily configurable
+from loguru import logger
+from torch.utils.tensorboard import SummaryWriter
+writer = SummaryWriter(TB_LOGDIR)
 
 PADDING_MODES = {'mirror':'reflection','smear':'border','black':'zeros','wrap':'zeros'}
 
@@ -155,11 +160,36 @@ def zoom_3d(img, translate = (0,0,0), rotate=0, fov = 45, near=180, far=15000, b
   r = depth_min/px
   R = depth_max/px
   mu = (depth_mean+depth_median)/(2*px)
-  print("depth range:",r,"(r) to",R,"(R)")
-  print("mu =",mu)
+  ########################################
+  logger.debug(f"depth range: {r} (r) to {R} (R)")
+  logger.debug(f"mu = {mu}")
   translate = [parametric_eval(x, r=r, R=R, mu=mu) for x in translate]
   rotate = parametric_eval(rotate, r=r, R=R, mu=mu)
-  print('moving:',translate)
+  logger.debug(f"moving: {translate}")
+  
+  # where to get global_step form?
+  # maybe track iterations on a centralized object?
+  #_dx, _dy, _dz = translate
+  #writer.add_scalars(
+  #    main_tag = 'zoom_3d/depth',
+  #    tag_scalar_dict = {
+  #        'r':r,
+  #        'R':R,
+  #        'mu':mu
+  #    }
+  #)
+
+  #writer.add_scalars(
+  #    main_tag = 'zoom_3d/translation',
+  #    tag_scalar_dict = {
+  #        'dx':_dx,
+  #        'dy':_dy,
+  #        'dz':_dz
+  #    }
+  #)
+
+
+  ########################################
   
   try:
     image_tensor = img.get_image_tensor().to(DEVICE)

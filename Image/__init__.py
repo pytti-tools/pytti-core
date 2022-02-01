@@ -2,7 +2,7 @@ import torch, copy
 from torch import nn
 import numpy as np
 from PIL import Image
-from pytti import *
+from pytti import named_rearrange
 
 SUPPORTED_MODES = ['L','RGB','I','F']
 FORMAT_SAMPLES  = {'L':1, 'RGB':3, 'I':1, 'F':1}
