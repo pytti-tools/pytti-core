@@ -1,51 +1,22 @@
 from loguru import logger
-    
-TB_LOGDIR = 'logs' # to do: make this more easily configurable
 from torch.utils.tensorboard import SummaryWriter
-writer = SummaryWriter(TB_LOGDIR)
-
-import os, sys
-
-# I really hate this...
-# make this a commandline arg or maybe even an environment variable
-TASK_IS_LOCAL=False
-
-# fix path for our shitty imports.
-if TASK_IS_LOCAL:
-    cwd = os.getcwd()
-    sys.path.append(f'{cwd}/GMA/core')
-    sys.path.append(f'{cwd}/pytti')
-    
-
-# Instead of prepending an OUTPATH, 
-# use params.file_namespace
-#OUTPREFIX = 'foobar'
-
-#OUTPATH = f"{os.getcwd()}/images_out/{OUTPREFIX}"
-OUTPATH = f"{os.getcwd()}/images_out/"
-#if not TASK_IS_LOCAL:
-#    OUTPATH = f"/opt/colab/images_out/{OUTPREFIX}"
-#OUTTERPATH = OUTPATH
-
-
-#import json
+import os, sys    
 from bunch import Bunch
-#with open('default_params.json','r') as f:
-#    #default_params = Bunch(json.load(f))
-#    default_params = json.load(f)
-
-#####################
-
 from pathlib import Path
-
 import torch
-
 from os.path import exists as path_exists
+
+TB_LOGDIR = 'logs' # to do: make this more easily configurable
+writer = SummaryWriter(TB_LOGDIR)
+OUTPATH = f"{os.getcwd()}/images_out/"
+
 #if path_exists('/content/drive/MyDrive/pytti_test'):
 #  %cd /content/drive/MyDrive/pytti_test
 #  drive_mounted = True
 #else:
 #  drive_mounted = False
+
+# TO DO: populate this from... params? globals? 
 drive_mounted = False
 try:
   from pytti.Notebook import (
@@ -66,7 +37,11 @@ except ModuleNotFoundError:
     raise RuntimeError('WARNING: drive is not mounted.\nERROR: please run setup (step 1.3).')
 change_tqdm_color()
 import sys
-sys.path.append('./AdaBins')
+#sys.path.append('./AdaBins')
+for p in ('GMA/core', 'AdaBins'):
+  # Adding GMA before AdaBins seems to resolve "utils" module name collision
+    if p not in sys.path:
+        sys.path.append(p)
 logger.debug(sys.path)
 
 try:
