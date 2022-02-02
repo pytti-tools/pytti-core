@@ -76,17 +76,6 @@ def parse(string, split, defaults):
   tokens = tokens+defaults[len(tokens):]
   return tokens
 
-def to_pil(tensor, image_shape = None):
-  h, w = tensor.shape[-2:]
-  if tensor.dim() == 2:
-    tensor = tensor.unsqueeze(0).unsqueeze(0).expand(1,3,h,w)
-  elif tensor.dim() == 3:
-    tensor = tensor.unsqueeze(0).expand(1,3,h,w)
-  pil_image = PIL_Image.fromarray(tensor.squeeze(0).movedim(0,-1).mul(255).clamp(0,255).detach().cpu().numpy().astype(np.uint8))
-  if image_shape is not None:
-    pil_image = pil_image.resize(image_shape, PIL_Image.LANCZOS)
-  return pil_image
-
 __all__  = ['DEVICE', 
             'named_rearrange', 'format_input', 'pad_tensor', 'cat_with_pad', 'format_module', 'to_pil',
             'replace_grad', 'clamp_with_grad', 'clamp_grad', 'normalize', 

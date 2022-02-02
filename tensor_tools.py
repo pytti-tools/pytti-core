@@ -2,6 +2,11 @@ import torch
 from torch.nn import functional as F
 from torchvision import transforms
 
+
+normalize = transforms.Normalize(mean=[0.48145466, 0.4578275, 0.40821073],
+                                 std=[0.26862954, 0.26130258, 0.27577711])
+
+
 def named_rearrange(tensor, axes, new_positions):
   """
   Permute and unsqueeze tensor to match target dimensional arrangement
@@ -46,12 +51,12 @@ def cat_with_pad(tensors):
   max_size = max(t.shape[-1] for t in tensors)
   return torch.cat([pad_tensor(t, max_size) for t in tensors])
 
-
 def format_module(module, dest, *args, **kwargs):
   output = module(*args, **kwargs)
   if isinstance(output, tuple):
     output = output[0]
   return format_input(output, module, dest)
+
 
 class ReplaceGrad(torch.autograd.Function):
   """
@@ -65,7 +70,9 @@ class ReplaceGrad(torch.autograd.Function):
   @staticmethod
   def backward(ctx, grad_in):
     return None, grad_in.sum_to_size(ctx.shape)
+
 replace_grad = ReplaceGrad.apply
+
 
 class ClampWithGrad(torch.autograd.Function):
   """
@@ -86,5 +93,13 @@ clamp_with_grad = ClampWithGrad.apply
 def clamp_grad(input, min, max):
   return replace_grad(input.clamp(min,max), input)
 
-normalize = transforms.Normalize(mean=[0.48145466, 0.4578275, 0.40821073],
-                                 std=[0.26862954, 0.26130258, 0.27577711])
+def to_pil(tensor, image_shape = None):
+  h, w = tensor.shape[-2:]
+  if tensor.dim() == 2:
+    tensor = tensor.unsqueeze(0).unsqueeze(0).expand(1,3,h,w)
+  elif tensor.dim() == 3:
+    tensor = tensor.unsqueeze(0).expand(1,3,h,w)
+  pil_image = PIL_Image.fromarray(tensor.squeeze(0).movedim(0,-1).mul(255).clamp(0,255).detach().cpu().numpy().astype(np.uint8))
+  if image_shape is not None:
+    pil_image = pil_image.resize(image_shape, PIL_Image.LANCZOS)
+  return pil_image
