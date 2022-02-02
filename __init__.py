@@ -8,7 +8,16 @@ import numpy as np
 from PIL import Image as PIL_Image
 from loguru import logger
 
+from pytti.vram_tools import (
+    vram_usage_mode, 
+    print_vram_usage,
+    reset_vram_usage,
+    freeze_vram_usage,
+    vram_profiling
+)
+
 DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
 
 def named_rearrange(tensor, axes, new_positions):
   """
