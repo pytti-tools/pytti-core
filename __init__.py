@@ -1,14 +1,5 @@
-import torch, math, gc, re
-from torchvision import transforms
-from torch.nn import functional as F
-import requests, io
-from collections import defaultdict
-import pandas as pd
-import numpy as np
-from PIL import Image as PIL_Image
-from loguru import logger
-
 from pytti.vram_tools import (
+    DEVICE,
     vram_usage_mode, 
     print_vram_usage,
     reset_vram_usage,
@@ -35,9 +26,6 @@ from pytti.eval_tools import (
     parse,
     set_t
 )
-
-DEVICE = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-
 
 __all__  = ['DEVICE', 
             'named_rearrange', 'format_input', 'pad_tensor', 'cat_with_pad', 'format_module', 'to_pil',
