@@ -16,7 +16,7 @@ class DifferentiableImage(nn.Module):
     pixel_format: (string) PIL image mode. Either 'L','RGB','I', or 'F'
     """
 
-    def __init__(self, width, height, pixel_format="RGB"):
+    def __init__(self, width: int, height: int, pixel_format: str = "RGB"):
         super().__init__()
         if pixel_format not in SUPPORTED_MODES:
             raise ValueError(f"Pixel format {pixel_format} is not supported.")
