@@ -1,5 +1,9 @@
 runs/
 logs/
+**/runs/
+**/logs/
+**/outputs/
+.devcontainer/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
