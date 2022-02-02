@@ -16,6 +16,11 @@ OUTPATH = f"{os.getcwd()}/images_out/"
 # else:
 #  drive_mounted = False
 
+# hot fix for running as a CLI tool, e.g.
+# $ python pytti/workhorse.py conf=demo
+sys.path.append('.')
+logger.debug(sys.path)
+
 # TO DO: populate this from... params? globals?
 drive_mounted = False
 try:
