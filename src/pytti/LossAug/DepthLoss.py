@@ -1,5 +1,5 @@
 # from infer import InferenceHelper
-from AdaBins.infer import InferenceHelper
+from adabins.infer import InferenceHelper
 from pytti.LossAug import MSELoss
 import gc, torch, os, math
 from pytti import DEVICE, vram_usage_mode

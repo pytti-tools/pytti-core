@@ -5,7 +5,7 @@ from PIL import Image, ImageFilter
 import numpy as np
 from pytti import DEVICE, parametric_eval
 from pytti.LossAug.DepthLoss import DepthLoss
-from infer import InferenceHelper
+from adabins.infer import InferenceHelper
 
 TB_LOGDIR = "logs"  # to do: make this more easily configurable
 from loguru import logger
