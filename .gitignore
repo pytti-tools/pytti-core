@@ -1,5 +1,6 @@
 runs/
 logs/
+
 **/runs/
 **/logs/
 **/outputs/
@@ -7,6 +8,7 @@ logs/
 **/images_out/
 
 # Byte-compiled / optimized / DLL files
+**/__pycache__/
 __pycache__/
 *.py[cod]
 *$py.class
