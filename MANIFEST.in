@@ -1,0 +1,8 @@
+# originally scavenged from https://github.com/facebookresearch/vissl/
+# updated with tips from https://www.reddit.com/r/Python/comments/40s8qw/simplify_your_manifestin_commands/
+global-exclude __pycache__
+
+# yeeeeesh
+# pip uninstall -y pyttitools-core; rm -r pytti-core/build; rm -r pytti-core/src/pyttitools_core.egg-info
+
+graft src/pytti/config
