@@ -1,14 +1,14 @@
 import torch
 from torch.nn import functional as F
 from torchvision import transforms
-
+from PIL import Image as PIL_Image
 
 normalize = transforms.Normalize(
     mean=[0.48145466, 0.4578275, 0.40821073], std=[0.26862954, 0.26130258, 0.27577711]
 )
 
 
-def named_rearrange(tensor, axes, new_positions):
+def named_rearrange(tensor, axes, new_positions) -> torch.tensor:
     """
     Permute and unsqueeze tensor to match target dimensional arrangement
     tensor:        (Tensor) input
@@ -42,11 +42,11 @@ def named_rearrange(tensor, axes, new_positions):
     return tensor.permute(*permutation)
 
 
-def format_input(tensor, source, dest):
+def format_input(tensor, source, dest) -> torch.tensor:
     return named_rearrange(tensor, source.output_axes, dest.input_axes)
 
 
-def pad_tensor(tensor, target_len):
+def pad_tensor(tensor, target_len) -> torch.tensor:
     l = tensor.shape[-1]
     if l >= target_len:
         return tensor
@@ -58,7 +58,7 @@ def cat_with_pad(tensors):
     return torch.cat([pad_tensor(t, max_size) for t in tensors])
 
 
-def format_module(module, dest, *args, **kwargs):
+def format_module(module, dest, *args, **kwargs) -> torch.tensor:
     output = module(*args, **kwargs)
     if isinstance(output, tuple):
         output = output[0]
@@ -72,7 +72,7 @@ class ReplaceGrad(torch.autograd.Function):
     """
 
     @staticmethod
-    def forward(ctx, x_forward, x_backward):
+    def forward(ctx, x_forward, x_backward) -> torch.tensor:
         ctx.shape = x_backward.shape
         return x_forward
 
@@ -90,14 +90,14 @@ class ClampWithGrad(torch.autograd.Function):
     """
 
     @staticmethod
-    def forward(ctx, input, min, max):
+    def forward(ctx, input, min, max) -> torch.tensor:
         ctx.min = min
         ctx.max = max
         ctx.save_for_backward(input)
         return input.clamp(min, max)
 
     @staticmethod
-    def backward(ctx, grad_in):
+    def backward(ctx, grad_in) -> torch.tensor:
         (input,) = ctx.saved_tensors
         return (
             grad_in * (grad_in * (input - input.clamp(ctx.min, ctx.max)) >= 0),
@@ -109,11 +109,11 @@ class ClampWithGrad(torch.autograd.Function):
 clamp_with_grad = ClampWithGrad.apply
 
 
-def clamp_grad(input, min, max):
+def clamp_grad(input, min, max) -> torch.tensor:
     return replace_grad(input.clamp(min, max), input)
 
 
-def to_pil(tensor, image_shape=None):
+def to_pil(tensor, image_shape=None) -> PIL_Image.Image:
     h, w = tensor.shape[-2:]
     if tensor.dim() == 2:
         tensor = tensor.unsqueeze(0).unsqueeze(0).expand(1, 3, h, w)

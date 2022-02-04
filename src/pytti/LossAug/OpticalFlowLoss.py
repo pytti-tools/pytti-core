@@ -23,9 +23,9 @@ from torchvision.transforms import functional as TF
 #  from utils.utils import InputPadder
 # finally:
 #  os.chdir('..')
-from GMA.core.network import RAFTGMA
-from GMA.core.utils import flow_viz
-from GMA.core.utils.utils import InputPadder
+from gma.core.network import RAFTGMA
+from gma.core.utils import flow_viz
+from gma.core.utils.utils import InputPadder
 
 from pytti.Transforms import apply_flow
 from pytti import fetch, to_pil, DEVICE, vram_usage_mode
