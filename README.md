@@ -6,10 +6,11 @@ python text to image
 ## Requirements
 
 * Python 3.x
-* Pytorch
+* [Pytorch](https://pytorch.org/get-started/locally/)
 * Cuda-capable GPU
 * OpenCV
 * ffmpeg
+* Python Image Library (PIL/pillow)
 
 **Optional**  
 * git - simplifies downloading code and keeping it up to date
