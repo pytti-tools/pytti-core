@@ -79,6 +79,10 @@ git clone https://github.com/pytti-tools/pytti-notebook
         You should see the environment name change back to `(base)`. The tools you installed into the pytti-tools environment will no longer be accessible, so you won't have to worry about breaking the environment by installing conflicting versions of dependencies when you are not using it.
 
         Sorry, some of this just gonna be like that.
+        
+        EXPERIMENTAL: An alternative to manually creating the environment is described here: https://github.com/pytti-tools/pytti-core/issues/32  
+        If you are succcessful, you should be able to skip down step 2 ("Download the code for pytti and the models it depends on").  
+        If you attempt this, whether you are successful or not: please report your experience in the linked github issue.
 
     3. Install Pytorch
 
