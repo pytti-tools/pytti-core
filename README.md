@@ -44,7 +44,7 @@ Perform all of these steps in the location on your computer where you plan to us
 
     1. Install python
 
-        We strongly recommend installing python via the free anaconda distribution. If you have installed the full Anaconda distribution, you may skip to step 1.x.
+        We strongly recommend installing python via the free anaconda distribution. If you have installed the full Anaconda distribution, you may skip to step 1.7.
 
         Get Anaconda here: https://www.anaconda.com/products/individual
 
@@ -112,24 +112,15 @@ Perform all of these steps in the location on your computer where you plan to us
 
            conda install -c conda-forge pillow
 
-    7. Install Huggingface Transformers
-
-        To check if it's already installed:
-
-            python -c "import transformers"
-
-        To install with conda:
-
-           conda install -c huggingface transformers
-
-    8. You get the idea. Here're some more conda installations you'll need.
+    7. You get the idea. Here're some more conda installations you'll need.
 
             conda install -c conda-forge imageio
             conda install -c conda-forge pytorch-lightning
             conda install -c conda-forge kornia
+            conda install -c huggingface transformers
             conda install scikit-learn pandas
 
-    9. Install pip dependencies
+    8. Install pip dependencies
 
             pip install jupyter gdown einops seaborn PyGLM ftfy regex tqdm hydra-core adjustText exrex bunch matplotlib-label-lines
 
@@ -209,3 +200,11 @@ Perform all of these steps in the location on your computer where you plan to us
             │   ├── pytti-core
             │   ├── taming-transformers
             │   └── videos
+
+# Usage
+
+## Quick Hydra/yaml tutorial
+
+## Notebook Usage
+
+## CLI usage
