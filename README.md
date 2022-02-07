@@ -1,9 +1,7 @@
 # pytti
 python text to image
 
-# Setup
-
-## Requirements
+# Requirements
 
 * Python 3.x
 * [Pytorch](https://pytorch.org/get-started/locally/)
@@ -17,9 +15,12 @@ python text to image
 * jupyter - Notebook interface
 * gdown - simplifies downloading pretrained models
 
-## Installation
+# Setup
+## Automated Setup
 
-### Automated Install
+---
+NB: AUTOMATED SETUP IS ONLY CURRENTLY SUPPORTED ON GOOGLE COLAB. Local use still requires manual setup.
+---
 
 The simplest way to perform the setup is to download the notebook and let it do the setup for you. This has the added benefit of providing you with a convenient interface for interacting with pytti. Both git and jupyter are required for the notebook setup to work.
 
@@ -31,65 +32,180 @@ git clone https://github.com/pytti-tools/pytti-notebook
 
 Skip to the cell labeled "install everything else!"
 
-### Manual Install
+## Manual Setup
 
-Perform all of these steps in the location on your computer where you plan to use these tools. We recommend creating a new empty folder and performing these steps inside that folder.
+Perform all of these steps in the location on your computer where you plan to use these tools. We recommend creating a new empty folder and performing these steps inside that folder. To be concrete, let's call this folder `pytti_local`
 
-1. Download the code for pytti and the models it depends on. 
-  * We recommend using `git` for this step, but you could also download manually.
-  * The end result should be a separate folder for each of pytti and the downloaded models
+1. Setup a local environment that emulates google colab
+
+   In addition to providing free GPUs, Google colab is helpful because a lot of stuff comes pre-installed. The following steps configure an environment containing some of the tools that come pre-installed in colab. This setup procedure should significantly facilitate running any colab notebook locally, not just pytti.
+
+   In the near future, this sequence will hopefully be replaced with a single step.
+
+    1. Install python
+
+        We strongly recommend installing python via the free anaconda distribution. If you have installed the full Anaconda distribution, you may skip to step 1.x.
+
+        Get Anaconda here: https://www.anaconda.com/products/individual
+
+    2. Create and acivate a new environment
+
+        One of Conda's primary capabilities is creating "virtual environments,' which allows us to compartmentalize dependencies to ensure projetcs with different dependencies don't conflict with each other. 
+
+        To create a new conda environment named: `pytti-tools`
+
+            conda create -n pytti-tools
+
+        We now need to "activate" this environment to use it, like so:
+
+            conda activate pytti-tools
+
+        The environment name shows up at the beginning of the line in the terminal. After running this command, it should have changed from `(base)` to `(pytti-tools)`. The installation steps that follow will now install into our new environment only. 
+
+        When you are done working in this environment (you are not done yet, this is just informational), run
+
+            conda deactivate
+
+        You should see the environment name change back to `(base)`. The tools you installed into the pytti-tools environment will no longer be accessible, so you won't have to worry about breaking the environment by installing conflicting versions of dependencies when you are not using it.
+
+        Sorry, some of this just gonna be like that.
+
+    3. Install Pytorch
+
+        If pytorch is already installed, the following should return `True`
+
+            python -c "import torch; torch.cuda.is_available()"
+
+        If pytorch is not installed, follow the installation steps for installing pytorch with CUDA/GPU support here: https://pytorch.org/get-started/locally/
+
+        If you're on windows and following the steps for conda, this is probably what you need:
+
+            conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
+
+    4. Install tensorflow
+
+        To check to see if tensorflow is already installed:
+
+            python -c "import tensorflow"
+
+        To install with conda:
+
+            conda install tensorflow-gpu
+
+    5. Install OpenCV
+
+        To check to see if OpenCV is already installed:
+
+            python -c "import cv2"
+
+        To install with conda:
+
+            conda install -c conda-forge opencv
+    
+    6. Install the Python Image Library (aka pillow/PIL)
+
+        To check if it's already installed:
+
+            python -c "import PIL"
+
+        To install with conda:
+
+           conda install -c conda-forge pillow
+
+    7. Install Huggingface Transformers
+
+        To check if it's already installed:
+
+            python -c "import transformers"
+
+        To install with conda:
+
+           conda install -c huggingface transformers
+
+    8. You get the idea. Here're some more conda installations you'll need.
+
+            conda install -c conda-forge imageio
+            conda install -c conda-forge pytorch-lightning
+            conda install -c conda-forge kornia
+            conda install scikit-learn pandas
+
+    9. Install pip dependencies
+
+            pip install jupyter gdown einops seaborn PyGLM ftfy regex tqdm hydra-core adjustText exrex bunch matplotlib-label-lines
+
+
+2. Download the code for pytti and the models it depends on. 
+    
+    We recommend using `git` for this step, but you could also download manually. To install git, follow the instructions here and use all the defaults in the installer: https://git-scm.com/book/en/v2/Getting-Started-Installing-Git 
+
+
+      ```
+      # Download this codebase
+      git clone https://github.com/pytti-tools/pytti-core
+
+      # Download research code from reference repositories
+      git clone https://github.com/openai/CLIP
+      git clone https://github.com/CompVis/taming-transformers
+
+      # Download research code modified to integrate better with PYTTI
+      git clone https://github.com/pytti-tools/AdaBins
+      git clone https://github.com/pytti-tools/GMA
+      ```
+
+    The end result should be a separate folder for each of pytti and the downloaded models. You should now have a folder structure that looks something like this:
+
+        ├── pytti_local
+        │   ├── AdaBins
+        │   ├── CLIP
+        │   ├── GMA
+        │   ├── pytti-core
+        │   └── taming-transformers
+          
+3. Download the pretrained AdaBins model
+
+    1. Create a new empty folder called `pretrained`. Your directory structure should now look like this:
+
+
+            ├── pytti_local
+            │   ├── AdaBins
+            │   ├── CLIP
+            │   ├── GMA
+            │   ├── pretrained
+            │   ├── pytti-core
+            │   └── taming-transformers
+
+    2. Download the file `AdaBins_nyu.pt` from google drive. 
+
+            # If you would prefer to do this step in the browser, just visit the URL.
+
+            gdown -O ./pretrained/ https://drive.google.com/uc?id=1lvyZZbC9NLcS8a__YPcUP7rDiIpbRpoF
+
+            # If you get an error saying this file is not available because it's been accessed too many times or whatever, try this alternative URL:
+
+            gdown -O ./pretrained/ https://drive.google.com/uc?id=1zgGJrkFkJbRouqMaWArXE4WF_rhj-pxW
+
+    3. If you downloaded manually, copy or move `AdaBins_nyu.pt` into the `pytti_local/pretrained` subdirectory.
+
+4. Install the cloned code into your python environment
+
     ```
-    # Download this codebase
-    git clone https://github.com/pytti-tools/pytti-core
-
-    # Download research code from reference repositories
-    git clone https://github.com/openai/CLIP
-    git clone https://github.com/CompVis/taming-transformers
-
-    # Download research code modified to integrate better with PYTTI
-    git clone https://github.com/pytti-tools/AdaBins
-    git clone https://github.com/pytti-tools/GMA
-
-2. Add the libraries to your python environment
-
-  * It is generally recommended you do this in an isolated python environment to ensure there are no conflicts between PYTTI dependencies and dependencies for other python tools you may use now or in the future. 
-  * We recommended using [Anaconda](https://docs.anaconda.com/anaconda/) or [venv](https://docs.python.org/3/library/venv.html) for creating and managing these environments. 
-
-    ```
-    # Install python libraries ...this might cause version conflicts :(
-    #Maybe skip this step for now. 
-    #pip install -r pytti-core/requirements.txt
-
     # Install research code
-    pip install ./CLIP
     pip install ./AdaBins
+    pip install ./CLIP
     pip install ./GMA
 
     # Install pytti
     pip install ./pytti-core
     ```
 
-3. Create an empty folder named "pretrained" 
+5. Create folders in which generated images and videos will be outputted, named `images_out` and `videos` respectively. Your directory structure should now look like this:
 
-   ```
-   mkdir pretrained
-   ```
-
-4. Download pretrained AdaBins models for depth estimation
-
-    ```
-    !gdown -O ./pretrained/ https://drive.google.com/uc?id=1lvyZZbC9NLcS8a__YPcUP7rDiIpbRpoF
-
-    # Backup download location in case the first is throttled
-    if [ -f pretrained/AdaBins_nyu.pt ]
-    then
-        !gdown -O ./pretrained/ https://drive.google.com/uc?id=1zgGJrkFkJbRouqMaWArXE4WF_rhj-pxW
-    fi
-    ```
-
-5. (optional) Create folders in which generated images and videos will be outputted. Creating the following two folders is recommended to be consistent with the notebook setup:
-
-    ```
-    mkdir images_out
-    mkdir videos
-    ```
+            ├── pytti_local
+            │   ├── AdaBins
+            │   ├── CLIP
+            │   ├── GMA
+            │   ├── images_out
+            │   ├── pretrained
+            │   ├── pytti-core
+            │   ├── taming-transformers
+            │   └── videos
