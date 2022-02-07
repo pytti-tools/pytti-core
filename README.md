@@ -34,7 +34,17 @@ Skip to the cell labeled "install everything else!"
 
 ## Manual Setup
 
-Perform all of these steps in the location on your computer where you plan to use these tools. We recommend creating a new empty folder and performing these steps inside that folder. To be concrete, let's call this folder `pytti_local`
+0. Clone the pytti-notebook project and change directory into it.
+
+The pytti-notebook folder will be our root directory for the rest of the setup sequence.
+
+    # Download the code and create the pytti-notebook directory 
+    git clone https://github.com/pytti-tools/pytti-notebook
+
+    # Navigate into the directory
+    cd pytti-notebook
+
+git clone https://github.com/pytti-tools/pytti-notebook
 
 1. Setup a local environment that emulates google colab
 
@@ -145,7 +155,7 @@ Perform all of these steps in the location on your computer where you plan to us
 
     The end result should be a separate folder for each of pytti and the downloaded models. You should now have a folder structure that looks something like this:
 
-        ├── pytti_local
+        ├── pytti-notebook
         │   ├── AdaBins
         │   ├── CLIP
         │   ├── GMA
@@ -157,7 +167,7 @@ Perform all of these steps in the location on your computer where you plan to us
     1. Create a new empty folder called `pretrained`. Your directory structure should now look like this:
 
 
-            ├── pytti_local
+            ├── pytti-notebook
             │   ├── AdaBins
             │   ├── CLIP
             │   ├── GMA
@@ -175,7 +185,7 @@ Perform all of these steps in the location on your computer where you plan to us
 
             gdown -O ./pretrained/ https://drive.google.com/uc?id=1zgGJrkFkJbRouqMaWArXE4WF_rhj-pxW
 
-    3. If you downloaded manually, copy or move `AdaBins_nyu.pt` into the `pytti_local/pretrained` subdirectory.
+    3. If you downloaded manually, copy or move `AdaBins_nyu.pt` into the `pytti-notebo/pretrained` subdirectory.
 
 4. Install the cloned code into your python environment
 
@@ -191,7 +201,7 @@ Perform all of these steps in the location on your computer where you plan to us
 
 5. Create folders in which generated images and videos will be outputted, named `images_out` and `videos` respectively. Your directory structure should now look like this:
 
-            ├── pytti_local
+            ├── pytti-notebook
             │   ├── AdaBins
             │   ├── CLIP
             │   ├── GMA
