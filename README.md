@@ -56,8 +56,9 @@ Perform all of these steps in the location on your computer where you plan to us
   * We recommended using [Anaconda](https://docs.anaconda.com/anaconda/) or [venv](https://docs.python.org/3/library/venv.html) for creating and managing these environments. 
 
     ```
-    # Install python libraries
-    pip install -r pytti-core/requirements.txt
+    # Install python libraries ...this might cause version conflicts :(
+    #Maybe skip this step for now. 
+    #pip install -r pytti-core/requirements.txt
 
     # Install research code
     pip install ./CLIP
@@ -65,7 +66,7 @@ Perform all of these steps in the location on your computer where you plan to us
     pip install ./GMA
 
     # Install pytti
-    pip install ./pytti
+    pip install ./pytti-core
     ```
 
 3. Create an empty folder named "pretrained" 
