@@ -86,11 +86,7 @@ git clone https://github.com/pytti-tools/pytti-notebook
 
     3. Install Pytorch
 
-        If pytorch is already installed, the following should return `True`
-
-            python -c "import torch; torch.cuda.is_available()"
-
-        If pytorch is not installed, follow the installation steps for installing pytorch with CUDA/GPU support here: https://pytorch.org/get-started/locally/
+        Follow the installation steps for installing pytorch with CUDA/GPU support here: https://pytorch.org/get-started/locally/
 
         If you're on windows and following the steps for conda, this is probably what you need:
 
@@ -98,29 +94,17 @@ git clone https://github.com/pytti-tools/pytti-notebook
 
     4. Install tensorflow
 
-        To check to see if tensorflow is already installed:
-
-            python -c "import tensorflow"
-
         To install with conda:
 
             conda install tensorflow-gpu
 
     5. Install OpenCV
 
-        To check to see if OpenCV is already installed:
-
-            python -c "import cv2"
-
         To install with conda:
 
             conda install -c conda-forge opencv
     
     6. Install the Python Image Library (aka pillow/PIL)
-
-        To check if it's already installed:
-
-            python -c "import PIL"
 
         To install with conda:
 
