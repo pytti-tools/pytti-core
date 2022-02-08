@@ -136,7 +136,7 @@ git clone https://github.com/pytti-tools/pytti-notebook
 
     8. Install pip dependencies
 
-            pip install jupyter gdown einops seaborn PyGLM ftfy regex tqdm hydra-core adjustText exrex bunch matplotlib-label-lines
+            pip install jupyter gdown loguru einops seaborn PyGLM ftfy regex tqdm hydra-core adjustText exrex bunch matplotlib-label-lines
 
 
 2. Download the code for pytti and the models it depends on. 
