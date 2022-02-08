@@ -142,38 +142,30 @@ git clone https://github.com/pytti-tools/pytti-notebook
       ```
 
     The end result should be a separate folder for each of pytti and the downloaded models. You should now have a folder structure that looks something like this:
-
-        ├── pytti-notebook
-        │   ├── AdaBins
-        │   ├── CLIP
-        │   ├── GMA
-        │   ├── pytti-core
-        │   └── taming-transformers
-          
-3. Download the pretrained AdaBins model
-
-    1. Create a new empty folder called `pretrained`. Your directory structure should now look like this:
-
-
+         
             ├── pytti-notebook
             │   ├── AdaBins
             │   ├── CLIP
+            │   ├── config
             │   ├── GMA
+            │   ├── images_out
             │   ├── pretrained
             │   ├── pytti-core
-            │   └── taming-transformers
+            │   ├── taming-transformers
+            │   └── videos
 
-    2. Download the file `AdaBins_nyu.pt` from google drive. 
 
-            # If you would prefer to do this step in the browser, just visit the URL.
+  3. Download the file `AdaBins_nyu.pt` from google drive. 
 
-            gdown -O ./pretrained/ https://drive.google.com/uc?id=1lvyZZbC9NLcS8a__YPcUP7rDiIpbRpoF
+          # If you would prefer to do this step in the browser, just visit the URL.
 
-            # If you get an error saying this file is not available because it's been accessed too many times or whatever, try this alternative URL:
+          gdown -O ./pretrained/ https://drive.google.com/uc?id=1lvyZZbC9NLcS8a__YPcUP7rDiIpbRpoF
 
-            gdown -O ./pretrained/ https://drive.google.com/uc?id=1zgGJrkFkJbRouqMaWArXE4WF_rhj-pxW
+          # If you get an error saying this file is not available because it's been accessed too many times or whatever, try this alternative URL:
 
-    3. If you downloaded manually, copy or move `AdaBins_nyu.pt` into the `pytti-notebo/pretrained` subdirectory.
+          gdown -O ./pretrained/ https://drive.google.com/uc?id=1zgGJrkFkJbRouqMaWArXE4WF_rhj-pxW
+
+      If you downloaded manually, move `AdaBins_nyu.pt` into the `pytti-notebo/pretrained` subdirectory.
 
 4. Install the cloned code into your python environment
 
@@ -187,17 +179,6 @@ git clone https://github.com/pytti-tools/pytti-notebook
     pip install ./pytti-core
     ```
 
-5. Create folders in which generated images and videos will be outputted, named `images_out` and `videos` respectively. Your directory structure should now look like this:
-
-            ├── pytti-notebook
-            │   ├── AdaBins
-            │   ├── CLIP
-            │   ├── GMA
-            │   ├── images_out
-            │   ├── pretrained
-            │   ├── pytti-core
-            │   ├── taming-transformers
-            │   └── videos
 
 # Usage
 
