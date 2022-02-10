@@ -130,30 +130,17 @@ git clone https://github.com/pytti-tools/pytti-notebook
 
       ```
       # Download this codebase
-      git clone https://github.com/pytti-tools/pytti-core
-
-      # Download research code from reference repositories
-      git clone https://github.com/openai/CLIP
-      git clone https://github.com/CompVis/taming-transformers
-
-      # Download research code modified to integrate better with PYTTI
-      git clone https://github.com/pytti-tools/AdaBins
-      git clone https://github.com/pytti-tools/GMA
+      git clone --recursive-submodules https://github.com/pytti-tools/pytti-core
       ```
 
     The end result should be a separate folder for each of pytti and the downloaded models. You should now have a folder structure that looks something like this:
          
             ├── pytti-notebook
-            │   ├── AdaBins
-            │   ├── CLIP
             │   ├── config
-            │   ├── GMA
             │   ├── images_out
             │   ├── pretrained
             │   ├── pytti-core
-            │   ├── taming-transformers
             │   └── videos
-
 
   3. Download the file `AdaBins_nyu.pt` from google drive. 
 
@@ -165,17 +152,15 @@ git clone https://github.com/pytti-tools/pytti-notebook
 
           gdown -O ./pretrained/ https://drive.google.com/uc?id=1zgGJrkFkJbRouqMaWArXE4WF_rhj-pxW
 
-      If you downloaded manually, move `AdaBins_nyu.pt` into the `pytti-notebo/pretrained` subdirectory.
+      If you downloaded manually, move `AdaBins_nyu.pt` into the `pytti-notebook/pretrained` subdirectory.
 
 4. Install the cloned code into your python environment
 
     ```
     # Install research code
-    pip install ./AdaBins
-    pip install ./CLIP
-    pip install ./GMA
-
-    # Install pytti
+    pip install ./pytti-core/vendor/AdaBins
+    pip install ./pytti-core/vendor/CLIP
+    pip install ./pytti-core/vendor/GMA
     pip install ./pytti-core
     ```
 
