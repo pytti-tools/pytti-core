@@ -1,0 +1,12 @@
+[submodule "vendor/GMA"]
+	path = vendor/GMA
+	url = https://github.com/pytti-tools/GMA
+[submodule "vendor/AdaBins"]
+	path = vendor/AdaBins
+	url = https://github.com/pytti-tools/AdaBins
+[submodule "vendor/CLIP"]
+	path = vendor/CLIP
+	url = https://github.com/openai/CLIP
+[submodule "vendor/taming-transformers"]
+	path = vendor/taming-transformers
+	url = https://github.com/CompVis/taming-transformers
