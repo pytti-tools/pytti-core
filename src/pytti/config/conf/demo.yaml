@@ -9,8 +9,8 @@ scene_suffix: '| satellite image:-1:-.95 | text:-1:-.95 | anime:-1:-.95 | waterm
 steps_per_scene: 30
 steps_per_frame: 3
 pre_animation_steps: 2
-save_every: steps_per_frame
-display_every: steps_per_frame
+save_every: ${steps_per_frame}
+display_every: ${steps_per_frame}
 
 image_model: Limited Palette
 ViTB32: true
