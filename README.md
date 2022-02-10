@@ -144,15 +144,23 @@ git clone https://github.com/pytti-tools/pytti-notebook
 
   3. Download the file `AdaBins_nyu.pt` from google drive. 
 
-          # If you would prefer to do this step in the browser, just visit the URL.
+      1. Run the following command to determine the directory where you should put the model
 
-          gdown -O ./pretrained/ https://drive.google.com/uc?id=1lvyZZbC9NLcS8a__YPcUP7rDiIpbRpoF
+          ```
+          python -c "import os; os.path.expanduser('~/.cache/adabins/')"
+          ```
+          on colab, this would evaluate to: `/root/.cache/adabins/`
+
+      2. Download the model to the directory indicated by the output of the previous step. Update the command below to use the correct path.
+          ```
+          # If you would prefer to do this step in the browser, you can download by visiting the URL. You will have to move the file to the correct location afterwards.
+
+          gdown -O /root/.cache/adabins/ https://drive.google.com/uc?id=1lvyZZbC9NLcS8a__YPcUP7rDiIpbRpoF
 
           # If you get an error saying this file is not available because it's been accessed too many times or whatever, try this alternative URL:
 
-          gdown -O ./pretrained/ https://drive.google.com/uc?id=1zgGJrkFkJbRouqMaWArXE4WF_rhj-pxW
-
-      If you downloaded manually, move `AdaBins_nyu.pt` into the `pytti-notebook/pretrained` subdirectory.
+          gdown -O /root/.cache/adabins/ https://drive.google.com/uc?id=1zgGJrkFkJbRouqMaWArXE4WF_rhj-pxW
+          ```
 
 4. Install the cloned code into your python environment
 
