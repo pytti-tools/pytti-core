@@ -192,7 +192,17 @@ This file contains the default settings for all available parameters. The colab 
 
 Entries in this file are in the form `key: value`. Feel free to modify this file to specify defaults that are useful for you, but we recommend holding off on tampering with `default.yaml` until after you are comfortable specifying your experiments with an override config (discussed below).
 
-### ``
+### `config/conf/*.yaml`
+
+PYTTI requires that you specify a "config node" with the `conf` argument. The simplest use here is to add a yaml file in `config/conf/` with a name that somehow describes your experiment. A `demo.yaml` is provided. 
+
+**IMPORTANT**: The first line of any non-default YAML file you create needs to be: 
+
+    # @package _global_
+
+for it to work properly in the current config scheme. See the `demo.yaml` as an example [here](https://github.com/pytti-tools/pytti-notebook/blob/main/config/conf/demo.yaml#L1)
+
+As with `default.yaml`, each parameter should appear on its own line in the form `key: value`. Starting a line with '#' is interpreted as a comment: you can use this to annotate your config file with your own personal notes, or deactivate settings you want ignored.
 
 ## Notebook Usage
 
