@@ -7,6 +7,3 @@
 [submodule "vendor/CLIP"]
 	path = vendor/CLIP
 	url = https://github.com/openai/CLIP
-[submodule "vendor/taming-transformers"]
-	path = vendor/taming-transformers
-	url = https://github.com/CompVis/taming-transformers
