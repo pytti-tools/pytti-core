@@ -161,6 +161,7 @@ git clone https://github.com/pytti-tools/pytti-notebook
     pip install ./pytti-core/vendor/AdaBins
     pip install ./pytti-core/vendor/CLIP
     pip install ./pytti-core/vendor/GMA
+    pip install ./pytti-core/vendor/taming-transformers
     pip install ./pytti-core
     ```
 
