@@ -292,3 +292,58 @@ Now if we want to add one of these effects to an experiment, all we have to do i
 
 ## CLI usage
 
+To e.g. run the configuration specified by `config/conf/demo.yaml`, our command would look like this:
+
+    python -m pytti.workhorse conf=demo
+
+Not that on the command line the convention is now `key=value` whereas it was `key: value` in the yaml files. Same keys and values work here, just need that `=` sign.
+
+We can actually override arguments from the command line directly:
+
+```
+# to make this easier to read, I'm 
+# using the line continuation character: "\"
+
+python -m pytti.workhorse \
+    conf=demo \
+    steps_per_scene=300 \
+    translate_x=5 \
+    seed=123
+```
+
+### CLI Superpowers
+
+A superpower commandline hydra gives us is the ability to specify multiple values for the same key, we just need to add the argument `--multirun`. For example, we can do this:
+
+    python -m pytti.workhorse \
+        --multirun \
+        conf=experiment1,experiment2
+
+This will first run `conf/experiment1.yaml` then `conf/experiment2.yaml`. Simple as that.
+
+The real magic here is that we can provide multiple values like this *to multiple keys*, creating permutations of settings. 
+
+Lets say that we wanted to compare our two experiments across several different random seeds:
+
+```
+python -m pytti.workhorse \
+  --multirun \
+  conf=experiment1,experiment2 \
+  seed=123,42,1001
+```
+
+Simple as that, pytti will now run each experiment for all three seeds provided, giving us six experiments. 
+
+This works for parameter groups as well (you may have already figured out that `conf` *is* a parameter group, so we've actually already been using this feature with parameter groups):
+
+```
+# to make this easier to read, I'm 
+# using the line continuation character: "\"
+
+python -m pytti.workhorse \
+  conf=experiment1,experiment2 \
+  seed=123,42,1001 \
+  motion=zoom_in_slow,zoom_in_fast,zoom_and_spin
+```
+
+And just like that, we're permuting two prompts against 3 different motion transformations, and 3 random seeds. That tiny chunk of code is now generating 18 experiments for us.
