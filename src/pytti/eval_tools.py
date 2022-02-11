@@ -9,7 +9,7 @@ eval_memo = {}
 
 
 def parametric_eval(string, **vals):
-    global math_env
+    global math_env # what is "math_env"?
     if string in eval_memo:
         return eval_memo[string]
     if isinstance(string, str):
