@@ -1,6 +1,9 @@
 # this library is designed for use with google colab runtimes.
 # This file defines utility functions for use with notebooks.
 
+# ... a lot of stuff in her actually connected to animation/video/rotoscope
+# most of the rest can probably be flushed
+
 from loguru import logger
 
 # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
@@ -62,7 +65,7 @@ def get_last_file(directory, pattern):
     index = key(files[-1])
     return files[-1], index
 
-
+# this doesn't belong in here
 def get_next_file(directory, pattern, templates):
     import os, re
 
@@ -173,8 +176,10 @@ def save_batch(settings_list, path):
             f.write("\n\n")
 
 
+# this doesn't belong in here
 CLIP_MODEL_NAMES = None
 
+# this doesn't belong in here
 # refactor or deprecate this
 def load_clip(params):
     from pytti import Perceptor
@@ -202,7 +207,7 @@ def load_clip(params):
         Perceptor.init_clip(CLIP_MODEL_NAMES)
         logger.debug("CLIP loaded.")
 
-
+# this doesn't belong in here
 def get_frames(path):
     """reads the frames of the mp4 file `path` and returns them as a list of PIL images"""
     import imageio, subprocess
@@ -221,7 +226,7 @@ def get_frames(path):
     logger.info(f"loaded {n_frames} frames. for {path}")
     return vid
 
-
+# this doesn't belong in here
 def build_loss(weight_name, weight, name, img, pil_target):
     from pytti.LossAug import LOSS_DICT
 
