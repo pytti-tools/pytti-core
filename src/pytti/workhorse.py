@@ -1,12 +1,32 @@
 from loguru import logger
 from torch.utils.tensorboard import SummaryWriter
 import os, sys
-from bunch import Bunch
 from pathlib import Path
 import torch
 from os.path import exists as path_exists
 import sys
 
+import torch, gc, glob, subprocess, warnings, re, math, json
+import numpy as np
+from IPython import display
+from PIL import Image, ImageEnhance
+from torchvision.transforms import functional as TF
+import pandas as pd
+import hydra
+from omegaconf import OmegaConf, DictConfig
+
+import os
+from pathlib import Path
+from loguru import logger
+from bunch import Bunch
+
+# Libraries to deprecate
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+
+logger.info("Loading pytti...")
 
 from pytti.Notebook import (
     is_notebook,
@@ -30,21 +50,7 @@ from pytti.Notebook import (
     Rotoscoper,
 )
 
-
-TB_LOGDIR = "logs"  # to do: make this more easily configurable
-writer = SummaryWriter(TB_LOGDIR)
-OUTPATH = f"{os.getcwd()}/images_out/"
-
-
-# TO DO: populate this from... params? globals?
-drive_mounted = False
-
-
-
-
 from pytti import Perceptor
-
-logger.info("Loading pytti...")
 from pytti.Image import PixelImage, RGBImage, VQGANImage
 from pytti.ImageGuide import DirectImageGuide
 from pytti.Perceptor.Embedder import HDMultiClipEmbedder
@@ -66,37 +72,25 @@ from pytti.LossAug.DepthLoss import init_AdaBins
 
 logger.info("pytti loaded.")
 
-import torch, gc, glob, subprocess, warnings, re, math, json
-import numpy as np
-from IPython import display
-from PIL import Image, ImageEnhance
 
-from torchvision.transforms import functional as TF
 
-# display settings, because usability counts
-# warnings.filterwarnings("error", category=UserWarning)
-#%matplotlib inline
-import matplotlib.pyplot as plt
-import seaborn as sns
+TB_LOGDIR = "logs"  # to do: make this more easily configurable
+writer = SummaryWriter(TB_LOGDIR)
+OUTPATH = f"{os.getcwd()}/images_out/" # to do: transition to relying fully on hydra outputs/
+
+
+# TO DO: populate this from... params? globals?
+drive_mounted = False
+# what is this even for? Can I just delete this variable?
+
+
 
 sns.set()
-import pandas as pd
 
 plt.style.use("bmh")
 pd.options.display.max_columns = None
 pd.options.display.width = 175
 
-#####################
-
-import hydra
-from omegaconf import OmegaConf, DictConfig
-
-# conf = OmegaConf.create(default_params)
-# OmegaConf.save(conf, f="default_params.yaml")
-
-import os
-from pathlib import Path
-from loguru import logger
 
 
 local_path = Path(os.getcwd()) / "config"
