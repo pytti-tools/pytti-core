@@ -487,6 +487,13 @@ def _main(cfg: DictConfig):
                     filename = f"backup/{params.file_namespace}/{base_name}_{n}.bak"
                     torch.save(img.state_dict(), filename)
                     if n > params.backups:
+
+                        # YOOOOOOO let's not start shell processes unnecessarily
+                        # and then execute commands using string interpolation.
+                        # Replace this with a pythonic folder removal, then see
+                        # if we can't deprecate the folder removal entirely. What
+                        # is the purpose of "backups" here? Just use the frames that
+                        # are being written to disk.
                         subprocess.run(
                             [
                                 "rm",
@@ -666,6 +673,9 @@ def _main(cfg: DictConfig):
             params, f"{OUTPATH}/{params.file_namespace}/{base_name}_settings.txt"
         )
 
+        # Run the training loop
+        ########################
+
         # what are these skip variables doing?
         skip_prompts = i // params.steps_per_scene
         skip_steps = i % params.steps_per_scene
@@ -684,13 +694,15 @@ def _main(cfg: DictConfig):
             skip_steps = 0
             model.clear_dataframe()
             last_scene = scene
+
+        # tensorboard summarywriter should supplnat all our graph stuff
         if fig:
             del fig, axs
         ############################# DMARX
         writer.close()
         #############################
 
-    # if __name__ == '__main__':
+    ## Work on getting rid of this batch mode garbage. Hydra's got this.
     try:
         gc.collect()
         torch.cuda.empty_cache()
