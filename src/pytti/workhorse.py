@@ -5,52 +5,44 @@ from bunch import Bunch
 from pathlib import Path
 import torch
 from os.path import exists as path_exists
+import sys
+
+
+from pytti.Notebook import (
+    is_notebook,
+    change_tqdm_color, # who cares tho
+    get_tqdm,
+    get_last_file,
+    get_next_file,
+    make_hbox,
+    load_settings,
+    write_settings,
+    save_settings,
+    save_batch,
+    CLIP_MODEL_NAMES,
+    load_clip,
+    get_frames,
+    build_loss,
+    format_params,
+    rotoscopers,
+    clear_rotoscopers,
+    update_rotoscopers,
+    Rotoscoper,
+)
+
 
 TB_LOGDIR = "logs"  # to do: make this more easily configurable
 writer = SummaryWriter(TB_LOGDIR)
 OUTPATH = f"{os.getcwd()}/images_out/"
 
 
-
-
-
 # TO DO: populate this from... params? globals?
 drive_mounted = False
-try:
-    from pytti.Notebook import (
-        is_notebook,
-        change_tqdm_color,
-        get_tqdm,
-        get_last_file,
-        get_next_file,
-        make_hbox,
-        load_settings,
-        write_settings,
-        save_settings,
-        save_batch,
-        CLIP_MODEL_NAMES,
-        load_clip,
-        get_frames,
-        build_loss,
-        format_params,
-        rotoscopers,
-        clear_rotoscopers,
-        update_rotoscopers,
-        Rotoscoper,
-    )
-except ModuleNotFoundError:
-    if drive_mounted:
-        # THIS IS NOT AN ERROR. This is the code that would
-        # make an error if something were wrong.
-        raise RuntimeError("ERROR: please run setup (step 1.3).")
-    else:
-        # THIS IS NOT AN ERROR. This is the code that would
-        # make an error if something were wrong.
-        raise RuntimeError(
-            "WARNING: drive is not mounted.\nERROR: please run setup (step 1.3)."
-        )
-change_tqdm_color()
-import sys
+
+
+
+
+
 
 # sys.path.append('./AdaBins')
 for p in ("GMA/core", "AdaBins"):
