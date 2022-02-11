@@ -147,7 +147,7 @@ git clone https://github.com/pytti-tools/pytti-notebook
       1. Run the following command to determine the directory where you should put the model
 
           ```
-          python -c "import os; os.path.expanduser('~/.cache/adabins/')"
+          python -c "import os; print(os.path.expanduser('~/.cache/adabins/'))"
           ```
           on colab, this would evaluate to: `/root/.cache/adabins/`
 
