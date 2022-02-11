@@ -26,7 +26,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-
 logger.info("Loading pytti...")
 
 from pytti.Notebook import (
@@ -73,27 +72,21 @@ from pytti.LossAug.DepthLoss import init_AdaBins
 
 logger.info("pytti loaded.")
 
+sns.set()
+plt.style.use("bmh")
+pd.options.display.max_columns = None
+pd.options.display.width = 175
 
 
 TB_LOGDIR = "logs"  # to do: make this more easily configurable
 writer = SummaryWriter(TB_LOGDIR)
 OUTPATH = f"{os.getcwd()}/images_out/" # to do: transition to relying fully on hydra outputs/
 
-
 # TO DO: populate this from... params? globals?
+# what is this even for? Can I eliminate this variable?
 drive_mounted = False
-# what is this even for? Can I just delete this variable?
 
-
-
-sns.set()
-
-plt.style.use("bmh")
-pd.options.display.max_columns = None
-pd.options.display.width = 175
-
-
-
+# This should probably be configured in a hydra config file 
 local_path = Path(os.getcwd()) / "config"
 logger.debug(local_path)
 
@@ -102,12 +95,20 @@ def _main(cfg: DictConfig):
     default_params = OmegaConf.to_container(cfg, resolve=True)
     logger.debug(os.getcwd())
     logger.debug(default_params)
+
+    # this is probably some version checking hack I should remove
     latest = -1
-    # @markdown check `batch_mode` to run batch settings
-    batch_mode = False  # @param{type:"boolean"}
+    
+    batch_mode = False
+    restore = False
+    reencode = False
+
+    restore_run = latest # I think this is only useful inside the notebook
+
+    # This is why notebooks are bad. Right here.
     if batch_mode:
         try:
-            batch_list
+            batch_list 
         except NameError:
             raise RuntimeError(
                 "ERROR: no batch settings. Please run 'batch settings' cell at the bottom of the page to use batch mode."
@@ -117,34 +118,39 @@ def _main(cfg: DictConfig):
             params = default_params
             params = Bunch(
                 params
-            )  # fuck it... # probably easier to use an argparse namesapce here
+            )  # maybe replace Bunch () with  OmegaConf.create(params)?
         except NameError:
             raise RuntimeError(
                 "ERROR: no parameters. Please run parameters (step 2.1)."
             )
-    # @markdown check `restore` to restore from a previous run
-    restore = False  # @param{type:"boolean"}
-    # @markdown check `reencode` if you are restoring with a modified image or modified image settings
-    reencode = False  # @param{type:"boolean"}
-    # @markdown which run to restore
-    restore_run = latest  # @param{type:"raw"}
+
+    # This will never evaluate to true right now because `latest=-1` above
     if restore and restore_run == latest:
         _, restore_run = get_last_file(
             f"backup/{params.file_namespace}",
             f"^(?P<pre>{re.escape(params.file_namespace)}\\(?)(?P<index>\\d*)(?P<post>\\)?_\\d+\\.bak)$",
         )
 
+
+    # I feel like there's probably no reason this is defined inside of _main()
     def do_run():
+
+        # Phase 1 - reset state
+        ########################
+
         clear_rotoscopers()  # what a silly name
         vram_profiling(params.approximate_vram_usage)
         reset_vram_usage()
-        global CLIP_MODEL_NAMES
-        # @markdown which frame to restore from
-        restore_frame = latest  # @param{type:"raw"}
+        global CLIP_MODEL_NAMES # We're gonna do something about these globals
+
+        restore_frame = latest
 
         # set up seed for deterministic RNG
         if params.seed is not None:
             torch.manual_seed(params.seed)
+
+        # Phase 2 - load and parse
+        ###########################
 
         # load CLIP
         load_clip(params)
@@ -201,6 +207,10 @@ def _main(cfg: DictConfig):
                     params.width = int(params.height * init_size[0] / init_size[1])
                 if params.height == -1:
                     params.height = int(params.width * init_size[1] / init_size[0])
+
+
+        # Phase 3 - Setup Optimization
+        ###############################
 
         # set up image
         if params.image_model == "Limited Palette":
@@ -336,6 +346,12 @@ def _main(cfg: DictConfig):
         if params.smoothing_weight != 0:
             loss_augs.append(TVLoss(weight=params.smoothing_weight))
 
+
+        # Phase 4 - setup outputs 
+        ##########################
+
+        # Transition as much of this as possible to hydra
+
         # set up filespace
         Path(f"{OUTPATH}/{params.file_namespace}").mkdir(parents=True, exist_ok=True)
         Path(f"backup/{params.file_namespace}").mkdir(parents=True, exist_ok=True)
@@ -398,12 +414,23 @@ def _main(cfg: DictConfig):
         else:
             fig, axs = None, None
 
+
+        # Phase 5 - setup optimizer 
+        ############################
+
         # make the main model object
         model = DirectImageGuide(img, embedder, lr=params.learning_rate)
 
         # Update is called each step.
         def update(i, stage_i):
             # display
+
+            #
+            #
+            #
+            #
+
+            # DM: I bet this could be abstracted out into a report_out() function or whatever
             if params.clear_every > 0 and i > 0 and i % params.clear_every == 0:
                 display.clear_output()
             if params.display_every > 0 and i % params.display_every == 0:
@@ -416,6 +443,7 @@ def _main(cfg: DictConfig):
                             tag=f"losses/{k}", scalar_value=v, global_step=i
                         )
 
+                # does this VRAM stuff even do anything?
                 if params.approximate_vram_usage:
                     logger.debug("VRAM Usage:")
                     print_vram_usage()  # update this function to use logger
@@ -465,7 +493,17 @@ def _main(cfg: DictConfig):
                                 f"backup/{params.file_namespace}/{base_name}_{n-params.backups}.bak",
                             ]
                         )
+
+            ### DM: report_out() would probably end down here
+
+            #
+            #
+            #
+            #
+
             # animate
+            ################
+
             t = (i - params.pre_animation_steps) / (
                 params.steps_per_frame * params.frames_per_second
             )
@@ -608,8 +646,19 @@ def _main(cfg: DictConfig):
                         if semantic_init_prompt is not None:
                             semantic_init_prompt.set_enabled(False)
 
+        ###############################################################
+        ###
+
+        # Wait.... we literally instantiated the model just before
+        # defining update here. 
+        # I bet all of this can go in the DirectImageGuide class and then
+        # we can just instantiate that class with the config object.
+
         model.update = update
 
+
+        # Pretty sure this isn't necessary, Hydra should take care of saving 
+        # the run settings now
         logger.info(
             f"Settings saved to {OUTPATH}/{params.file_namespace}/{base_name}_settings.txt"
         )
@@ -617,6 +666,7 @@ def _main(cfg: DictConfig):
             params, f"{OUTPATH}/{params.file_namespace}/{base_name}_settings.txt"
         )
 
+        # what are these skip variables doing?
         skip_prompts = i // params.steps_per_scene
         skip_steps = i % params.steps_per_scene
         last_scene = prompts[0] if skip_prompts == 0 else prompts[skip_prompts - 1]
