@@ -42,23 +42,8 @@ drive_mounted = False
 
 
 
+from pytti import Perceptor
 
-
-
-
-try:
-    from pytti import Perceptor
-except ModuleNotFoundError:
-    if drive_mounted:
-        # THIS IS NOT AN ERROR. This is the code that would
-        # make an error if something were wrong.
-        raise RuntimeError("ERROR: please run setup (step 1.3).")
-    else:
-        # THIS IS NOT AN ERROR. This is the code that would
-        # make an error if something were wrong.
-        raise RuntimeError(
-            "WARNING: drive is not mounted.\nERROR: please run setup (step 1.3)."
-        )
 logger.info("Loading pytti...")
 from pytti.Image import PixelImage, RGBImage, VQGANImage
 from pytti.ImageGuide import DirectImageGuide
