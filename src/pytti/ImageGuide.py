@@ -3,17 +3,15 @@ from pytti.Notebook import tqdm
 from pytti import format_input
 import pandas as pd
 import math
+from scipy.signal import savgol_filter
 
+# deprecate this
 from labellines import labelLines
 
 
 def unpack_dict(D, n=2):
     ds = [{k: V[i] for k, V in D.items()} for i in range(n)]
     return tuple(ds)
-
-
-import pandas as pd
-from scipy.signal import savgol_filter
 
 
 def smooth_dataframe(df, window_size):
