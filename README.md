@@ -133,7 +133,7 @@ git clone https://github.com/pytti-tools/pytti-notebook
       git clone --recurse-submodules -j8 --branch dev https://github.com/pytti-tools/pytti-core
       ```
 
-    The end result should be a separate folder for each of pytti and the downloaded models. You should now have a folder structure that looks something like this:
+    You should now have a folder structure that looks something like this:
          
             ├── pytti-notebook
             │   ├── config
