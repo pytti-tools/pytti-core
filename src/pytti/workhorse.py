@@ -10,16 +10,9 @@ TB_LOGDIR = "logs"  # to do: make this more easily configurable
 writer = SummaryWriter(TB_LOGDIR)
 OUTPATH = f"{os.getcwd()}/images_out/"
 
-# if path_exists('/content/drive/MyDrive/pytti_test'):
-#  %cd /content/drive/MyDrive/pytti_test
-#  drive_mounted = True
-# else:
-#  drive_mounted = False
 
-# hot fix for running as a CLI tool, e.g.
-# $ python pytti/workhorse.py conf=demo
-sys.path.append('.')
-logger.debug(sys.path)
+
+
 
 # TO DO: populate this from... params? globals?
 drive_mounted = False
