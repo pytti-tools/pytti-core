@@ -1,26 +1,27 @@
-from loguru import logger
-from torch.utils.tensorboard import SummaryWriter
-import os, sys
+"""
+This is the rendering logic that used to live in the notebook. 
+It's sort of a mess in here. I'm working on it. 
+Thank you for your patience.-- The Management
+"""
 from pathlib import Path
-import torch
+import os
 from os.path import exists as path_exists
 import sys
+import gc, glob, subprocess, warnings, re, math, json
 
-import torch, gc, glob, subprocess, warnings, re, math, json
-import numpy as np
-from IPython import display
-from PIL import Image, ImageEnhance
-from torchvision.transforms import functional as TF
-import pandas as pd
 import hydra
+from IPython import display
 from omegaconf import OmegaConf, DictConfig
-
-import os
-from pathlib import Path
 from loguru import logger
-from bunch import Bunch
+import numpy as np
+from PIL import Image, ImageEnhance
+import pandas as pd
+import torch
+from torch.utils.tensorboard import SummaryWriter
+from torchvision.transforms import functional as TF
 
 # Libraries to deprecate
+from bunch import Bunch
 import matplotlib.pyplot as plt
 import seaborn as sns
 
