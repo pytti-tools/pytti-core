@@ -129,12 +129,18 @@ from omegaconf import OmegaConf, DictConfig
 # conf = OmegaConf.create(default_params)
 # OmegaConf.save(conf, f="default_params.yaml")
 
+import os
+from pathlib import Path
 from loguru import logger
 
 
-@hydra.main(config_path="config", config_name="default")
+local_path = Path(os.getcwd()) / "config"
+logger.debug(local_path)
+
+@hydra.main(config_path=local_path, config_name="default")
 def _main(cfg: DictConfig):
     default_params = OmegaConf.to_container(cfg, resolve=True)
+    logger.debug(os.getcwd())
     logger.debug(default_params)
     latest = -1
     # @markdown check `batch_mode` to run batch settings
@@ -705,9 +711,6 @@ def _main(cfg: DictConfig):
                 gc.collect()
                 torch.cuda.empty_cache()
         else:
-            if params.animation_mode == "3D":
-                pass
-                # init_AdaBins()
             do_run()
             logger.info("Complete.")
             gc.collect()
