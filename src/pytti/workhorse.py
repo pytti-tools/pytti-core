@@ -30,8 +30,7 @@ logger.info("Loading pytti...")
 
 from pytti.Notebook import (
     is_notebook,
-    change_tqdm_color, # who cares tho
-    get_tqdm,
+    change_tqdm_color, # who cares tho.
     get_last_file,
     get_next_file,
     make_hbox,

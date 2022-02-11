@@ -41,15 +41,11 @@ def change_tqdm_color():
 
     get_ipython().events.register("pre_run_cell", set_css_in_cell_output)
 
-
+# what is this doing in here? This should be in the notebook
 if is_notebook():
     from tqdm.notebook import tqdm
 else:
     from tqdm import tqdm
-
-
-def get_tqdm():
-    return tqdm
 
 
 def get_last_file(directory, pattern):
