@@ -13,7 +13,7 @@ def unpack_dict(D, n=2):
     ds = [{k: V[i] for k, V in D.items()} for i in range(n)]
     return tuple(ds)
 
-
+# this only gets used in the plot_losses method below. Deprecate in favor of tensorflow
 def smooth_dataframe(df, window_size):
     """applies a moving average filter to the columns of df"""
     smoothed_df = pd.DataFrame().reindex_like(df)
@@ -88,6 +88,7 @@ class DirectImageGuide:
     def clear_dataframe(self):
         self.dataframe = []
 
+    #deprecate 
     def plot_losses(self, axs):
         def plot_dataframe(df, ax, legend=False):
             keys = list(df)
