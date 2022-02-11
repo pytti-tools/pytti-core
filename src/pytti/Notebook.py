@@ -100,7 +100,7 @@ def get_next_file(directory, pattern, templates):
         i + 1,
     )
 
-
+# deprecate this
 def make_hbox(im, fig):
     # https://stackoverflow.com/questions/51315566/how-to-display-the-images-side-by-side-in-jupyter-notebook/51316108
     import io
@@ -128,7 +128,7 @@ def make_hbox(im, fig):
         layout=Layout(border="0", margin="0", padding="0", align_items="flex-start"),
     )
 
-
+# deprecate this...
 def load_settings(settings_string, random_seed=True):
     import json, random
     from bunch import Bunch
@@ -139,7 +139,7 @@ def load_settings(settings_string, random_seed=True):
         logger.debug("using seed:", params.seed)
     return params
 
-
+# deprecate this...
 def write_settings(settings_dict, f):
     import json
 
@@ -156,12 +156,12 @@ def write_settings(settings_dict, f):
         f.write(str(f"{frame:.2f}: {scene}".encode("utf-8", "ignore")))
         f.write("\n")
 
-
+# deprecate this...
 def save_settings(settings_dict, path):
     with open(path, "w+") as f:
         write_settings(settings_dict, f)
 
-
+# deprecate this...
 def save_batch(settings_list, path):
     from bunch import Bunch
 
@@ -175,7 +175,7 @@ def save_batch(settings_list, path):
 
 CLIP_MODEL_NAMES = None
 
-
+# refactor or deprecate this
 def load_clip(params):
     from pytti import Perceptor
 
@@ -240,6 +240,10 @@ def build_loss(weight_name, weight, name, img, pil_target):
 def format_params(params, *args):
     return [params[x] for x in args]
 
+]#########################################
+
+# Nothing about rotoscopers is specific to notebooks. 
+# Move this somewhere better.
 
 rotoscopers = []
 
@@ -248,7 +252,7 @@ def clear_rotoscopers():
     global rotoscopers
     rotoscopers = []
 
-
+# this is... weird. also why the globals?
 def update_rotoscopers(frame_n):
     global rotoscopers
     for r in rotoscopers:
