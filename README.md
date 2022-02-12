@@ -88,15 +88,17 @@ Your local directory structure probably looks like this now:
 
 # Usage
 
-For a convenient UI, open [this notebook](https://colab.research.google.com/github/pytti-tools/pytti-notebook/blob/main/pyttitools-PYTTI.ipynb) in google colab.
+If you are running pytti in google colab, [this notebook](https://colab.research.google.com/github/pytti-tools/pytti-notebook/blob/main/pyttitools-PYTTI.ipynb) is recommended.
 
-If you would like a notebook experience but are not using colab, please use the ["_local"](https://github.com/pytti-tools/pytti-notebook/blob/main/pyttitools-PYTTI_local.ipynb) notebook instead. The following usage notes are written with the _local notebook and command-line (CLI) use in mind.
+If you would like a notebook experience but are not using colab, please use the ["_local"](https://github.com/pytti-tools/pytti-notebook/blob/main/pyttitools-PYTTI_local.ipynb) notebook instead. 
 
-## YAML Config Crash-Course
+The following usage notes are written with the _local notebook and command-line (CLI) use in mind.
+
+## YAML Configuration Crash-Course
 
 PYTTI uses [OmegaConf](https://omegaconf.readthedocs.io/)/[Hydra](https://hydra.cc/docs/) for configuring experiments (i.e. "runs", "renders", "generating images", etc.). In this framework, experiments are specified using text files that contain the parameters we want to use in our experiment. 
 
-A starting set of [configuration files](https://github.com/pytti-tools/pytti-notebook/tree/main/config) is provided with the notebook repository. If you followed the setup instructions above, this `config/` folder should be in the same directory as your notebooks. If you are using the CLI, the config folder should be located in your current working directory.
+A starting set of [configuration files](https://github.com/pytti-tools/pytti-notebook/tree/main/config) is provided with the notebook repository. If you followed the setup instructions above, this `config/` folder should be in the same directory as your notebooks. If you are using the CLI, create a "config" folder with a "conf" subfolder in your current working directory.
 
 ### `config/default.yaml`
 
