@@ -18,5 +18,5 @@ class PyttiLocalConfigSearchPathPlugin(SearchPathPlugin):
         logger.debug(local_path)
 
         search_path.append(
-            provider="pytti_hydra_pathplugin", path=f"file://{local_path}/"
+            provider="pytti_hydra_pathplugin", path=f"file://{local_path}"
         )
