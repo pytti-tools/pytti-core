@@ -7,7 +7,10 @@ p0 = find_packages(where='src')
 #p1 = find_namespace_packages(where='vendor.*')
 #print(p1)
 #logging.critical(p1)
-p2 = find_namespace_packages(where='hydra_plugins')
+p2 = find_namespace_packages(
+    where='src',
+    include=['hydra_plugins.*'],
+    )
 #logging.critical(p2)
 
 setup(
