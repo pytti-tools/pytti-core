@@ -23,11 +23,20 @@ class RGBImage(DifferentiableImage):
         self.scale = scale
 
     def decode_tensor(self):
+        '''
+        Given a tensor, resize it to the given image shape and clamp the values to be between 0 and 1
+        :return: The decoded tensor.
+        '''
         width, height = self.image_shape
         out = F.interpolate(self.tensor, (height, width), mode="nearest")
         return clamp_with_grad(out, 0, 1)
 
     def clone(self):
+        '''
+        It takes an image and returns a smaller version of it
+        :return: A new RGBImage object with the same dimensions as the original image, but with the
+        tensor values being a clone of the original image's tensor.
+        '''
         width, height = self.image_shape
         dummy = RGBImage(width // self.scale, height // self.scale, self.scale)
         with torch.no_grad():
@@ -35,6 +44,9 @@ class RGBImage(DifferentiableImage):
         return dummy
 
     def get_image_tensor(self):
+        '''
+        Gets the attached image tensor with batch dimension squeezed.
+        '''
         return self.tensor.squeeze(0)
 
     @torch.no_grad()
@@ -43,6 +55,15 @@ class RGBImage(DifferentiableImage):
 
     @torch.no_grad()
     def encode_image(self, pil_image, device=DEVICE, **kwargs):
+        '''
+        1. Resize the image to the desired size.
+        2. Convert the image to a tensor.
+        3. Add a batch dimension to the tensor.
+        4. Send the tensor to the device
+        
+        :param pil_image: The image to be encoded
+        :param device: The device to use for the computation
+        '''
         width, height = self.image_shape
         scale = self.scale
         pil_image = pil_image.resize((width // scale, height // scale), Image.LANCZOS)
@@ -54,4 +75,7 @@ class RGBImage(DifferentiableImage):
 
     @torch.no_grad()
     def encode_random(self):
+        '''
+        Sets the attached tensor to uniform noise
+        '''
         self.tensor.uniform_()
