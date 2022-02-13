@@ -22,6 +22,7 @@ VQGAN_MODEL = None
 VQGAN_NAME = None
 VQGAN_IS_GUMBEL = None
 
+# migrate these to config files
 VQGAN_MODEL_NAMES = ["imagenet", "coco", "wikiart", "sflckr", "openimages"]
 VQGAN_CONFIG_URLS = {
     "imagenet": [
