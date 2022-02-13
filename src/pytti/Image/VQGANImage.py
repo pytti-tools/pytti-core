@@ -63,6 +63,13 @@ VQGAN_CHECKPOINT_URLS = {
 
 
 def load_vqgan_model(config_path, checkpoint_path):
+    '''
+    Loads a model from a config file and a checkpoint file
+    
+    :param config_path: Path to the config file
+    :param checkpoint_path: The path to the checkpoint file
+    :return: The model and whether or not it uses gumbel softmax.
+    '''
     config = OmegaConf.load(config_path)
     if config.model.target == "taming.models.vqgan.VQModel":
         model = vqgan.VQModel(**config.model.params)
@@ -87,6 +94,15 @@ def load_vqgan_model(config_path, checkpoint_path):
 
 
 def vector_quantize(x, codebook, fake_grad=True):
+    '''
+    Takes a tensor x and a codebook, and returns a quantized version of x
+    
+    :param x: The input to be quantized
+    :param codebook: the codebook of shape (n_code, n_dim)
+    :param fake_grad: If True, the gradient of the output with respect to the input will be replaced
+    with the identity function, defaults to True (optional)
+    :return: The quantized vector
+    '''
     d = (
         x.pow(2).sum(dim=-1, keepdim=True)
         + codebook.pow(2).sum(dim=1)
@@ -152,6 +168,11 @@ class VQGANImage(EMAImage):
         self.vqgan_encode = model.encode
 
     def clone(self):
+        '''
+        Create a new VQGANImage object and set its tensor to a clone of the original object's tensor
+        :return: The clone function returns a new VQGANImage object with the same parameters as the
+        original.
+        '''
         dummy = VQGANImage(*self.image_shape)
         with torch.no_grad():
             dummy.tensor.set_(self.tensor.clone())
@@ -162,6 +183,14 @@ class VQGANImage(EMAImage):
         return dummy
 
     def get_latent_tensor(self, detach=False, device=DEVICE):
+        '''
+        Given a tensor, quantize it using vector quantization and return the quantized tensor
+        
+        :param detach: if True, the latent tensor is detached from the graph, defaults to False
+        (optional)
+        :param device: The device to run the model on
+        :return: The latent tensor quantized to the nearest neighbor in the embedding.
+        '''
         z = self.tensor
         if detach:
             z = z.detach()
@@ -170,11 +199,24 @@ class VQGANImage(EMAImage):
 
     @classmethod
     def get_preferred_loss(cls):
+        '''
+        Given a class, return the preferred loss function
+        
+        :param cls: The class of the loss function
+        :return: A class object
+        '''
         from pytti.LossAug import LatentLoss
 
         return LatentLoss
 
     def decode(self, z, device=DEVICE):
+        '''
+        Takes a latent vector and converts it into an image.
+        
+        :param z: The latent vector that we want to decode
+        :param device: the device to use for training
+        :return: The decoded image.
+        '''
         z_q = vector_quantize(z, self.vqgan_quantize_embedding).movedim(3, 1).to(device)
         out = self.vqgan_decode(z_q).add(1).div(2)
         width, height = self.image_shape
@@ -183,6 +225,16 @@ class VQGANImage(EMAImage):
 
     @torch.no_grad()
     def encode_image(self, pil_image, device=DEVICE, **kwargs):
+        '''
+        1. resize the image to the desired size
+        2. convert the image to a tensor
+        3. encode the image using the VQ-VAE
+        4. move the z vector to the GPU
+        5. reset the hidden state of the LSTM
+        
+        :param pil_image: The image to encode
+        :param device: The device to run the model on
+        '''
         pil_image = pil_image.resize(self.image_shape, Image.LANCZOS)
         pil_image = TF.to_tensor(pil_image)
         z, *_ = self.vqgan_encode(pil_image.unsqueeze(0).to(device) * 2 - 1)
@@ -191,6 +243,14 @@ class VQGANImage(EMAImage):
 
     @torch.no_grad()
     def make_latent(self, pil_image, device=DEVICE):
+        '''
+        Given an image, resize it to the desired image shape, convert it to a tensor, and encode it with
+        the VQ-VAE
+        
+        :param pil_image: The image to be encoded
+        :param device: The device to run the model on
+        :return: The latent vector z_q
+        '''
         pil_image = pil_image.resize(self.image_shape, Image.LANCZOS)
         pil_image = TF.to_tensor(pil_image)
         z, *_ = self.vqgan_encode(pil_image.unsqueeze(0).to(device) * 2 - 1)
@@ -203,10 +263,34 @@ class VQGANImage(EMAImage):
 
     @torch.no_grad()
     def encode_random(self):
+        '''
+        Set the tensor to a random latent vector
+        '''
         self.tensor.set_(self.rand_latent())
         self.reset()
 
     def rand_latent(self, device=DEVICE, vqgan_quantize_embedding=None):
+        '''
+        Generate a random latent vector of shape [toksY, toksX, e_dim]
+        
+        # Python
+        def rand_latent_softmax(self, device=DEVICE, vqgan_quantize_embedding=None):
+                if vqgan_quantize_embedding is None:
+                    vqgan_quantize_embedding = self.vqgan_quantize_embedding
+                n_toks = self.n_toks
+                toksX, toksY = self.toksX, self.toksY
+                one_hot = F.softmax(
+                    torch.randn(toksY * toksX, n_toks, device=device), dim=1
+                ).float()
+                z = one_hot @ vqgan_quantize_embedding
+                z = z.view([-1, toksY
+        
+        uh... that was an automated docstring. fascinating.
+        
+        :param device: the device to run the model on
+        :param vqgan_quantize_embedding: The embedding matrix that we use to quantize the latent space
+        :return: The latent vector
+        '''
         if vqgan_quantize_embedding is None:
             vqgan_quantize_embedding = self.vqgan_quantize_embedding
         n_toks = self.n_toks
@@ -220,6 +304,13 @@ class VQGANImage(EMAImage):
 
     @staticmethod
     def init_vqgan(model_name, device=DEVICE):
+        '''
+        Loads the VQGAN model from the config and checkpoint files
+        
+        :param model_name: The name of the model to use
+        :param device: The device to run the model on
+        :return: The model, and whether it is a Gumbel model.
+        '''
         global VQGAN_MODEL, VQGAN_NAME, VQGAN_IS_GUMBEL
         if VQGAN_NAME == model_name:
             return
@@ -259,5 +350,8 @@ class VQGANImage(EMAImage):
 
     @staticmethod
     def free_vqgan():
+        '''
+        Releases the global VQGAN model from memory
+        '''
         global VQGAN_MODEL
-        VQGAN_MODEL = None
+        VQGAN_MODEL = None # should this maybe be `del VQGAN_MODEL` insetad?
