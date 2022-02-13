@@ -11,6 +11,19 @@ from PIL import Image, ImageOps
 
 
 def break_tensor(tensor):
+    '''
+    Given a tensor, break it into a tuple of four tensors: 
+    the floor of the tensor, the ceiling of the tensor, 
+    the rounded tensor, and the fractional part of the tensor
+    
+    :param tensor: the tensor to be broken down
+    :return: 4 tensors:
+        - floors: tensor of integer values that are the largest integer less than or equal to the
+    corresponding element in the input tensor
+        - ceils: tensor of integer values that are the smallest integer greater than or equal to the
+    corresponding element in the input tensor
+        - rounds: tensor of integer values that are the nearest integer
+    '''
     floors = tensor.floor().long()
     ceils = tensor.ceil().long()
     rounds = tensor.round().long()
@@ -19,12 +32,19 @@ def break_tensor(tensor):
 
 
 class PalletLoss(nn.Module):
+    """Palette normalization"""
     def __init__(self, n_pallets, weight=0.15, device=DEVICE):
         super().__init__()
         self.n_pallets = n_pallets
         self.register_buffer("weight", torch.as_tensor(weight).to(device))
 
     def forward(self, input):
+        '''
+        Given a pixel image, the function returns the mean of the loss of the softmax of the pixel image
+        
+        :param input: a PixelImage
+        :return: The loss and the loss_raw.
+        '''
         if isinstance(input, PixelImage):
             tensor = (
                 input.tensor.movedim(0, -1)
@@ -49,6 +69,12 @@ class PalletLoss(nn.Module):
 
     @torch.no_grad()
     def set_weight(self, weight, device=DEVICE):
+        '''
+        Set the weight of the layer to the given value
+        
+        :param weight: The weight tensor
+        :param device: The device to put the weights on
+        '''
         self.weight.set_(torch.as_tensor(weight, device=device))
 
     def __str__(self):
@@ -57,6 +83,16 @@ class PalletLoss(nn.Module):
 
 class HdrLoss(nn.Module):
     def __init__(self, pallet_size, n_pallets, gamma=2.5, weight=0.15, device=DEVICE):
+        '''
+        Create a tensor of size (pallet_size, n_pallets) and set the first row to be the pallet_size
+        values raised to the power of gamma
+        
+        :param pallet_size: The number of colors in the pallet
+        :param n_pallets: The number of pallets in the warehouse
+        :param gamma: The gamma parameter for the power law
+        :param weight: The weight of the loss
+        :param device: The device to run the model on
+        '''
         super().__init__()
         self.register_buffer(
             "comp",
@@ -69,6 +105,12 @@ class HdrLoss(nn.Module):
         self.register_buffer("weight", torch.as_tensor(weight).to(device))
 
     def forward(self, input):
+        '''
+        Given a PixelImage, returns the loss.
+        
+        :param input: the input image
+        :return: The loss and the loss itself.
+        '''
         if isinstance(input, PixelImage):
             pallet = input.sort_pallet()
             magic_color = pallet.new_tensor([[[0.299, 0.587, 0.114]]])
@@ -147,6 +189,12 @@ class PixelImage(DifferentiableImage):
         self.use_pallet_target = False
 
     def clone(self):
+        '''
+        Returns a new PixelImage object with the same parameters as the original, and copies the
+        tensor and pallet values from the original
+        :return: The clone function returns a new PixelImage object with the same parameters as the
+        original.
+        '''
         width, height = self.image_shape
         dummy = PixelImage(
             width // self.scale,
@@ -166,6 +214,12 @@ class PixelImage(DifferentiableImage):
         return dummy
 
     def set_pallet_target(self, pil_image):
+        '''
+        If the user has provided a pallet image, encode it and set it as the pallet target
+        
+        :param pil_image: A PIL image
+        :return: The return value is a tuple of the form (output, loss).
+        '''
         if pil_image is None:
             self.use_pallet_target = False
             return
@@ -179,14 +233,28 @@ class PixelImage(DifferentiableImage):
 
     @torch.no_grad()
     def lock_pallet(self, lock=True):
+        '''
+        If lock is True, set the pallet_target attribute to the value of the sort_pallet method
+        
+        :param lock: If True, the pallet_target is locked to the current pallet, defaults to True
+        (optional)
+        '''
         if lock:
             self.pallet_target.set_(self.sort_pallet().clone())
         self.use_pallet_target = lock
 
     def image_loss(self):
+        '''
+        If the loss is not None, return it
+        :return: A list of losses.
+        '''
         return [x for x in [self.hdr_loss, self.loss] if x is not None]
 
     def sort_pallet(self):
+        '''
+        Given a pallet of colors, sort the pallet such that the colors are sorted by their brightness
+        :return: The pallet is being returned.
+        '''
         if self.use_pallet_target:
             return self.pallet_target
         pallet = (self.pallet / self.pallet_inertia).clamp_(0, 1)
@@ -200,14 +268,29 @@ class PixelImage(DifferentiableImage):
         return pallet
 
     def get_image_tensor(self):
+        '''
+        Given a tensor, return a tensor with the value tensor concatenated to the right side of the
+        input tensor
+        :return: The image tensor
+        '''
         return torch.cat([self.value.unsqueeze(0), self.tensor])
 
     @torch.no_grad()
     def set_image_tensor(self, tensor):
+        '''
+        Set the image tensor to the given tensor
+        
+        :param tensor: the tensor to be set
+        '''
         self.value.set_(tensor[0])
         self.tensor.set_(tensor[1:])
 
     def decode_tensor(self):
+        '''
+        Given a tensor of shape (batch_size, n_pallets, n_values), 
+        decode_tensor returns a tensor of shape (batch_size, height, width, 3)
+        :return: The image with the pallet applied.
+        '''
         width, height = self.image_shape
         pallet = self.sort_pallet()
 
@@ -247,6 +330,10 @@ class PixelImage(DifferentiableImage):
 
     @torch.no_grad()
     def render_value_image(self):
+        '''
+        Takes in the value tensor, converts it to a numpy array, and then converts it to a PIL image
+        :return: The image of the value function.
+        '''
         width, height = self.image_shape
         values = self.value.clamp(0, 1).unsqueeze(-1).repeat(1, 1, 3)
         array = np.array(
