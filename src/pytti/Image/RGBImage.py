@@ -11,7 +11,6 @@ class RGBImage(DifferentiableImage):
     """
     Naive RGB image representation
     """
-
     def __init__(self, width, height, scale=1, device=DEVICE):
         super().__init__(width * scale, height * scale)
         self.tensor = nn.Parameter(
