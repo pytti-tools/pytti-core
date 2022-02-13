@@ -1,5 +1,5 @@
 import torch
-from CLIP import clip
+from clip import clip
 from pytti import DEVICE, vram_usage_mode
 
 CLIP_PERCEPTORS = None

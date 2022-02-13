@@ -6,7 +6,11 @@ scene_prefix: 'astrophotography #pixelart | image credit nasa | space full of cy
 scene_suffix: '| satellite image:-1:-.95 | text:-1:-.95 | anime:-1:-.95 | watermark:-1:-.95
   | backyard telescope:-1:-.95 | map:-1:-.95'
 
-direct_image_prompts: https://i.imgur.com/frXoHJ6.jpg
+steps_per_scene: 30
+steps_per_frame: 3
+pre_animation_steps: 2
+save_every: ${steps_per_frame}
+display_every: ${steps_per_frame}
 
 image_model: Limited Palette
 ViTB32: true
