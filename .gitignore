@@ -1,5 +1,10 @@
+# just for now
+environment.yml
+
 runs/
 logs/
+backup/
+.vscode/
 
 **/runs/
 **/logs/
