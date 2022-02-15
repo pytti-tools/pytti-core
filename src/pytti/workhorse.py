@@ -104,29 +104,40 @@ def _main(cfg: DictConfig):
 
     params = Bunch(params)
 
+    ### Move these into default.yaml
     # @markdown check `restore` to restore from a previous run
     restore = False  # @param{type:"boolean"}
     # @markdown check `reencode` if you are restoring with a modified image or modified image settings
     reencode = False  # @param{type:"boolean"}
     # @markdown which run to restore
     restore_run = latest  # @param{type:"raw"}
+
+    # NB: `backup/` dir probably not working at present
     if restore and restore_run == latest:
         _, restore_run = get_last_file(
             f"backup/{params.file_namespace}",
             f"^(?P<pre>{re.escape(params.file_namespace)}\\(?)(?P<index>\\d*)(?P<post>\\)?_\\d+\\.bak)$",
         )
 
+    # I feel like there's probably no reason this is defined inside of _main()
     def do_run():
+
+        # Phase 1 - reset state
+        ########################
+
         clear_rotoscopers()  # what a silly name
         vram_profiling(params.approximate_vram_usage)
         reset_vram_usage()
-        global CLIP_MODEL_NAMES
+        global CLIP_MODEL_NAMES  # We're gonna do something about these globals
         # @markdown which frame to restore from
         restore_frame = latest  # @param{type:"raw"}
 
         # set up seed for deterministic RNG
         if params.seed is not None:
             torch.manual_seed(params.seed)
+
+        # Phase 2 - load and parse
+        ###########################
 
         # load CLIP
         load_clip(params)
@@ -183,6 +194,9 @@ def _main(cfg: DictConfig):
                     params.width = int(params.height * init_size[0] / init_size[1])
                 if params.height == -1:
                     params.height = int(params.width * init_size[1] / init_size[0])
+
+        # Phase 3 - Setup Optimization
+        ###############################
 
         # set up image
         if params.image_model == "Limited Palette":
@@ -318,6 +332,11 @@ def _main(cfg: DictConfig):
         if params.smoothing_weight != 0:
             loss_augs.append(TVLoss(weight=params.smoothing_weight))
 
+        # Phase 4 - setup outputs
+        ##########################
+
+        # Transition as much of this as possible to hydra
+
         # set up filespace
         Path(f"{OUTPATH}/{params.file_namespace}").mkdir(parents=True, exist_ok=True)
         Path(f"backup/{params.file_namespace}").mkdir(parents=True, exist_ok=True)
@@ -372,6 +391,8 @@ def _main(cfg: DictConfig):
         else:
             i = 0
 
+        ## tensorboard should handle this stuff.
+
         # graphs
         if params.show_graphs:
             fig, axs = plt.subplots(4, 1, figsize=(21, 13))
@@ -380,12 +401,22 @@ def _main(cfg: DictConfig):
         else:
             fig, axs = None, None
 
+        # Phase 5 - setup optimizer
+        ############################
+
         # make the main model object
         model = DirectImageGuide(img, embedder, lr=params.learning_rate)
 
         # Update is called each step.
         def update(i, stage_i):
             # display
+
+            #
+            #
+            #
+            #
+
+            # DM: I bet this could be abstracted out into a report_out() function or whatever
             if params.clear_every > 0 and i > 0 and i % params.clear_every == 0:
                 display.clear_output()
             if params.display_every > 0 and i % params.display_every == 0:
@@ -397,7 +428,7 @@ def _main(cfg: DictConfig):
                         writer.add_scalar(
                             tag=f"losses/{k}", scalar_value=v, global_step=i
                         )
-
+                # does this VRAM stuff even do anything?
                 if params.approximate_vram_usage:
                     logger.debug("VRAM Usage:")
                     print_vram_usage()  # update this function to use logger
@@ -441,13 +472,29 @@ def _main(cfg: DictConfig):
                     filename = f"backup/{params.file_namespace}/{base_name}_{n}.bak"
                     torch.save(img.state_dict(), filename)
                     if n > params.backups:
+
+                        # YOOOOOOO let's not start shell processes unnecessarily
+                        # and then execute commands using string interpolation.
+                        # Replace this with a pythonic folder removal, then see
+                        # if we can't deprecate the folder removal entirely. What
+                        # is the purpose of "backups" here? Just use the frames that
+                        # are being written to disk.
                         subprocess.run(
                             [
                                 "rm",
                                 f"backup/{params.file_namespace}/{base_name}_{n-params.backups}.bak",
                             ]
                         )
+
+            ### DM: report_out() would probably end down here
+
+            #
+            #
+            #
+            #
+
             # animate
+            ################
             t = (i - params.pre_animation_steps) / (
                 params.steps_per_frame * params.frames_per_second
             )
@@ -590,8 +637,18 @@ def _main(cfg: DictConfig):
                         if semantic_init_prompt is not None:
                             semantic_init_prompt.set_enabled(False)
 
+        ###############################################################
+        ###
+
+        # Wait.... we literally instantiated the model just before
+        # defining update here.
+        # I bet all of this can go in the DirectImageGuide class and then
+        # we can just instantiate that class with the config object.
+
         model.update = update
 
+        # Pretty sure this isn't necessary, Hydra should take care of saving
+        # the run settings now
         logger.info(
             f"Settings saved to {OUTPATH}/{params.file_namespace}/{base_name}_settings.txt"
         )
@@ -599,6 +656,10 @@ def _main(cfg: DictConfig):
             params, f"{OUTPATH}/{params.file_namespace}/{base_name}_settings.txt"
         )
 
+        # Run the training loop
+        ########################
+
+        # what are these skip variables doing?
         skip_prompts = i // params.steps_per_scene
         skip_steps = i % params.steps_per_scene
         last_scene = prompts[0] if skip_prompts == 0 else prompts[skip_prompts - 1]
@@ -616,13 +677,15 @@ def _main(cfg: DictConfig):
             skip_steps = 0
             model.clear_dataframe()
             last_scene = scene
+
+        # tensorboard summarywriter should supplant all our graph stuff
         if fig:
             del fig, axs
         ############################# DMARX
         writer.close()
         #############################
 
-    # if __name__ == '__main__':
+    ## Work on getting rid of this batch mode garbage. Hydra's got this.
     try:
         gc.collect()
         torch.cuda.empty_cache()
