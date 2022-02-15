@@ -18,7 +18,7 @@ OUTPATH = f"{os.getcwd()}/images_out/"
 
 # hot fix for running as a CLI tool, e.g.
 # $ python pytti/workhorse.py conf=demo
-sys.path.append('.')
+sys.path.append(".")
 logger.debug(sys.path)
 
 # TO DO: populate this from... params? globals?

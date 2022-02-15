@@ -9,8 +9,8 @@ from hydra.plugins.search_path_plugin import SearchPathPlugin
 # https://hydra.cc/docs/advanced/search_path/#
 # https://github.com/facebookresearch/hydra/issues/763
 
-class PyttiLocalConfigSearchPathPlugin(SearchPathPlugin):
 
+class PyttiLocalConfigSearchPathPlugin(SearchPathPlugin):
     def manipulate_search_path(self, search_path: ConfigSearchPath) -> None:
 
         local_path = f"{os.getcwd()}/config/"

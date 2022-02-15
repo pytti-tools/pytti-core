@@ -2,11 +2,11 @@ from os.path import exists as path_exists
 import sys, subprocess
 from loguru import logger
 
-#if not path_exists("./taming-transformers"):
+# if not path_exists("./taming-transformers"):
 #    raise FileNotFoundError("ERROR: taming-transformers is missing!")
-#if "./taming-transformers" not in sys.path:
+# if "./taming-transformers" not in sys.path:
 #    sys.path.append("./taming-transformers")
-#else:
+# else:
 #    logger.debug("DEBUG: sys.path already contains ./taming transformers")
 from taming.models import cond_transformer, vqgan
 
