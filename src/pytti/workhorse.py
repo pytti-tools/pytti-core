@@ -1,20 +1,43 @@
-from loguru import logger
-from torch.utils.tensorboard import SummaryWriter
-import os, sys
-from bunch import Bunch
+"""
+This is the rendering logic that used to live in the notebook.
+It's sort of a mess in here. I'm working on it.
+Thank you for your patience.-- The Management
+"""
+
+import gc
+import glob
+import json
 from pathlib import Path
-import torch
+import math
+import os
 from os.path import exists as path_exists
+import re
+import sys
+import subprocess
+import warnings
+
+import hydra
+from loguru import logger
+from omegaconf import OmegaConf, DictConfig
+
+import numpy as np
+import pandas as pd
+from PIL import Image, ImageEnhance
+import torch
+from torch.utils.tensorboard import SummaryWriter
+from torchvision.transforms import functional as TF
+
+# Deprecate or move functionality somewhere less general
+from bunch import Bunch
+import matplotlib.pyplot as plt
+import seaborn as sns
+from IPython import display
+
 
 TB_LOGDIR = "logs"  # to do: make this more easily configurable
 writer = SummaryWriter(TB_LOGDIR)
 OUTPATH = f"{os.getcwd()}/images_out/"
 
-# if path_exists('/content/drive/MyDrive/pytti_test'):
-#  %cd /content/drive/MyDrive/pytti_test
-#  drive_mounted = True
-# else:
-#  drive_mounted = False
 
 # hot fix for running as a CLI tool, e.g.
 # $ python pytti/workhorse.py conf=demo
@@ -57,7 +80,6 @@ except ModuleNotFoundError:
             "WARNING: drive is not mounted.\nERROR: please run setup (step 1.3)."
         )
 change_tqdm_color()
-import sys
 
 # sys.path.append('./AdaBins')
 for p in ("GMA/core", "AdaBins"):
@@ -101,35 +123,15 @@ from pytti.LossAug.DepthLoss import init_AdaBins
 
 logger.info("pytti loaded.")
 
-import torch, gc, glob, subprocess, warnings, re, math, json
-import numpy as np
-from IPython import display
-from PIL import Image, ImageEnhance
-
-from torchvision.transforms import functional as TF
-
-# display settings, because usability counts
-# warnings.filterwarnings("error", category=UserWarning)
-#%matplotlib inline
-import matplotlib.pyplot as plt
-import seaborn as sns
-
 sns.set()
-import pandas as pd
-
 plt.style.use("bmh")
 pd.options.display.max_columns = None
 pd.options.display.width = 175
 
 #####################
 
-import hydra
-from omegaconf import OmegaConf, DictConfig
-
 # conf = OmegaConf.create(default_params)
 # OmegaConf.save(conf, f="default_params.yaml")
-
-from loguru import logger
 
 
 @hydra.main(config_path="config", config_name="default")
