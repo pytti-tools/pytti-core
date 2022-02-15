@@ -1,2 +1,5 @@
 # Migrate code style to Black
 e46265f7c20c8741ec8a827531a76b36f382703e
+
+# Installed precommit
+ebc2eb78f9bf531db5474b8495da83bdd8913d29
