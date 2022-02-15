@@ -1,85 +1,61 @@
-from loguru import logger
-from torch.utils.tensorboard import SummaryWriter
-import os, sys
-from bunch import Bunch
+"""
+This is the rendering logic that used to live in the notebook.
+It's sort of a mess in here. I'm working on it.
+Thank you for your patience.-- The Management
+"""
+
+import gc
+import glob
+import json
 from pathlib import Path
-import torch
+import math
+import os
 from os.path import exists as path_exists
-
-TB_LOGDIR = "logs"  # to do: make this more easily configurable
-writer = SummaryWriter(TB_LOGDIR)
-OUTPATH = f"{os.getcwd()}/images_out/"
-
-# if path_exists('/content/drive/MyDrive/pytti_test'):
-#  %cd /content/drive/MyDrive/pytti_test
-#  drive_mounted = True
-# else:
-#  drive_mounted = False
-
-# hot fix for running as a CLI tool, e.g.
-# $ python pytti/workhorse.py conf=demo
-sys.path.append(".")
-logger.debug(sys.path)
-
-# TO DO: populate this from... params? globals?
-drive_mounted = False
-try:
-    from pytti.Notebook import (
-        is_notebook,
-        change_tqdm_color,
-        get_tqdm,
-        get_last_file,
-        get_next_file,
-        make_hbox,
-        load_settings,
-        write_settings,
-        save_settings,
-        save_batch,
-        CLIP_MODEL_NAMES,
-        load_clip,
-        get_frames,
-        build_loss,
-        format_params,
-        rotoscopers,
-        clear_rotoscopers,
-        update_rotoscopers,
-        Rotoscoper,
-    )
-except ModuleNotFoundError:
-    if drive_mounted:
-        # THIS IS NOT AN ERROR. This is the code that would
-        # make an error if something were wrong.
-        raise RuntimeError("ERROR: please run setup (step 1.3).")
-    else:
-        # THIS IS NOT AN ERROR. This is the code that would
-        # make an error if something were wrong.
-        raise RuntimeError(
-            "WARNING: drive is not mounted.\nERROR: please run setup (step 1.3)."
-        )
-change_tqdm_color()
+import re
 import sys
+import subprocess
+import warnings
 
-# sys.path.append('./AdaBins')
-for p in ("GMA/core", "AdaBins"):
-    # Adding GMA before AdaBins seems to resolve "utils" module name collision
-    if p not in sys.path:
-        sys.path.append(p)
-logger.debug(sys.path)
+import hydra
+from loguru import logger
+from omegaconf import OmegaConf, DictConfig
 
-try:
-    from pytti import Perceptor
-except ModuleNotFoundError:
-    if drive_mounted:
-        # THIS IS NOT AN ERROR. This is the code that would
-        # make an error if something were wrong.
-        raise RuntimeError("ERROR: please run setup (step 1.3).")
-    else:
-        # THIS IS NOT AN ERROR. This is the code that would
-        # make an error if something were wrong.
-        raise RuntimeError(
-            "WARNING: drive is not mounted.\nERROR: please run setup (step 1.3)."
-        )
+import numpy as np
+import pandas as pd
+from PIL import Image, ImageEnhance
+import torch
+from torch.utils.tensorboard import SummaryWriter
+from torchvision.transforms import functional as TF
+
+# Deprecate or move functionality somewhere less general
+from bunch import Bunch
+import matplotlib.pyplot as plt
+import seaborn as sns
+from IPython import display
+
 logger.info("Loading pytti...")
+from pytti.Notebook import (
+    is_notebook,
+    change_tqdm_color,  # why though?
+    get_last_file,
+    get_next_file,
+    make_hbox,
+    load_settings,  # hydra should handle this stuff
+    write_settings,
+    save_settings,
+    save_batch,
+    CLIP_MODEL_NAMES,
+    load_clip,
+    get_frames,
+    build_loss,
+    format_params,
+    rotoscopers,
+    clear_rotoscopers,
+    update_rotoscopers,
+    Rotoscoper,
+)
+
+from pytti import Perceptor
 from pytti.Image import PixelImage, RGBImage, VQGANImage
 from pytti.ImageGuide import DirectImageGuide
 from pytti.Perceptor.Embedder import HDMultiClipEmbedder
@@ -101,84 +77,66 @@ from pytti.LossAug.DepthLoss import init_AdaBins
 
 logger.info("pytti loaded.")
 
-import torch, gc, glob, subprocess, warnings, re, math, json
-import numpy as np
-from IPython import display
-from PIL import Image, ImageEnhance
+change_tqdm_color()
 
-from torchvision.transforms import functional as TF
+logger.debug(sys.path)
 
-# display settings, because usability counts
-# warnings.filterwarnings("error", category=UserWarning)
-#%matplotlib inline
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 sns.set()
-import pandas as pd
-
 plt.style.use("bmh")
 pd.options.display.max_columns = None
 pd.options.display.width = 175
 
-#####################
 
-import hydra
-from omegaconf import OmegaConf, DictConfig
-
-# conf = OmegaConf.create(default_params)
-# OmegaConf.save(conf, f="default_params.yaml")
-
-from loguru import logger
+TB_LOGDIR = "logs"  # to do: make this more easily configurable
+writer = SummaryWriter(TB_LOGDIR)
+OUTPATH = f"{os.getcwd()}/images_out/"
 
 
 @hydra.main(config_path="config", config_name="default")
 def _main(cfg: DictConfig):
-    default_params = OmegaConf.to_container(cfg, resolve=True)
-    logger.debug(default_params)
+    params = OmegaConf.to_container(cfg, resolve=True)
+    logger.debug(params)
     latest = -1
-    # @markdown check `batch_mode` to run batch settings
+
     batch_mode = False  # @param{type:"boolean"}
-    if batch_mode:
-        try:
-            batch_list
-        except NameError:
-            raise RuntimeError(
-                "ERROR: no batch settings. Please run 'batch settings' cell at the bottom of the page to use batch mode."
-            )
-    else:
-        try:
-            params = default_params
-            params = Bunch(
-                params
-            )  # fuck it... # probably easier to use an argparse namesapce here
-        except NameError:
-            raise RuntimeError(
-                "ERROR: no parameters. Please run parameters (step 2.1)."
-            )
+
+    params = Bunch(params)
+
+    ### Move these into default.yaml
     # @markdown check `restore` to restore from a previous run
     restore = False  # @param{type:"boolean"}
     # @markdown check `reencode` if you are restoring with a modified image or modified image settings
     reencode = False  # @param{type:"boolean"}
     # @markdown which run to restore
     restore_run = latest  # @param{type:"raw"}
+
+    # NB: `backup/` dir probably not working at present
     if restore and restore_run == latest:
         _, restore_run = get_last_file(
             f"backup/{params.file_namespace}",
             f"^(?P<pre>{re.escape(params.file_namespace)}\\(?)(?P<index>\\d*)(?P<post>\\)?_\\d+\\.bak)$",
         )
 
+    # I feel like there's probably no reason this is defined inside of _main()
     def do_run():
+
+        # Phase 1 - reset state
+        ########################
+
         clear_rotoscopers()  # what a silly name
         vram_profiling(params.approximate_vram_usage)
         reset_vram_usage()
-        global CLIP_MODEL_NAMES
+        global CLIP_MODEL_NAMES  # We're gonna do something about these globals
         # @markdown which frame to restore from
         restore_frame = latest  # @param{type:"raw"}
 
         # set up seed for deterministic RNG
         if params.seed is not None:
             torch.manual_seed(params.seed)
+
+        # Phase 2 - load and parse
+        ###########################
 
         # load CLIP
         load_clip(params)
@@ -235,6 +193,9 @@ def _main(cfg: DictConfig):
                     params.width = int(params.height * init_size[0] / init_size[1])
                 if params.height == -1:
                     params.height = int(params.width * init_size[1] / init_size[0])
+
+        # Phase 3 - Setup Optimization
+        ###############################
 
         # set up image
         if params.image_model == "Limited Palette":
@@ -370,6 +331,11 @@ def _main(cfg: DictConfig):
         if params.smoothing_weight != 0:
             loss_augs.append(TVLoss(weight=params.smoothing_weight))
 
+        # Phase 4 - setup outputs
+        ##########################
+
+        # Transition as much of this as possible to hydra
+
         # set up filespace
         Path(f"{OUTPATH}/{params.file_namespace}").mkdir(parents=True, exist_ok=True)
         Path(f"backup/{params.file_namespace}").mkdir(parents=True, exist_ok=True)
@@ -424,6 +390,8 @@ def _main(cfg: DictConfig):
         else:
             i = 0
 
+        ## tensorboard should handle this stuff.
+
         # graphs
         if params.show_graphs:
             fig, axs = plt.subplots(4, 1, figsize=(21, 13))
@@ -432,12 +400,22 @@ def _main(cfg: DictConfig):
         else:
             fig, axs = None, None
 
+        # Phase 5 - setup optimizer
+        ############################
+
         # make the main model object
         model = DirectImageGuide(img, embedder, lr=params.learning_rate)
 
         # Update is called each step.
         def update(i, stage_i):
             # display
+
+            #
+            #
+            #
+            #
+
+            # DM: I bet this could be abstracted out into a report_out() function or whatever
             if params.clear_every > 0 and i > 0 and i % params.clear_every == 0:
                 display.clear_output()
             if params.display_every > 0 and i % params.display_every == 0:
@@ -449,7 +427,7 @@ def _main(cfg: DictConfig):
                         writer.add_scalar(
                             tag=f"losses/{k}", scalar_value=v, global_step=i
                         )
-
+                # does this VRAM stuff even do anything?
                 if params.approximate_vram_usage:
                     logger.debug("VRAM Usage:")
                     print_vram_usage()  # update this function to use logger
@@ -493,13 +471,29 @@ def _main(cfg: DictConfig):
                     filename = f"backup/{params.file_namespace}/{base_name}_{n}.bak"
                     torch.save(img.state_dict(), filename)
                     if n > params.backups:
+
+                        # YOOOOOOO let's not start shell processes unnecessarily
+                        # and then execute commands using string interpolation.
+                        # Replace this with a pythonic folder removal, then see
+                        # if we can't deprecate the folder removal entirely. What
+                        # is the purpose of "backups" here? Just use the frames that
+                        # are being written to disk.
                         subprocess.run(
                             [
                                 "rm",
                                 f"backup/{params.file_namespace}/{base_name}_{n-params.backups}.bak",
                             ]
                         )
+
+            ### DM: report_out() would probably end down here
+
+            #
+            #
+            #
+            #
+
             # animate
+            ################
             t = (i - params.pre_animation_steps) / (
                 params.steps_per_frame * params.frames_per_second
             )
@@ -642,8 +636,18 @@ def _main(cfg: DictConfig):
                         if semantic_init_prompt is not None:
                             semantic_init_prompt.set_enabled(False)
 
+        ###############################################################
+        ###
+
+        # Wait.... we literally instantiated the model just before
+        # defining update here.
+        # I bet all of this can go in the DirectImageGuide class and then
+        # we can just instantiate that class with the config object.
+
         model.update = update
 
+        # Pretty sure this isn't necessary, Hydra should take care of saving
+        # the run settings now
         logger.info(
             f"Settings saved to {OUTPATH}/{params.file_namespace}/{base_name}_settings.txt"
         )
@@ -651,6 +655,10 @@ def _main(cfg: DictConfig):
             params, f"{OUTPATH}/{params.file_namespace}/{base_name}_settings.txt"
         )
 
+        # Run the training loop
+        ########################
+
+        # what are these skip variables doing?
         skip_prompts = i // params.steps_per_scene
         skip_steps = i % params.steps_per_scene
         last_scene = prompts[0] if skip_prompts == 0 else prompts[skip_prompts - 1]
@@ -668,13 +676,15 @@ def _main(cfg: DictConfig):
             skip_steps = 0
             model.clear_dataframe()
             last_scene = scene
+
+        # tensorboard summarywriter should supplant all our graph stuff
         if fig:
             del fig, axs
         ############################# DMARX
         writer.close()
         #############################
 
-    # if __name__ == '__main__':
+    ## Work on getting rid of this batch mode garbage. Hydra's got this.
     try:
         gc.collect()
         torch.cuda.empty_cache()
@@ -705,9 +715,6 @@ def _main(cfg: DictConfig):
                 gc.collect()
                 torch.cuda.empty_cache()
         else:
-            if params.animation_mode == "3D":
-                pass
-                # init_AdaBins()
             do_run()
             logger.info("Complete.")
             gc.collect()

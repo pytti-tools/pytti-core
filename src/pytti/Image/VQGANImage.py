@@ -2,12 +2,7 @@ from os.path import exists as path_exists
 import sys, subprocess
 from loguru import logger
 
-# if not path_exists("./taming-transformers"):
-#    raise FileNotFoundError("ERROR: taming-transformers is missing!")
-# if "./taming-transformers" not in sys.path:
-#    sys.path.append("./taming-transformers")
-# else:
-#    logger.debug("DEBUG: sys.path already contains ./taming transformers")
+
 from taming.models import cond_transformer, vqgan
 
 from pytti import DEVICE, replace_grad, clamp_with_grad, vram_usage_mode
@@ -22,6 +17,7 @@ VQGAN_MODEL = None
 VQGAN_NAME = None
 VQGAN_IS_GUMBEL = None
 
+# migrate these to config files
 VQGAN_MODEL_NAMES = ["imagenet", "coco", "wikiart", "sflckr", "openimages"]
 VQGAN_CONFIG_URLS = {
     "imagenet": [
@@ -259,4 +255,4 @@ class VQGANImage(EMAImage):
     @staticmethod
     def free_vqgan():
         global VQGAN_MODEL
-        VQGAN_MODEL = None
+        VQGAN_MODEL = None  # should this maybe be `del VQGAN_MODEL` instead?
