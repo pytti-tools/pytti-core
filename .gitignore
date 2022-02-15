@@ -1,5 +1,7 @@
 # just for now
 environment.yml
+__main__.py
+vendor/
 
 runs/
 logs/
