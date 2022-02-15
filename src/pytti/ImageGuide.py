@@ -1,9 +1,11 @@
-from torch import optim, nn
+import math
+import pandas as pd
 from pytti.Notebook import tqdm
 from pytti import format_input
-import pandas as pd
-import math
+from scipy.signal import savgol_filter
+from torch import optim, nn
 
+# deprecate this
 from labellines import labelLines
 
 
@@ -12,10 +14,8 @@ def unpack_dict(D, n=2):
     return tuple(ds)
 
 
-import pandas as pd
-from scipy.signal import savgol_filter
-
-
+# this only gets used in the plot_losses method below.
+# deprecate (tensorboard)
 def smooth_dataframe(df, window_size):
     """applies a moving average filter to the columns of df"""
     smoothed_df = pd.DataFrame().reindex_like(df)
@@ -90,6 +90,7 @@ class DirectImageGuide:
     def clear_dataframe(self):
         self.dataframe = []
 
+    # deprecate (tensorboard)
     def plot_losses(self, axs):
         def plot_dataframe(df, ax, legend=False):
             keys = list(df)
