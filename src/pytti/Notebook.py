@@ -57,10 +57,6 @@ else:
     from tqdm import tqdm
 
 
-def get_tqdm():
-    return tqdm
-
-
 # this doesn't belong in here
 def get_last_file(directory, pattern):
     import os, re

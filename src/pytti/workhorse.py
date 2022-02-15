@@ -37,7 +37,6 @@ logger.info("Loading pytti...")
 from pytti.Notebook import (
     is_notebook,
     change_tqdm_color,  # why though?
-    get_tqdm,  # deprecate this
     get_last_file,
     get_next_file,
     make_hbox,
