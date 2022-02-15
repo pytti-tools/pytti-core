@@ -93,36 +93,17 @@ TB_LOGDIR = "logs"  # to do: make this more easily configurable
 writer = SummaryWriter(TB_LOGDIR)
 OUTPATH = f"{os.getcwd()}/images_out/"
 
-#####################
-
-# conf = OmegaConf.create(default_params)
-# OmegaConf.save(conf, f="default_params.yaml")
-
 
 @hydra.main(config_path="config", config_name="default")
 def _main(cfg: DictConfig):
-    default_params = OmegaConf.to_container(cfg, resolve=True)
-    logger.debug(default_params)
+    params = OmegaConf.to_container(cfg, resolve=True)
+    logger.debug(params)
     latest = -1
-    # @markdown check `batch_mode` to run batch settings
+
     batch_mode = False  # @param{type:"boolean"}
-    if batch_mode:
-        try:
-            batch_list
-        except NameError:
-            raise RuntimeError(
-                "ERROR: no batch settings. Please run 'batch settings' cell at the bottom of the page to use batch mode."
-            )
-    else:
-        try:
-            params = default_params
-            params = Bunch(
-                params
-            )  # fuck it... # probably easier to use an argparse namesapce here
-        except NameError:
-            raise RuntimeError(
-                "ERROR: no parameters. Please run parameters (step 2.1)."
-            )
+
+    params = Bunch(params)
+
     # @markdown check `restore` to restore from a previous run
     restore = False  # @param{type:"boolean"}
     # @markdown check `reencode` if you are restoring with a modified image or modified image settings
