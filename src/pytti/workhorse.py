@@ -33,75 +33,30 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from IPython import display
 
-
-TB_LOGDIR = "logs"  # to do: make this more easily configurable
-writer = SummaryWriter(TB_LOGDIR)
-OUTPATH = f"{os.getcwd()}/images_out/"
-
-
-# hot fix for running as a CLI tool, e.g.
-# $ python pytti/workhorse.py conf=demo
-sys.path.append(".")
-logger.debug(sys.path)
-
-# TO DO: populate this from... params? globals?
-drive_mounted = False
-try:
-    from pytti.Notebook import (
-        is_notebook,
-        change_tqdm_color,
-        get_tqdm,
-        get_last_file,
-        get_next_file,
-        make_hbox,
-        load_settings,
-        write_settings,
-        save_settings,
-        save_batch,
-        CLIP_MODEL_NAMES,
-        load_clip,
-        get_frames,
-        build_loss,
-        format_params,
-        rotoscopers,
-        clear_rotoscopers,
-        update_rotoscopers,
-        Rotoscoper,
-    )
-except ModuleNotFoundError:
-    if drive_mounted:
-        # THIS IS NOT AN ERROR. This is the code that would
-        # make an error if something were wrong.
-        raise RuntimeError("ERROR: please run setup (step 1.3).")
-    else:
-        # THIS IS NOT AN ERROR. This is the code that would
-        # make an error if something were wrong.
-        raise RuntimeError(
-            "WARNING: drive is not mounted.\nERROR: please run setup (step 1.3)."
-        )
-change_tqdm_color()
-
-# sys.path.append('./AdaBins')
-for p in ("GMA/core", "AdaBins"):
-    # Adding GMA before AdaBins seems to resolve "utils" module name collision
-    if p not in sys.path:
-        sys.path.append(p)
-logger.debug(sys.path)
-
-try:
-    from pytti import Perceptor
-except ModuleNotFoundError:
-    if drive_mounted:
-        # THIS IS NOT AN ERROR. This is the code that would
-        # make an error if something were wrong.
-        raise RuntimeError("ERROR: please run setup (step 1.3).")
-    else:
-        # THIS IS NOT AN ERROR. This is the code that would
-        # make an error if something were wrong.
-        raise RuntimeError(
-            "WARNING: drive is not mounted.\nERROR: please run setup (step 1.3)."
-        )
 logger.info("Loading pytti...")
+from pytti.Notebook import (
+    is_notebook,
+    change_tqdm_color,  # why though?
+    get_tqdm,  # deprecate this
+    get_last_file,
+    get_next_file,
+    make_hbox,
+    load_settings,  # hydra should handle this stuff
+    write_settings,
+    save_settings,
+    save_batch,
+    CLIP_MODEL_NAMES,
+    load_clip,
+    get_frames,
+    build_loss,
+    format_params,
+    rotoscopers,
+    clear_rotoscopers,
+    update_rotoscopers,
+    Rotoscoper,
+)
+
+from pytti import Perceptor
 from pytti.Image import PixelImage, RGBImage, VQGANImage
 from pytti.ImageGuide import DirectImageGuide
 from pytti.Perceptor.Embedder import HDMultiClipEmbedder
@@ -123,10 +78,20 @@ from pytti.LossAug.DepthLoss import init_AdaBins
 
 logger.info("pytti loaded.")
 
+change_tqdm_color()
+
+logger.debug(sys.path)
+
+
 sns.set()
 plt.style.use("bmh")
 pd.options.display.max_columns = None
 pd.options.display.width = 175
+
+
+TB_LOGDIR = "logs"  # to do: make this more easily configurable
+writer = SummaryWriter(TB_LOGDIR)
+OUTPATH = f"{os.getcwd()}/images_out/"
 
 #####################
 
