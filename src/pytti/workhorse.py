@@ -716,9 +716,6 @@ def _main(cfg: DictConfig):
                 gc.collect()
                 torch.cuda.empty_cache()
         else:
-            if params.animation_mode == "3D":
-                pass
-                # init_AdaBins()
             do_run()
             logger.info("Complete.")
             gc.collect()
