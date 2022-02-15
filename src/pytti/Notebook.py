@@ -1,5 +1,13 @@
-# this library is designed for use with google colab runtimes.
-# This file defines utility functions for use with notebooks.
+# this library was originally designed for use with google colab runtimes.
+# This file defined utility functions for use with notebooks.
+# Many of the functions previously defined here have been moved into the following:
+#  * src/pytti/eval_tools.py
+#  * src/pytti/tensor_tools.py
+#  * src/pytti/vram_tools.py
+#
+# It seems like most of the functionality that remains defined here is actually
+# connected with animation/video/rotoscoping logic, i.e. should probably be moved
+# elsewhere (TBD)
 
 from loguru import logger
 
@@ -42,6 +50,7 @@ def change_tqdm_color():
     get_ipython().events.register("pre_run_cell", set_css_in_cell_output)
 
 
+# what is this doing in here? This should be in the notebook
 if is_notebook():
     from tqdm.notebook import tqdm
 else:
@@ -52,6 +61,7 @@ def get_tqdm():
     return tqdm
 
 
+# this doesn't belong in here
 def get_last_file(directory, pattern):
     import os, re
 
@@ -67,6 +77,7 @@ def get_last_file(directory, pattern):
     return files[-1], index
 
 
+# this doesn't belong in here
 def get_next_file(directory, pattern, templates):
     import os, re
 
@@ -105,6 +116,7 @@ def get_next_file(directory, pattern, templates):
     )
 
 
+# deprecate this (tensorboard)
 def make_hbox(im, fig):
     # https://stackoverflow.com/questions/51315566/how-to-display-the-images-side-by-side-in-jupyter-notebook/51316108
     import io
@@ -133,6 +145,7 @@ def make_hbox(im, fig):
     )
 
 
+# deprecate this (hydra)
 def load_settings(settings_string, random_seed=True):
     import json, random
     from bunch import Bunch
@@ -144,6 +157,7 @@ def load_settings(settings_string, random_seed=True):
     return params
 
 
+# deprecate this (hydra)
 def write_settings(settings_dict, f):
     import json
 
@@ -161,11 +175,13 @@ def write_settings(settings_dict, f):
         f.write("\n")
 
 
+# deprecate this (hydra)
 def save_settings(settings_dict, path):
     with open(path, "w+") as f:
         write_settings(settings_dict, f)
 
 
+# deprecate this (hydra)
 def save_batch(settings_list, path):
     from bunch import Bunch
 
@@ -177,12 +193,14 @@ def save_batch(settings_list, path):
             f.write("\n\n")
 
 
+# this doesn't belong here
 CLIP_MODEL_NAMES = None
 
 
 def load_clip(params):
     from pytti import Perceptor
 
+    # refactor to specify this stuff in a config file
     global CLIP_MODEL_NAMES
     if CLIP_MODEL_NAMES is not None:
         last_names = CLIP_MODEL_NAMES
@@ -207,6 +225,7 @@ def load_clip(params):
         logger.debug("CLIP loaded.")
 
 
+# this doesn't belong in here (animation)
 def get_frames(path):
     """reads the frames of the mp4 file `path` and returns them as a list of PIL images"""
     import imageio, subprocess
@@ -226,6 +245,7 @@ def get_frames(path):
     return vid
 
 
+# this doesn't belong in here ...LossAug? also... let's fix those capitalized folder names...
 def build_loss(weight_name, weight, name, img, pil_target):
     from pytti.LossAug import LOSS_DICT
 
@@ -241,9 +261,16 @@ def build_loss(weight_name, weight, name, img, pil_target):
     return out
 
 
+# what is this even doing?
+# should probably deprecate in favor of hydra-idiomatic object intantiation
 def format_params(params, *args):
     return [params[x] for x in args]
 
+
+#########################################
+
+# Nothing about rotoscopers is specific to notebooks.
+# Move this somewhere better.
 
 rotoscopers = []
 
@@ -253,6 +280,7 @@ def clear_rotoscopers():
     rotoscopers = []
 
 
+# this is... weird. also why the globals?
 def update_rotoscopers(frame_n):
     global rotoscopers
     for r in rotoscopers:
