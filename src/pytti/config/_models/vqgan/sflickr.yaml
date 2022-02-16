@@ -1,0 +1,6 @@
+config:
+  filename: sflickr.yaml
+  url: https://heibox.uni-heidelberg.de/d/73487ab6e5314cb5adba/files/?p=%2Fconfigs%2F2020-11-09T13-31-51-project.yaml&dl=1
+weights:
+  filename: sflickr.ckpt
+  url: https://heibox.uni-heidelberg.de/d/73487ab6e5314cb5adba/files/?p=%2Fcheckpoints%2Flast.ckpt&dl=1
