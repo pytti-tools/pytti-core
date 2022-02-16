@@ -24,6 +24,7 @@ scikit-learn
 loguru
 hydra-core
 setuptools==59.5.0
+jupyter
 
 # Pinning versions for google colab
 Pillow==7.1.2
