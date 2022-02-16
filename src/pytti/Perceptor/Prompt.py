@@ -1,3 +1,18 @@
+from collections import defaultdict
+import re
+import math
+
+from PIL import Image
+import numpy as np
+from scipy.spatial.distance import cdist
+from scipy.optimize import linear_sum_assignment
+import torch
+from torch import nn
+from torch.nn import functional as F
+from torchvision.transforms import functional as TF
+
+from clip import clip
+import pytti
 from pytti import (
     DEVICE,
     format_input,
@@ -8,18 +23,8 @@ from pytti import (
     parametric_eval,
     vram_usage_mode,
 )
-from pytti.Notebook import Rotoscoper
-import torch
-from torch import nn
-from torch.nn import functional as F
-from torchvision.transforms import functional as TF
-import re, math
-from clip import clip
-import pytti
-from PIL import Image
 from pytti.Image import RGBImage
-from collections import defaultdict
-import numpy as np
+from pytti.Notebook import Rotoscoper
 
 
 def spherical_dist_loss(x, y):
@@ -175,6 +180,16 @@ MASK_DICT = {
 
 @torch.no_grad()
 def parse_prompt(embedder, prompt_string="", pil_image=None, device=DEVICE):
+    """
+    It takes a prompt string,
+    parses it, and returns a Prompt object
+
+    :param embedder: the embedder to use
+    :param prompt_string: the prompt to be parsed
+    :param pil_image: if you want to use an image instead of text, pass it in here
+    :param device: the device to run on
+    :return: A Prompt object.
+    """
     text, weight, stop = parse(prompt_string, r":(?![^\[]*\])", ["", "1", "-inf"])
     weight, mask, cutoff = parse(
         weight, r"_(?![^\[]*\])", ["1", "a", "0.5000873264"]
@@ -232,6 +247,13 @@ class Prompt(nn.Module):
         return self.text
 
     def set_mask(self, pil_image, inverted=False):
+        """
+        Given an input image, registers the image as a mask.
+
+        :param pil_image: The image to be masked
+        :param inverted: If True, the mask is inverted, so the background is black and the foreground is
+        white, defaults to False (optional)
+        """
         self.mask = mask_image(pil_image, inverted=inverted)
 
     def set_enabled(self, enabled):
@@ -289,6 +311,12 @@ class MultiClipImagePrompt(Prompt):
     @torch.no_grad()
     @vram_usage_mode("Image Prompts")
     def set_image(self, embedder, pil_image):
+        """
+        It takes an embedder, a PIL image, and returns the embeddings, positions, and sizes
+
+        :param embedder: the embedder function
+        :param pil_image: The image to be embedded
+        """
         width, height = pil_image.size
         img = RGBImage(width, height)
         img.encode_image(pil_image)
@@ -297,10 +325,6 @@ class MultiClipImagePrompt(Prompt):
         self.positions.set_(format_input(positions, embedder, self))
         self.sizes.set_(format_input(sizes, embedder, self))
         self.embeds.set_(format_input(embeds, embedder, self))
-
-
-from scipy.spatial.distance import cdist
-from scipy.optimize import linear_sum_assignment
 
 
 def minimize_average_distance(tensor_a, tensor_b, device=DEVICE):
