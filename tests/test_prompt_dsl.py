@@ -1,4 +1,4 @@
-from Pytti.Perceptor.Prompt import Prompt, parse_prompt
+from pytti.Perceptor.Prompt import Prompt, parse_prompt
 
 
 def test_prompt_parsing():
