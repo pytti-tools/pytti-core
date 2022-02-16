@@ -112,7 +112,7 @@ class HdrLoss(nn.Module):
         )
         self.register_buffer("weight", torch.as_tensor(weight).to(device))
 
-    def forward(self, input: PixelImage):
+    def forward(self, input: DifferentiableImage):
         """
         Given a Pixelimage and returns the loss.
 
