@@ -66,6 +66,10 @@ def ensure_configs_exist():
 # Path.home() == os.path.expanduser('~')
 # user_cache = Path.home() / '.cache'
 # logger.debug(f'user_cache: {user_cache}')
-OmegaConf.register_new_resolver("user_cache", lambda: Path.home() / ".cache")
+OmegaConf.register_new_resolver(
+    "user_cache", lambda: str((Path.home() / ".cache").resolve())
+)
 
-OmegaConf.register_new_resolver("path_join", lambda a, b: Path(a) / Path(b))
+OmegaConf.register_new_resolver(
+    "path_join", lambda a, b: str((Path(a) / Path(b)).resolve())
+)
