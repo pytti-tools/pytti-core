@@ -160,6 +160,10 @@ def write_settings(settings_dict, f):
     json.dump(settings_dict, f)
     f.write("\n\n")
     params = settings_dict
+    # why are scenes being parsed and iterated over here?
+    # Is this maybe part of the resume behavior?
+    # ... whatever it is... parsing logic needs to live in the code.
+    # omegaconf/hydra will be responsible for loading and persisting params.
     scenes = [
         (params.scene_prefix + scene + params.scene_suffix).strip()
         for scene in params.scenes.split("||")
@@ -175,6 +179,7 @@ def write_settings(settings_dict, f):
 def save_settings(settings_dict, path):
     with open(path, "w+") as f:
         write_settings(settings_dict, f)
+        # OmegaConf.save(config=settings_dict, f=f)
 
 
 # deprecate this (hydra)
