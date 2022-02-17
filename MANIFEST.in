@@ -5,4 +5,5 @@ global-exclude __pycache__
 # yeeeeesh
 # pip uninstall -y pyttitools-core; rm -r pytti-core/build; rm -r pytti-core/src/pyttitools_core.egg-info
 
-graft src/pytti/config
+#graft src/pytti/config
+graft src/pytti/assets

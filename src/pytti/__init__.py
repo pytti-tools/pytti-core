@@ -1,3 +1,7 @@
+from pytti.warmup import ensure_configs_exist
+
+ensure_configs_exist()
+
 from pytti.vram_tools import (
     DEVICE,
     vram_usage_mode,
