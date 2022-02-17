@@ -649,12 +649,9 @@ def _main(cfg: DictConfig):
 
         # Pretty sure this isn't necessary, Hydra should take care of saving
         # the run settings now
-        logger.info(
-            f"Settings saved to {OUTPATH}/{params.file_namespace}/{base_name}_settings.txt"
-        )
-        save_settings(
-            params, f"{OUTPATH}/{params.file_namespace}/{base_name}_settings.txt"
-        )
+        settings_path = f"{OUTPATH}/{params.file_namespace}/{base_name}_settings.txt"
+        logger.info(f"Settings saved to {settings_path}")
+        save_settings(params, settings_path)
 
         # Run the training loop
         ########################
