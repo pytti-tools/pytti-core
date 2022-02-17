@@ -223,7 +223,8 @@ def _main(cfg: DictConfig):
             img = RGBImage(params.width, params.height, params.pixel_size)
             img.encode_random()
         elif params.image_model == "VQGAN":
-            VQGANImage.init_vqgan(params.vqgan_model)
+            model_artifacts_path = Path(params.models_parent_dir) / "vqgan"
+            VQGANImage.init_vqgan(params.vqgan_model, model_artifacts_path)
             img = VQGANImage(params.width, params.height, params.pixel_size)
             img.encode_random()
 

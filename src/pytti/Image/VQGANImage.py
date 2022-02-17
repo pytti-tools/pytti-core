@@ -1,5 +1,9 @@
+from pathlib import Path
 from os.path import exists as path_exists
-import sys, subprocess
+import sys
+import subprocess
+import shutil
+
 from loguru import logger
 
 
@@ -214,7 +218,7 @@ class VQGANImage(EMAImage):
         return z
 
     @staticmethod
-    def init_vqgan(model_name, device=DEVICE):
+    def init_vqgan(model_name, model_artifacts_path, device=DEVICE):
         global VQGAN_MODEL, VQGAN_NAME, VQGAN_IS_GUMBEL
         if VQGAN_NAME == model_name:
             return
@@ -222,14 +226,23 @@ class VQGANImage(EMAImage):
             raise ValueError(
                 f"VQGAN model {model_name} is not supported. Supported models are {VQGAN_MODEL_NAMES}"
             )
-        vqgan_config = f"{model_name}.yaml"
-        vqgan_checkpoint = f"{model_name}.ckpt"
+        model_artifacts_path = Path(model_artifacts_path)
+        logger.info(model_artifacts_path)
+        model_artifacts_path.mkdir(parents=True, exist_ok=True)
+        vqgan_config = model_artifacts_path / f"{model_name}.yaml"
+        vqgan_checkpoint = model_artifacts_path / f"{model_name}.ckpt"
+        logger.debug(vqgan_config)
+        logger.debug(vqgan_checkpoint)
+        # good lord... the nested if statements and calling curl with subprocess... so much about this needs to change.
+        # for now, let's just use it the way it is and copy the file where it needs to go.
         if not path_exists(vqgan_config):
             logger.warning(
                 f"WARNING: VQGAN config file {vqgan_config} not found. Initializing download."
             )
             command = VQGAN_CONFIG_URLS[model_name][0].split(" ", 6)
             subprocess.run(command)
+            shutil.move(vqgan_config.name, vqgan_config)
+
             if not path_exists(vqgan_config):
                 logger.critical(
                     f"ERROR: VQGAN model {model_name} config failed to download! Please contact model host or find a new one."
@@ -241,6 +254,8 @@ class VQGANImage(EMAImage):
             )
             command = VQGAN_CHECKPOINT_URLS[model_name][0].split(" ", 6)
             subprocess.run(command)
+            shutil.move(vqgan_checkpoint.name, vqgan_checkpoint)
+
             if not path_exists(vqgan_checkpoint):
                 logger.critical(
                     f"ERROR: VQGAN model {model_name} checkpoint failed to download! Please contact model host or find a new one."
