@@ -15,6 +15,8 @@ import json, random
 import os, re
 from PIL import Image
 
+from pytti.LossAug import Loss as LossType
+
 # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
 def is_notebook():
     try:
@@ -248,7 +250,7 @@ def get_frames(path):
 
 
 # this doesn't belong in here ...LossAug? also... let's fix those capitalized folder names...
-def build_loss(weight_name, weight, name, img, pil_target):
+def build_loss(weight_name, weight, name, img, pil_target) -> LossType:
     """
     Given a weight name, weight, name, image, and target image, returns a loss object
 

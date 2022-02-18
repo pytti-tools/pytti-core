@@ -51,6 +51,7 @@ from pytti.Perceptor.Embedder import HDMultiClipEmbedder
 from pytti.Perceptor.Prompt import parse_prompt
 
 # HSVLoss no longer available to users?
+# ... nm, gets used in PixelImage
 from pytti.LossAug import TVLoss, HSVLoss, OpticalFlowLoss, TargetFlowLoss
 from pytti.Transforms import zoom_2d, zoom_3d
 from pytti import (
@@ -419,6 +420,7 @@ def _main(cfg: DictConfig):
         model = DirectImageGuide(img, embedder, lr=params.learning_rate)
 
         # Update is called each step.
+        # NB: Update and 'report_out' should probably get attached to DirectImageGuide
         def update(i, stage_i):
             # display
 
