@@ -196,16 +196,27 @@ def _main(cfg: DictConfig):
         embedder, prompts = load_scenes(embedder, params)
 
         # load init image
-        if params.init_image != "":
-            init_image_pil = Image.open(fetch(params.init_image)).convert("RGB")
-            init_size = init_image_pil.size
-            # automatic aspect ratio matching
-            if params.width == -1:
-                params.width = int(params.height * init_size[0] / init_size[1])
-            if params.height == -1:
-                params.height = int(params.width * init_size[1] / init_size[0])
-        else:
-            init_image_pil = None
+        def load_init_image(params: DictConfig):
+            """
+            If the user has specified an image to use as the initial image, load it. Otherwise, if the
+            user has specified a width or height, create a blank image of the specified size
+
+            :param params: Experiment parameters
+            :return: the initial image and the size of the initial image.
+            """
+            if params.init_image != "":
+                init_image_pil = Image.open(fetch(params.init_image)).convert("RGB")
+                init_size = init_image_pil.size
+                # automatic aspect ratio matching
+                if params.width == -1:
+                    params.width = int(params.height * init_size[0] / init_size[1])
+                if params.height == -1:
+                    params.height = int(params.width * init_size[1] / init_size[0])
+            else:
+                init_image_pil = None
+            return init_image_pil, init_size
+
+        init_image_pil, init_size = load_init_image(params)
 
         # video source
         if params.animation_mode == "Video Source":
