@@ -28,7 +28,6 @@ from torch.utils.tensorboard import SummaryWriter
 from torchvision.transforms import functional as TF
 
 # Deprecate or move functionality somewhere less general
-from bunch import Bunch
 import matplotlib.pyplot as plt
 import seaborn as sns
 from IPython import display
@@ -100,8 +99,6 @@ def _main(cfg: DictConfig):
     latest = -1
 
     batch_mode = False  # @param{type:"boolean"}
-
-    params = Bunch(params)
 
     ### Move these into default.yaml
     # @markdown check `restore` to restore from a previous run

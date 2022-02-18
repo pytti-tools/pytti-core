@@ -63,7 +63,7 @@ Follow the installation steps for installing pytorch with CUDA/GPU support here:
 
 ### 9. Install pip dependencies
 
-    pip install jupyter gdown loguru einops seaborn PyGLM ftfy regex tqdm hydra-core adjustText exrex bunch matplotlib-label-lines
+    pip install jupyter gdown loguru einops seaborn PyGLM ftfy regex tqdm hydra-core adjustText exrex matplotlib-label-lines
 
 ### 10. Download pytti-core
 

@@ -15,7 +15,6 @@ einops==0.3.2
 imageio-ffmpeg==0.4.5
 adjustText
 exrex
-bunch==1.0.1
 matplotlib-label-lines==0.4.3
 pandas==1.3.4
 #imageio==2.13.5
