@@ -1,0 +1,6 @@
+config:
+  filename: imagenet.yaml
+  url: https://heibox.uni-heidelberg.de/f/274fb24ed38341bfa753/?dl=1
+weights:
+  filename: imagenet.ckpt
+  url: https://heibox.uni-heidelberg.de/f/867b05fc8c4841768640/?dl=1

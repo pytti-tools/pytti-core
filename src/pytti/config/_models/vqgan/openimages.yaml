@@ -1,0 +1,6 @@
+config:
+  filename: openimages.yaml
+  url: https://heibox.uni-heidelberg.de/d/2e5662443a6b4307b470/files/?p=%2Fconfigs%2Fmodel.yaml&dl=1
+weights:
+  filename: openimages.ckpt
+  url: https://heibox.uni-heidelberg.de/d/2e5662443a6b4307b470/files/?p=%2Fckpts%2Flast.ckpt&dl=1

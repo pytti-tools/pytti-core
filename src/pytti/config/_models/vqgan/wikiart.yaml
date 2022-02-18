@@ -1,0 +1,6 @@
+config:
+  filename: wikiart.yaml
+  url: http://eaidata.bmk.sh/data/Wikiart_16384/wikiart_f16_16384_8145600.yaml
+weights:
+  filename: wikiart.ckpt
+  url: http://eaidata.bmk.sh/data/Wikiart_16384/wikiart_f16_16384_8145600.yaml

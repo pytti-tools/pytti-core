@@ -3,8 +3,11 @@ Startup helpers.
 """
 # import os
 from pathlib import Path
+
 from loguru import logger
+from omegaconf import OmegaConf
 from pytti import __path__
+
 
 __path__ = __path__[0]
 logger.debug(__path__)
@@ -58,3 +61,15 @@ def ensure_configs_exist():
             f.write(default_yaml)
         with open(write_fpath_demo, "w") as f:
             f.write(demo_yaml)
+
+
+# Path.home() == os.path.expanduser('~')
+# user_cache = Path.home() / '.cache'
+# logger.debug(f'user_cache: {user_cache}')
+OmegaConf.register_new_resolver(
+    "user_cache", lambda: str((Path.home() / ".cache").resolve())
+)
+
+OmegaConf.register_new_resolver(
+    "path_join", lambda a, b: str((Path(a) / Path(b)).resolve())
+)
