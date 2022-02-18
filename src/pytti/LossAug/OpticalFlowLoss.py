@@ -30,6 +30,7 @@ def init_GMA(checkpoint_path):
     global GMA
     if GMA is None:
         with vram_usage_mode("GMA"):
+            # migrate this to a hydra initialize/compose operation
             parser = argparse.ArgumentParser()
             parser.add_argument(
                 "--model", help="restore checkpoint", default=checkpoint_path
