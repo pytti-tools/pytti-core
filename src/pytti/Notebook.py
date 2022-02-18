@@ -10,6 +10,10 @@
 # elsewhere (TBD)
 
 from loguru import logger
+from omegaconf import OmegaConf
+import json, random
+import os, re
+from PIL import Image
 
 # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
 def is_notebook():
@@ -59,8 +63,6 @@ else:
 
 # this doesn't belong in here
 def get_last_file(directory, pattern):
-    import os, re
-
     def key(f):
         index = re.match(pattern, f).group("index")
         return 0 if index == "" else int(index)
@@ -75,7 +77,6 @@ def get_last_file(directory, pattern):
 
 # this doesn't belong in here
 def get_next_file(directory, pattern, templates):
-    import os, re
 
     files = [f for f in os.listdir(directory) if re.match(pattern, f)]
     if len(files) == 0:
@@ -143,10 +144,7 @@ def make_hbox(im, fig):
 
 # deprecate this (hydra)
 def load_settings(settings_string, random_seed=True):
-    import json, random
-    from bunch import Bunch
-
-    params = Bunch(json.loads(settings_string))
+    params = OmegaConf.create(json.loads(settings_string))
     if random_seed or params.seed is None:
         params.seed = random.randint(-0x8000_0000_0000_0000, 0xFFFF_FFFF_FFFF_FFFF)
         logger.debug("using seed:", params.seed)
@@ -155,11 +153,10 @@ def load_settings(settings_string, random_seed=True):
 
 # deprecate this (hydra)
 def write_settings(settings_dict, f):
-    import json
-
     json.dump(settings_dict, f)
     f.write("\n\n")
-    params = settings_dict
+    # params = settings_dict
+    params = OmegaConf.create(settings_dict)
     # why are scenes being parsed and iterated over here?
     # Is this maybe part of the resume behavior?
     # ... whatever it is... parsing logic needs to live in the code.
@@ -184,13 +181,12 @@ def save_settings(settings_dict, path):
 
 # deprecate this (hydra)
 def save_batch(settings_list, path):
-    from bunch import Bunch
 
     with open(path, "w+") as f:
         for batch_index, settings_dict in enumerate(settings_list):
             f.write(f"batch_index: {batch_index}")
             f.write("\n")
-            write_settings(Bunch(settings_dict), f)
+            write_settings(dict(settings_dict), f)
             f.write("\n\n")
 
 
@@ -286,9 +282,6 @@ def update_rotoscopers(frame_n):
     global rotoscopers
     for r in rotoscopers:
         r.update(frame_n)
-
-
-from PIL import Image
 
 
 class Rotoscoper:
