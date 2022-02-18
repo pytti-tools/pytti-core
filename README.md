@@ -227,6 +227,12 @@ python -m pytti.workhorse \
 
 ### CLI Superpowers
 
+---
+WARNING: invoking multi-run from the CLI will likely re-download vgg weights for LPIPS. This will hopefully be patched soon, but until it is, please be aware that:
+* downloading large files repeatedly may eat up your internet quota if that's how your provider bills you.
+* these files may consume disk space. To free up space, delete any vgg.pth files in subdirectories of the "outputs" folders pytti creates in multirun mode.
+---
+
 A superpower commandline hydra gives us is the ability to specify multiple values for the same key, we just need to add the argument `--multirun`. For example, we can do this:
 
     python -m pytti.workhorse \
