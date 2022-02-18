@@ -134,8 +134,8 @@ def load_init_image(
     If the user has specified an image to use as the initial image, load it. Otherwise, if the
     user has specified a width or height, create a blank image of the specified size
 
-    :init_image_path: A local path or URL describing where to load the image from
-    :height: height of the image to be generated.
+    :param init_image_path: A local path or URL describing where to load the image from
+    :param height: height of the image to be generated.
     :return: the initial image and the size of the initial image.
     """
     if init_image_path:
@@ -149,6 +149,38 @@ def load_init_image(
     else:
         init_image_pil = None
     return init_image_pil, height, width
+
+
+def load_video_source(
+    video_path: str,
+    pre_animation_steps: int,
+    steps_per_frame: int,
+    height: int,
+    width: int,
+):
+    """
+    Loads a video file and returns a PIL image of the first frame
+
+    :param video_path: The path to the video file
+    :param pre_animation_steps: The number of frames to skip at the beginning of the video
+    :param steps_per_frame: How many steps to take per frame
+    :param height: the height of the output image
+    :param width: the width of the output image
+    :return: The video frames, the initial image, the height and width of the image.
+    """
+    logger.info(f"loading {video_path}...")
+    video_frames = get_frames(video_path)
+    pre_animation_steps = max(steps_per_frame, pre_animation_steps)
+    if init_image_pil is None:
+        init_image_pil = Image.fromarray(video_frames.get_data(0)).convert("RGB")
+        # enhancer = ImageEnhance.Contrast(init_image_pil)
+        # init_image_pil = enhancer.enhance(2)
+        init_size = init_image_pil.size
+        if width == -1:
+            width = int(height * init_size[0] / init_size[1])
+        if height == -1:
+            height = int(width * init_size[1] / init_size[0])
+    return video_frames, init_image_pil, height, width
 
 
 @hydra.main(config_path="config", config_name="default")
@@ -239,30 +271,19 @@ def _main(cfg: DictConfig):
         )
 
         # video source
-        def load_video_source(params: DictConfig):
-            """
-            If provided, process source video into image frames and init_image
-            """
-            if params.animation_mode == "Video Source":
-                logger.info(f"loading {params.video_path}...")
-                video_frames = get_frames(params.video_path)
-                params.pre_animation_steps = max(
-                    params.steps_per_frame, params.pre_animation_steps
-                )
-                if init_image_pil is None:
-                    init_image_pil = Image.fromarray(video_frames.get_data(0)).convert(
-                        "RGB"
-                    )
-                    # enhancer = ImageEnhance.Contrast(init_image_pil)
-                    # init_image_pil = enhancer.enhance(2)
-                    init_size = init_image_pil.size
-                    if params.width == -1:
-                        params.width = int(params.height * init_size[0] / init_size[1])
-                    if params.height == -1:
-                        params.height = int(params.width * init_size[1] / init_size[0])
-            return video_frames, init_image_pil, height, width
 
-        video_frames, init_image_pil, height, width = load_video_source(params)
+        if params.animation_mode == "Video Source":
+
+            video_frames, init_image_pil, height, width = load_video_source(
+                video_path=params.video_path,
+                pre_animation_steps=params.pre_animation_steps,
+                steps_per_frame=params.steps_per_frame,
+                height=params.height,
+                width=params.width,
+            )
+
+        # not a fan of modifying the params object like this, but may as well be consistent for now...
+        params.height, params.width = height, width
 
         # Phase 3 - Setup Optimization
         ###############################
