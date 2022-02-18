@@ -98,7 +98,7 @@ class Renderer:
 # combine load_scenes, parse_prompt, and parse into a unified, generic parser.
 # generic here means the output of the parsing process shouldn't be bound to
 # modules yet, just a collection of settings.
-def load_scenes(
+def parse_scenes(
     embedder,
     scenes,
     scene_prefix,
@@ -197,7 +197,7 @@ def _main(cfg: DictConfig):
         # load scenes
 
         with vram_usage_mode("Text Prompts"):
-            embedder, prompts = load_scenes(
+            embedder, prompts = parse_scenes(
                 embedder,
                 scenes=params.scenes,
                 scene_prefix=params.scene_prefix,
