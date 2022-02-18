@@ -109,6 +109,11 @@ class DirectImageGuide:
             )
 
     def clear_dataframe(self):
+        """
+        The .dataframe attribute is just a list of pd.DataFrames that
+        are tracking losses for the current scene. I wanna say one
+        for each prompt. To do: flush all that out and let tensorboard handle it.
+        """
         self.dataframe = []
 
     # deprecate (tensorboard)

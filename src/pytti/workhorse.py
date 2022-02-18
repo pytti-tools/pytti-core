@@ -421,6 +421,7 @@ def _main(cfg: DictConfig):
 
         # Update is called each step.
         # NB: Update and 'report_out' should probably get attached to DirectImageGuide
+        # ...or maybe `Renderer`?
         def update(i, stage_i):
             # display
 
@@ -432,6 +433,7 @@ def _main(cfg: DictConfig):
             # DM: I bet this could be abstracted out into a report_out() function or whatever
             if params.clear_every > 0 and i > 0 and i % params.clear_every == 0:
                 display.clear_output()
+
             if params.display_every > 0 and i % params.display_every == 0:
                 logger.debug(f"Step {i} losses:")
                 if model.dataframe:
@@ -441,10 +443,12 @@ def _main(cfg: DictConfig):
                         writer.add_scalar(
                             tag=f"losses/{k}", scalar_value=v, global_step=i
                         )
+
                 # does this VRAM stuff even do anything?
                 if params.approximate_vram_usage:
                     logger.debug("VRAM Usage:")
                     print_vram_usage()  # update this function to use logger
+                # update this stuff to use/rely on tensorboard
                 display_width = int(img.image_shape[0] * params.display_scale)
                 display_height = int(img.image_shape[1] * params.display_scale)
                 if stage_i > 0 and params.show_graphs:
@@ -462,6 +466,7 @@ def _main(cfg: DictConfig):
                 if params.show_palette and isinstance(img, PixelImage):
                     logger.debug("Palette:")
                     display.display(img.render_pallet())
+
             # save
             if i > 0 and params.save_every > 0 and i % params.save_every == 0:
                 try:
@@ -669,7 +674,9 @@ def _main(cfg: DictConfig):
         # Run the training loop
         ########################
 
-        # what are these skip variables doing?
+        # `i`: current iteration
+        # `skip_X`: number of _X that have already been processed to completion (per the current iteration)
+        # `last_scene`: previously processed scene/prompt (or current prompt if on first/only scene)
         skip_prompts = i // params.steps_per_scene
         skip_steps = i % params.steps_per_scene
         last_scene = prompts[0] if skip_prompts == 0 else prompts[skip_prompts - 1]
