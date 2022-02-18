@@ -88,6 +88,12 @@ class TargetFlowLoss(MSELoss):
 
     @torch.no_grad()
     def set_target_flow(self, flow, device=DEVICE):
+        """
+        Set the target flow to the given flow field
+
+        :param flow: the flow to be set as the target flow
+        :param device: the device to run the training on
+        """
         self.comp.set_(
             flow.movedim(-1, 1).to(device, memory_format=torch.channels_last)
         )
@@ -95,6 +101,12 @@ class TargetFlowLoss(MSELoss):
 
     @torch.no_grad()
     def set_last_step(self, last_step_pil, device=DEVICE):
+        """
+        It sets the last_step class attribute to the provided last_step_pil image.
+
+        :param last_step_pil: The last step of the sequence
+        :param device: The device to use for training
+        """
         last_step = (
             TF.to_tensor(last_step_pil)
             .unsqueeze(0)
@@ -103,6 +115,14 @@ class TargetFlowLoss(MSELoss):
         self.last_step.set_(last_step)
 
     def get_loss(self, input, img, device=DEVICE):
+        """
+        Uses the pretrained flow model (GMA) to compute the loss.
+
+        :param input: The flow target image
+        :param img: the DifferentiableImage we are fitting
+        :param device: the device to run the model on
+        :return: The loss function.
+        """
         init_GMA(
             "GMA/checkpoints/gma-sintel.pth"
         )  # update this to use model dir from config
@@ -126,6 +146,20 @@ class OpticalFlowLoss(MSELoss):
         sampling_mode="bilinear",
         device=DEVICE,
     ):
+        """
+        Given a forward flow, a backward flow, and an image,
+        it returns a mask that is 1 where the backward flow is valid,
+        and 0 where the backward flow is invalid.
+
+        :param flow_forward: The forward flow map
+        :param flow_backward: The backward flow, which is the flow from the future frame to the current
+        frame
+        :param img: The image to be warped
+        :param border_mode: "smear" or "nearest", defaults to smear (optional)
+        :param sampling_mode: "bilinear" or "nearest", defaults to bilinear (optional)
+        :param device: the device to run the algorithm on
+        :return: a mask that is used to mask out the unreliable pixels.
+        """
         # algorithm based on https://github.com/manuelruder/artistic-videos/blob/master/consistencyChecker/consistencyChecker.cpp
         # reimplemented in pytorch by Henry Rachootin
         # // consistencyChecker
@@ -188,6 +222,14 @@ class OpticalFlowLoss(MSELoss):
     @staticmethod
     @torch.no_grad()
     def get_flow(image1, image2, device=DEVICE):
+        """
+        Takes two images and returns the flow between them.
+
+        :param image1: The first image in the sequence
+        :param image2: the image that we want to transform towards
+        :param device: The device to run the model on
+        :return: the flow field.
+        """
         init_GMA("GMA/checkpoints/gma-sintel.pth")
         if isinstance(image1, Image.Image):
             image1 = TF.to_tensor(image1).unsqueeze(0).to(device)
@@ -224,6 +266,19 @@ class OpticalFlowLoss(MSELoss):
         sampling_mode="bilinear",
         device=DEVICE,
     ):
+        """
+        Given a frame, a path to a pretrained model, and a mask,
+        returns a flow field that can be applied to the frame
+
+        :param frame_prev: The previous frame of the video
+        :param frame_next: The next frame in the video
+        :param img: the image to be warped
+        :param path: path to the pretrained model
+        :param border_mode: "smear" or "crop", defaults to smear (optional)
+        :param sampling_mode: "bilinear" or "nearest", defaults to bilinear (optional)
+        :param device: the device to run the model on
+        :return: The flow image and the mask.
+        """
         if path is not None:
             img = img.clone()
             state_dict = torch.load(path)
@@ -280,6 +335,12 @@ class OpticalFlowLoss(MSELoss):
 
     @torch.no_grad()
     def set_flow_mask(self, mask):
+        """
+        If a mask is provided, resize it to the size of the component image and set it as the mask for
+        the latent loss. Otherwise, set the mask to None
+
+        :param mask: a binary mask of the same size as the input image. If None, no mask is used
+        """
         super().set_mask(TF.resize(mask, self.comp.shape[-2:]))
         if mask is not None:
             self.latent_loss.set_mask(TF.resize(mask, self.latent_loss.comp.shape[-2:]))
@@ -288,6 +349,15 @@ class OpticalFlowLoss(MSELoss):
 
     @torch.no_grad()
     def set_mask(self, mask, inverted=False, device=DEVICE):
+        """
+        Sets the mask for the background.
+
+        :param mask: The mask to use. Can be a string, a PIL Image, or a Tensor
+        :param inverted: If True, the mask is inverted. This means that the mask will be applied to the
+        background, defaults to False (optional)
+        :param device: The device to run the mask on
+        :return: Nothing.
+        """
         if isinstance(mask, str) and mask != "":
             if mask[0] == "-":
                 mask = mask[1:]
