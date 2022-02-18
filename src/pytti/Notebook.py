@@ -249,6 +249,16 @@ def get_frames(path):
 
 # this doesn't belong in here ...LossAug? also... let's fix those capitalized folder names...
 def build_loss(weight_name, weight, name, img, pil_target):
+    """
+    Given a weight name, weight, name, image, and target image, returns a loss object
+
+    :param weight_name: The name of the loss function
+    :param weight: The weight of the loss
+    :param name: The name of the loss function
+    :param img: The image to be optimized
+    :param pil_target: The target image
+    :return: The loss function.
+    """
     from pytti.LossAug import LOSS_DICT
 
     weight_name, suffix = weight_name.split("_", 1)
@@ -266,6 +276,13 @@ def build_loss(weight_name, weight, name, img, pil_target):
 # what is this even doing?
 # should probably deprecate in favor of hydra-idiomatic object intantiation
 def format_params(params, *args):
+    """
+    Given a dictionary of parameters and a list of keys, return a list of values in the same order as
+    the keys
+
+    :param params: a dictionary of parameters that we're going to pass into our function
+    :return: A list of the values of the parameters in the same order as the args.
+    """
     return [params[x] for x in args]
 
 
