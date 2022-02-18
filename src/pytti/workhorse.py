@@ -5,16 +5,13 @@ Thank you for your patience.-- The Management
 """
 
 import gc
-import glob
 import json
 from pathlib import Path
-import math
 import os
 from os.path import exists as path_exists
 import re
 import sys
 import subprocess
-import warnings
 
 import hydra
 from loguru import logger
@@ -22,10 +19,9 @@ from omegaconf import OmegaConf, DictConfig
 
 import numpy as np
 import pandas as pd
-from PIL import Image, ImageEnhance
+from PIL import Image
 import torch
 from torch.utils.tensorboard import SummaryWriter
-from torchvision.transforms import functional as TF
 
 # Deprecate or move functionality somewhere less general
 import matplotlib.pyplot as plt
@@ -34,13 +30,11 @@ from IPython import display
 
 logger.info("Loading pytti...")
 from pytti.Notebook import (
-    is_notebook,
     change_tqdm_color,  # why though?
     get_last_file,
     get_next_file,
     make_hbox,
     load_settings,  # hydra should handle this stuff
-    write_settings,
     save_settings,
     save_batch,
     CLIP_MODEL_NAMES,
@@ -51,7 +45,6 @@ from pytti.Notebook import (
     rotoscopers,
     clear_rotoscopers,
     update_rotoscopers,
-    Rotoscoper,
 )
 
 from pytti import Perceptor
@@ -242,6 +235,10 @@ def _main(cfg: DictConfig):
             VQGANImage.init_vqgan(params.vqgan_model, model_artifacts_path)
             img = VQGANImage(params.width, params.height, params.pixel_size)
             img.encode_random()
+
+        #######################################
+
+        # set up losses
 
         loss_augs = []
 
