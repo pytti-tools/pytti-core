@@ -105,7 +105,7 @@ def load_scenes(
     scene_suffix,
 ):
     """
-    Loads the scenes from the "scenes" parameter and parses them into a list of lists of strings
+    Parses scenes separated by || and applies provided prefixes and suffixes to each scene.
 
     :param embedder: The embedder object
     :param params: The experiment parameters
