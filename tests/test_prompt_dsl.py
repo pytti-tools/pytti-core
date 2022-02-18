@@ -1,4 +1,7 @@
+from pytti import parse  # this is the main function we need to test
 from pytti.Perceptor.Prompt import Prompt, parse_prompt
+
+# there's some stuff at the top of parse_prompt which should probably get combined with parse()
 
 
 def test_prompt_parsing():
