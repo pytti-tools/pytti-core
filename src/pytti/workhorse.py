@@ -41,18 +41,18 @@ from pytti.Notebook import (
     get_frames,
     build_loss,
     format_params,
-    rotoscopers,
     clear_rotoscopers,
     update_rotoscopers,
 )
 
-from pytti import Perceptor
 from pytti.Image import PixelImage, RGBImage, VQGANImage
 from pytti.ImageGuide import DirectImageGuide
 from pytti.Perceptor.Embedder import HDMultiClipEmbedder
 from pytti.Perceptor.Prompt import parse_prompt
+
+# HSVLoss no longer available to users?
 from pytti.LossAug import TVLoss, HSVLoss, OpticalFlowLoss, TargetFlowLoss
-from pytti.Transforms import zoom_2d, zoom_3d, apply_flow
+from pytti.Transforms import zoom_2d, zoom_3d
 from pytti import (
     DEVICE,
     fetch,
