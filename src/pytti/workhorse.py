@@ -148,7 +148,7 @@ def load_init_image(
             height = int(width * init_size[1] / init_size[0])
     else:
         init_image_pil = None
-    return init_image_pil, init_size
+    return init_image_pil, height, width
 
 
 @hydra.main(config_path="config", config_name="default")
@@ -232,7 +232,7 @@ def _main(cfg: DictConfig):
 
         # load init image
 
-        init_image_pil, init_size = load_init_image(
+        init_image_pil, height, width = load_init_image(
             init_image_path=params.init_image,
             height=params.height,
             width=params.width,
@@ -260,9 +260,9 @@ def _main(cfg: DictConfig):
                         params.width = int(params.height * init_size[0] / init_size[1])
                     if params.height == -1:
                         params.height = int(params.width * init_size[1] / init_size[0])
-            return video_frames, init_image_pil, init_size
+            return video_frames, init_image_pil, height, width
 
-        video_frames, init_image_pil, init_size = load_video_source(params)
+        video_frames, init_image_pil, height, width = load_video_source(params)
 
         # Phase 3 - Setup Optimization
         ###############################
