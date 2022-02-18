@@ -8,7 +8,6 @@ import gc
 import json
 from pathlib import Path
 import os
-from os.path import exists as path_exists
 import re
 import sys
 import subprocess
