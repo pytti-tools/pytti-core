@@ -85,6 +85,15 @@ writer = SummaryWriter(TB_LOGDIR)
 OUTPATH = f"{os.getcwd()}/images_out/"
 
 
+class Renderer:
+    """
+    High-level orchestrator for pytti rendering procedure.
+    """
+
+    def __init__(self, params):
+        pass
+
+
 @hydra.main(config_path="config", config_name="default")
 def _main(cfg: DictConfig):
     # params = OmegaConf.to_container(cfg, resolve=True)
@@ -115,7 +124,6 @@ def _main(cfg: DictConfig):
 
         # Phase 1 - reset state
         ########################
-
         clear_rotoscopers()  # what a silly name
         vram_profiling(params.approximate_vram_usage)
         reset_vram_usage()
@@ -156,20 +164,36 @@ def _main(cfg: DictConfig):
         )
 
         # load scenes
-        with vram_usage_mode("Text Prompts"):
-            logger.info("Loading prompts...")
-            prompts = [
-                [
-                    parse_prompt(embedder, p.strip())
-                    for p in (params.scene_prefix + stage + params.scene_suffix)
-                    .strip()
-                    .split("|")
-                    if p.strip()
+
+        # this is the only place `parse_prompt` is invoked.
+        # combine load_scenes, parse_prompt, and parse into a unified, generic parser.
+        # generic here means the output of the parsing process shouldn't be bound to
+        # modules yet, just a collection of settings.
+        def load_scenes(embedder, params: DictConfig):
+            """
+            Loads the scenes from the "scenes" parameter and parses them into a list of lists of strings
+
+            :param embedder: The embedder object
+            :param params: The experiment parameters
+            :return: The embedder and the prompts.
+            """
+            with vram_usage_mode("Text Prompts"):
+                logger.info("Loading prompts...")
+                prompts = [
+                    [
+                        parse_prompt(embedder, p.strip())
+                        for p in (params.scene_prefix + stage + params.scene_suffix)
+                        .strip()
+                        .split("|")
+                        if p.strip()
+                    ]
+                    for stage in params.scenes.split("||")
+                    if stage
                 ]
-                for stage in params.scenes.split("||")
-                if stage
-            ]
-            logger.info("Prompts loaded.")
+                logger.info("Prompts loaded.")
+            return embedder, prompts
+
+        embedder, prompts = load_scenes(embedder, params)
 
         # load init image
         if params.init_image != "":
