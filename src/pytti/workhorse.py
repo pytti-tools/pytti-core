@@ -219,23 +219,27 @@ def _main(cfg: DictConfig):
         init_image_pil, init_size = load_init_image(params)
 
         # video source
-        if params.animation_mode == "Video Source":
-            logger.info(f"loading {params.video_path}...")
-            video_frames = get_frames(params.video_path)
-            params.pre_animation_steps = max(
-                params.steps_per_frame, params.pre_animation_steps
-            )
-            if init_image_pil is None:
-                init_image_pil = Image.fromarray(video_frames.get_data(0)).convert(
-                    "RGB"
+        def load_video_source(params: DictConfig):
+            if params.animation_mode == "Video Source":
+                logger.info(f"loading {params.video_path}...")
+                video_frames = get_frames(params.video_path)
+                params.pre_animation_steps = max(
+                    params.steps_per_frame, params.pre_animation_steps
                 )
-                # enhancer = ImageEnhance.Contrast(init_image_pil)
-                # init_image_pil = enhancer.enhance(2)
-                init_size = init_image_pil.size
-                if params.width == -1:
-                    params.width = int(params.height * init_size[0] / init_size[1])
-                if params.height == -1:
-                    params.height = int(params.width * init_size[1] / init_size[0])
+                if init_image_pil is None:
+                    init_image_pil = Image.fromarray(video_frames.get_data(0)).convert(
+                        "RGB"
+                    )
+                    # enhancer = ImageEnhance.Contrast(init_image_pil)
+                    # init_image_pil = enhancer.enhance(2)
+                    init_size = init_image_pil.size
+                    if params.width == -1:
+                        params.width = int(params.height * init_size[0] / init_size[1])
+                    if params.height == -1:
+                        params.height = int(params.width * init_size[1] / init_size[0])
+            return video_frames, init_image_pil, init_size
+
+        video_frames, init_image_pil, init_size = load_video_source(params)
 
         # Phase 3 - Setup Optimization
         ###############################
