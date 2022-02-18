@@ -15,14 +15,6 @@ import matplotlib.pyplot as plt
 from pytti.Notebook import Rotoscoper
 from torchvision.transforms import functional as TF
 
-# os.chdir('GMA')
-# try:
-#  sys.path.append('core')
-#  from network import RAFTGMA
-#  from utils import flow_viz
-#  from utils.utils import InputPadder
-# finally:
-#  os.chdir('..')
 from gma.core.network import RAFTGMA
 from gma.core.utils import flow_viz
 from gma.core.utils.utils import InputPadder
@@ -110,18 +102,9 @@ class TargetFlowLoss(MSELoss):
         self.last_step.set_(last_step)
 
     def get_loss(self, input, img, device=DEVICE):
-        # os.chdir('GMA')
-        # try:
-        #  init_GMA('checkpoints/gma-sintel.pth')
-        #  image1 = self.last_step
-        #  image2 = input
-        #  padder = InputPadder(image1.shape)
-        #  image1, image2 = padder.pad(image1, image2)
-        #  _, flow = GMA(image1, image2, iters=3, test_mode=True)
-        #  flow = flow.to(device, memory_format = torch.channels_last)
-        # finally:
-        #  os.chdir('..')
-        init_GMA("GMA/checkpoints/gma-sintel.pth")
+        init_GMA(
+            "GMA/checkpoints/gma-sintel.pth"
+        )  # update this to use model dir from config
         image1 = self.last_step
         image2 = input
         padder = InputPadder(image1.shape)
@@ -204,18 +187,6 @@ class OpticalFlowLoss(MSELoss):
     @staticmethod
     @torch.no_grad()
     def get_flow(image1, image2, device=DEVICE):
-        # os.chdir('GMA')
-        # try:
-        #  init_GMA('checkpoints/gma-sintel.pth')
-        #  if isinstance(image1, Image.Image):
-        #    image1 = TF.to_tensor(image1).unsqueeze(0).to(device)
-        #  if isinstance(image2, Image.Image):
-        #    image2 = TF.to_tensor(image2).unsqueeze(0).to(device)
-        #  padder = InputPadder(image1.shape)
-        #  image1, image2 = padder.pad(image1, image2)
-        #  flow_low, flow_up = GMA(image1, image2, iters=12, test_mode=True)
-        # finally:
-        #  os.chdir('..')
         init_GMA("GMA/checkpoints/gma-sintel.pth")
         if isinstance(image1, Image.Image):
             image1 = TF.to_tensor(image1).unsqueeze(0).to(device)
@@ -274,18 +245,6 @@ class OpticalFlowLoss(MSELoss):
         # disabling the flow in those areas.
         image1.add_(noise)
         image2.add_(noise)
-
-        # bdy = image2.clone().squeeze(0).mean(dim = 0)
-        # h, w = bdy.shape
-        # s = 4
-        # bdy[s:-s,s:-s] = 0
-        # mean = bdy.sum().div(w*h - (w-2*s)*(h-s*2))
-        # overlay = image2.gt(0.5) if mean > 0.5 else image2.lt(0.5)
-        # noise = torch.empty_like(image2)
-        # noise.normal_(mean = 0, std = 0.05)
-        # noise[torch.logical_not(overlay)] = 0
-        # image1.add_(noise)
-        # image2.add_(noise)
 
         flow_forward = OpticalFlowLoss.get_flow(image1, image2)
         flow_backward = OpticalFlowLoss.get_flow(image2, image1)
@@ -352,5 +311,4 @@ class OpticalFlowLoss(MSELoss):
     def get_loss(self, input, img):
         l1 = super().get_loss(input, img)
         l2 = self.latent_loss.get_loss(img.get_latent_tensor(), img)
-        # print(float(l1),float(l2))
         return l1 + l2 * img.latent_strength
