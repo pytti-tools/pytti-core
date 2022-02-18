@@ -79,6 +79,21 @@ def get_last_file(directory, pattern):
 
 # this doesn't belong in here
 def get_next_file(directory, pattern, templates):
+    """
+    Given a directory, a file pattern, and a list of templates,
+    return the next file name and index that matches the pattern.
+
+    If no files match the pattern, return the first template and 0.
+
+    If multiple files match the pattern, sort the files by index and return the next index.
+
+    If the index is the last index in the list of templates, return the first template and 0
+
+    :param directory: The directory where the files are located
+    :param pattern: The pattern to match files against
+    :param templates: A list of file names that are used to create the new file
+    :return: The next file name and the next index.
+    """
 
     files = [f for f in os.listdir(directory) if re.match(pattern, f)]
     if len(files) == 0:
@@ -302,7 +317,12 @@ def clear_rotoscopers():
 
 
 # this is... weird. also why the globals?
-def update_rotoscopers(frame_n):
+def update_rotoscopers(frame_n: int):
+    """
+    For each rotoscope in the global list of rotoscopes, call the update function
+
+    :param frame_n: The current frame number
+    """
     global rotoscopers
     for r in rotoscopers:
         r.update(frame_n)
@@ -323,6 +343,12 @@ class Rotoscoper:
         rotoscopers.append(self)
 
     def update(self, frame_n):
+        """
+        Updates the mask of the attached target.
+
+        :param frame_n: The frame number to update the mask for
+        :return: Nothing.
+        """
         if self.target is None:
             return
         mask_pil = Image.fromarray(self.frames.get_data(frame_n)).convert("L")
