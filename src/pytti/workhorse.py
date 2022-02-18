@@ -94,6 +94,37 @@ class Renderer:
         pass
 
 
+# this is the only place `parse_prompt` is invoked.
+# combine load_scenes, parse_prompt, and parse into a unified, generic parser.
+# generic here means the output of the parsing process shouldn't be bound to
+# modules yet, just a collection of settings.
+def load_scenes(
+    embedder,
+    scenes,
+    scene_prefix,
+    scene_suffix,
+):
+    """
+    Loads the scenes from the "scenes" parameter and parses them into a list of lists of strings
+
+    :param embedder: The embedder object
+    :param params: The experiment parameters
+    :return: The embedder and the prompts.
+    """
+    logger.info("Loading prompts...")
+    prompts = [
+        [
+            parse_prompt(embedder, p.strip())
+            for p in (scene_prefix + stage + scene_suffix).strip().split("|")
+            if p.strip()
+        ]
+        for stage in scenes.split("||")
+        if stage
+    ]
+    logger.info("Prompts loaded.")
+    return embedder, prompts
+
+
 @hydra.main(config_path="config", config_name="default")
 def _main(cfg: DictConfig):
     # params = OmegaConf.to_container(cfg, resolve=True)
@@ -165,35 +196,13 @@ def _main(cfg: DictConfig):
 
         # load scenes
 
-        # this is the only place `parse_prompt` is invoked.
-        # combine load_scenes, parse_prompt, and parse into a unified, generic parser.
-        # generic here means the output of the parsing process shouldn't be bound to
-        # modules yet, just a collection of settings.
-        def load_scenes(embedder, params: DictConfig):
-            """
-            Loads the scenes from the "scenes" parameter and parses them into a list of lists of strings
-
-            :param embedder: The embedder object
-            :param params: The experiment parameters
-            :return: The embedder and the prompts.
-            """
-            with vram_usage_mode("Text Prompts"):
-                logger.info("Loading prompts...")
-                prompts = [
-                    [
-                        parse_prompt(embedder, p.strip())
-                        for p in (params.scene_prefix + stage + params.scene_suffix)
-                        .strip()
-                        .split("|")
-                        if p.strip()
-                    ]
-                    for stage in params.scenes.split("||")
-                    if stage
-                ]
-                logger.info("Prompts loaded.")
-            return embedder, prompts
-
-        embedder, prompts = load_scenes(embedder, params)
+        with vram_usage_mode("Text Prompts"):
+            embedder, prompts = load_scenes(
+                embedder,
+                scenes=params.scenes,
+                scene_prefix=params.scene_prefix,
+                scene_suffix=params.scene_suffix,
+            )
 
         # load init image
         def load_init_image(params: DictConfig):
@@ -220,6 +229,9 @@ def _main(cfg: DictConfig):
 
         # video source
         def load_video_source(params: DictConfig):
+            """
+            If provided, process source video into image frames and init_image
+            """
             if params.animation_mode == "Video Source":
                 logger.info(f"loading {params.video_path}...")
                 video_frames = get_frames(params.video_path)
