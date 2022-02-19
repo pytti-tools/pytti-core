@@ -172,8 +172,13 @@ def write_settings(settings_dict, f):
         f.write("\n")
 
 
+from omegaconf import OmegaConf, DictConfig
+
 # deprecate this (hydra)
 def save_settings(settings_dict, path):
+    if isinstance(settings_dict, DictConfig):
+        settings_dict = OmegaConf.to_container(settings_dict, resolve=True)
+
     with open(path, "w+") as f:
         write_settings(settings_dict, f)
         # OmegaConf.save(config=settings_dict, f=f)

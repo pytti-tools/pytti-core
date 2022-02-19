@@ -94,8 +94,10 @@ OUTPATH = f"{os.getcwd()}/images_out/"
 
 @hydra.main(config_path="config", config_name="default")
 def _main(cfg: DictConfig):
-    params = OmegaConf.to_container(cfg, resolve=True)
+    # params = OmegaConf.to_container(cfg, resolve=True)
+    params = cfg
     logger.debug(params)
+    logger.debug(OmegaConf.to_container(cfg, resolve=True))
     latest = -1
 
     batch_mode = False  # @param{type:"boolean"}
