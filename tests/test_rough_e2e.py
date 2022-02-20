@@ -16,6 +16,9 @@ def test_import():
     assert True
 
 
+# to do: E2E tests generate files, and setting the seed makes that process deterministic.
+# should compare the outputs of these tests with "ground-truth" generated images
+# to ensure consistency
 class TestE2e_ImageModels_FromYaml:
     def do_the_thing(self, cfg_fpath):
         from pytti.workhorse import _main as render_frames
