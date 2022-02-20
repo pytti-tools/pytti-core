@@ -16,10 +16,22 @@ def test_import():
     assert True
 
 
-def test_simple():
-    from pytti.workhorse import _main as render_frames
+class TestE2e_ImageModels_FromYaml:
+    def do_the_thing(self, cfg_fpath):
+        from pytti.workhorse import _main as render_frames
 
-    c_o = "_test.yaml"
-    with initialize(config_path=CONFIG_BASE_PATH):
-        cfg = compose(config_name=CONFIG_DEFAULTS, overrides=[f"conf={c_o}"])
-        render_frames(cfg)
+        with initialize(config_path=CONFIG_BASE_PATH):
+            cfg = compose(config_name=CONFIG_DEFAULTS, overrides=[f"conf={cfg_fpath}"])
+            render_frames(cfg)
+
+    def test_limited(self):
+        self.do_the_thing(cfg_fpath="_test_limited_palette.yaml")
+        assert True
+
+    def test_unlimited(self):
+        self.do_the_thing(cfg_fpath="_test_unlimited_palette.yaml")
+        assert True
+
+    def test_vqgan(self):
+        self.do_the_thing(cfg_fpath="_test_vqgan.yaml")
+        assert True

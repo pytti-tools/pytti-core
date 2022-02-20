@@ -1,0 +1,16 @@
+# @package _global_
+scenes: fear is the mind killer
+
+pre_animation_steps: 2
+steps_per_frame: 3
+steps_per_scene: 30
+
+save_every: ${steps_per_frame}
+display_every: ${steps_per_frame}
+
+image_model: Limited Palette
+ViTB32: true
+
+animation_mode: off
+
+seed: 12345
