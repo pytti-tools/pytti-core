@@ -169,7 +169,7 @@ class DirectImageGuide:
         loss_augs,
         interp_steps=0,
         save_loss=True,
-        gradient_accumulation_steps: int = 4,
+        gradient_accumulation_steps: int = 1,
     ):
         """
         steps the optimizer
