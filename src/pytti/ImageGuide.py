@@ -177,7 +177,7 @@ class DirectImageGuide:
         """
         self.optimizer.zero_grad()
         z = self.image_rep.decode_training_tensor()
-        logger.debug(z.shape)  # [1, 3, height, width]
+        # logger.debug(z.shape)  # [1, 3, height, width]
         losses = []
 
         aug_losses = {
@@ -190,11 +190,6 @@ class DirectImageGuide:
 
         if self.embedder is not None:
             image_embeds, offsets, sizes = self.embedder(self.image_rep, input=z)
-            logger.debug(
-                image_embeds.shape
-            )  # [1, 40, latent_dim] # vqgan latent_dim=512
-            logger.debug(offsets.shape)  # [1, 40, 2]
-            logger.debug(sizes.shape)  # [1, 40, 2]
 
         # reshape for gradient accumulation minibatches
         image_embeds_batched = eo.rearrange(
@@ -215,15 +210,9 @@ class DirectImageGuide:
 
         total_loss = 0
         for mb_i in range(gradient_accumulation_steps):
-            logger.debug(mb_i)
             image_embeds = image_embeds_batched[mb_i, ...].unsqueeze(0)
             offsets = offsets_batched[mb_i, ...].unsqueeze(0)
             sizes = sizes_batched[mb_i, ...].unsqueeze(0)
-            logger.debug(
-                image_embeds.shape
-            )  # [1, 40, latent_dim] # vqgan latent_dim=512
-            logger.debug(offsets.shape)  # [1, 40, 2]
-            logger.debug(sizes.shape)  # [1, 40, 2]
 
             t = 1
             interp_losses = [0]
@@ -250,7 +239,6 @@ class DirectImageGuide:
 
             losses, losses_raw = zip(
                 *map(unpack_dict, [prompt_losses, aug_losses, image_losses])
-                # *map(unpack_dict, [prompt_losses])
             )
 
             losses = list(losses)
@@ -258,33 +246,17 @@ class DirectImageGuide:
             for v in prompt_losses.values():
                 v[0].mul_(t)
 
-            # total_loss = sum(map(lambda x: sum(x.values()), losses)) + sum(interp_losses)
             total_loss_mb = sum(map(lambda x: sum(x.values()), losses)) + sum(
                 interp_losses
             )
-            logger.debug(f"total_loss (mb_i): {total_loss_mb}")
+
             total_loss_mb /= gradient_accumulation_steps
-            # losses_raw.append({"TOTAL": total_loss}) # before calling backward?
-            logger.debug(
-                f"total_loss / mb: {total_loss_mb}"
-            )  # ... doesn't matter. 0.8727 final output ....8745 now. and now 8709?
+
             # total_loss.backward()
             total_loss_mb.backward(retain_graph=True)
             total_loss += total_loss_mb
-            logger.debug(".backward() called successfully")
 
-        # logger.debug("computing aug losses")
-        # losses, losses_raw = zip(
-        #        *map(unpack_dict, [aug_losses, image_losses])
-        #    )
-        # if len(losses) > 0:
-        #    logger.debug(len(losses))
-        #    logger.debug(losses.shape) # tuples
-        #    total_loss += sum(map(lambda x: sum(x.values()), losses))
-        #    total_loss.backward() # where does zero_grad() get called?
-
-        losses_raw.append({"TOTAL": total_loss})  # before calling backward?
-        logger.debug(f"total_loss: {total_loss}")
+        losses_raw.append({"TOTAL": total_loss})
         self.optimizer.step()
         self.image_rep.update()
         # if t != 0:
