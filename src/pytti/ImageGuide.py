@@ -5,6 +5,8 @@ from pytti import format_input
 from scipy.signal import savgol_filter
 from torch import optim, nn
 
+from pytti.Image import DifferentiableImage
+
 # deprecate this
 from labellines import labelLines
 
@@ -35,7 +37,12 @@ class DirectImageGuide:
     """
 
     def __init__(
-        self, image_rep, embedder, optimizer=None, lr=None, **optimizer_params
+        self,
+        image_rep: DifferentiableImage,
+        embedder: nn.Module,
+        optimizer: optim.Optimizer = None,
+        lr: float = None,
+        **optimizer_params
     ):
         self.image_rep = image_rep
         self.embedder = embedder

@@ -1,6 +1,9 @@
 from collections import defaultdict
 import re
 import math
+from typing import Callable
+
+from loguru import logger
 
 from PIL import Image
 import numpy as np
@@ -223,7 +226,15 @@ def parse_prompt(embedder, prompt_string="", pil_image=None, device=DEVICE):
 
 class Prompt(nn.Module):
     @torch.no_grad()
-    def __init__(self, embeds, weight, stop, text, prompt_string, mask=mask_all):
+    def __init__(
+        self,
+        embeds: torch.Tensor,
+        weight: str,
+        stop: str,
+        text: str,
+        prompt_string: str,
+        mask: Callable = mask_all,
+    ):
         super().__init__()
         if embeds is not None:
             self.register_buffer("embeds", embeds)
@@ -285,15 +296,15 @@ class MultiClipImagePrompt(Prompt):
     @vram_usage_mode("Image Prompts")
     def __init__(
         self,
-        embeds,
+        embeds: torch.Tensor,
         positions,
         sizes,
         embedder,
-        weight,
-        stop,
-        text,
-        prompt_string,
-        mask=mask_all,
+        weight: str,
+        stop: str,
+        text: str,
+        prompt_string: str,
+        mask: Callable = mask_all,
     ):
         self.input_axes = ("c", "n", "i")
         super().__init__(
