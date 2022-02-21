@@ -78,6 +78,7 @@ class DirectImageGuide:
         interp_steps=0,
         i_offset=0,
         skipped_steps=0,
+        gradient_accumulation_steps: int = 1,
     ):
         """
         runs the optimizer
@@ -93,6 +94,7 @@ class DirectImageGuide:
                 interp_prompts,
                 loss_augs,
                 interp_steps=interp_steps,
+                gradient_accumulation_steps=gradient_accumulation_steps,
             )
             if losses["TOTAL"] <= stop:
                 break

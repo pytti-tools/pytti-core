@@ -669,6 +669,7 @@ def _main(cfg: DictConfig):
                 interp_steps=params.interpolation_steps,
                 i_offset=i,
                 skipped_steps=skip_steps,
+                gradient_accumulation_steps=params.gradient_accumulation_steps,
             )
             skip_steps = 0
             model.clear_dataframe()

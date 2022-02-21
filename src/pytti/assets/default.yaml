@@ -145,3 +145,11 @@ approximate_vram_usage: false
 # Each model will be assigned a separate subdirectory within this folder
 # If the expected model artifacts are not present, pytti will attempt to download them.
 models_parent_dir: ${user_cache:}
+
+######################################
+
+##########################
+### Performance tuning ###
+##########################
+
+gradient_accumulation_steps: 1
