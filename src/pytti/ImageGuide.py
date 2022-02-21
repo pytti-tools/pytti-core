@@ -7,6 +7,8 @@ from torch import optim, nn
 
 from pytti.Image import DifferentiableImage
 
+from loguru import logger
+
 # deprecate this
 from labellines import labelLines
 
@@ -158,9 +160,13 @@ class DirectImageGuide:
         """
         self.optimizer.zero_grad()
         z = self.image_rep.decode_training_tensor()
+        logger.debug(z.shape)
         losses = []
         if self.embedder is not None:
             image_embeds, offsets, sizes = self.embedder(self.image_rep, input=z)
+            logger.debug(image_embeds.shape)
+            logger.debug(offsets.shape)
+            logger.debug(sizes.shape)
 
         if i < interp_steps:
             t = i / interp_steps
@@ -185,6 +191,7 @@ class DirectImageGuide:
             )
             for prompt in prompts
         }
+
         aug_losses = {
             aug: aug(format_input(z, self.image_rep, aug), self.image_rep)
             for aug in loss_augs
