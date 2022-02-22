@@ -604,6 +604,44 @@ def _main(cfg: DictConfig):
                                 ]
                             )
 
+            def animate_2d(
+                translate_y,
+                translate_x,
+                rotate_2d,
+                zoom_x_2d,
+                zoom_y_2d,
+                infill_mode,
+                sampling_mode,
+                writer=writer,
+                i=i,
+            ):
+
+                tx, ty = parametric_eval(translate_x), parametric_eval(translate_y)
+                theta = parametric_eval(rotate_2d)
+                zx, zy = parametric_eval(zoom_x_2d), parametric_eval(zoom_y_2d)
+                next_step_pil = zoom_2d(
+                    img,
+                    (tx, ty),
+                    (zx, zy),
+                    theta,
+                    border_mode=infill_mode,
+                    sampling_mode=sampling_mode,
+                )
+                ################
+                for k, v in {
+                    "tx": tx,
+                    "ty": ty,
+                    "theta": theta,
+                    "zx": zx,
+                    "zy": zy,
+                    "t": t,
+                }.items():
+
+                    writer.add_scalar(
+                        tag=f"translation_2d/{k}", scalar_value=v, global_step=i
+                    )
+                return next_step_pil
+
             report_out(
                 i=i,
                 stage_i=stage_i,
@@ -637,6 +675,7 @@ def _main(cfg: DictConfig):
             )
             set_t(t)
             if i >= params.pre_animation_steps:
+
                 if (i - params.pre_animation_steps) % params.steps_per_frame == 0:
                     logger.debug(f"Time: {t:.4f} seconds")
                     update_rotoscopers(
@@ -645,35 +684,20 @@ def _main(cfg: DictConfig):
                     )
                     if params.reset_lr_each_frame:
                         model.set_optim(None)
-                    if params.animation_mode == "2D":
-                        tx, ty = parametric_eval(params.translate_x), parametric_eval(
-                            params.translate_y
-                        )
-                        theta = parametric_eval(params.rotate_2d)
-                        zx, zy = parametric_eval(params.zoom_x_2d), parametric_eval(
-                            params.zoom_y_2d
-                        )
-                        next_step_pil = zoom_2d(
-                            img,
-                            (tx, ty),
-                            (zx, zy),
-                            theta,
-                            border_mode=params.infill_mode,
-                            sampling_mode=params.sampling_mode,
-                        )
-                        ################
-                        for k, v in {
-                            "tx": tx,
-                            "ty": ty,
-                            "theta": theta,
-                            "zx": zx,
-                            "zy": zy,
-                            "t": t,
-                        }.items():
 
-                            writer.add_scalar(
-                                tag=f"translation_2d/{k}", scalar_value=v, global_step=i
-                            )
+                    if params.animation_mode == "2D":
+
+                        next_step_pil = animate_2d(
+                            translate_y=params.translate_y,
+                            translate_x=params.translate_x,
+                            rotate_2d=params.rotate_2d,
+                            zoom_x_2d=params.zoom_x_2d,
+                            zoom_y_2d=params.zoom_y_2d,
+                            infill_mode=params.infill_mode,
+                            sampling_mode=params.sampling_mode,
+                            writer=writer,
+                            i=i,
+                        )
 
                         ###########################
                     elif params.animation_mode == "3D":
@@ -703,6 +727,7 @@ def _main(cfg: DictConfig):
                             optical_flow.set_last_step(im)
                             optical_flow.set_target_flow(flow)
                             optical_flow.set_enabled(True)
+
                     elif params.animation_mode == "Video Source":
                         frame_n = min(
                             (i - params.pre_animation_steps)
@@ -762,6 +787,7 @@ def _main(cfg: DictConfig):
                                         (mask_tensor - mask_accum).clamp(0, 1)
                                     )
                                     mask_accum.add_(mask_tensor)
+
                     if params.animation_mode != "off":
                         for aug in stabilization_augs:
                             aug.set_comp(next_step_pil)
