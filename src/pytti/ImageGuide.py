@@ -227,8 +227,8 @@ class DirectImageGuide:
 
                 # logger.debug('unpack_dict')
                 losses, losses_raw = zip(
-                    # *map(unpack_dict, [prompt_losses, aug_losses, image_losses])
-                    *map(unpack_dict, [prompt_losses])
+                    *map(unpack_dict, [prompt_losses, aug_losses, image_losses])
+                    # *map(unpack_dict, [prompt_losses])
                 )
 
                 losses = list(losses)
