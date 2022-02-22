@@ -139,8 +139,16 @@ def _main(cfg: DictConfig):
 
         # load CLIP
         load_clip(params)
+
+        cutn = params.cutouts
+        if params.gradient_accumulation_steps > 1:
+            assert cutn % params.gradient_accumulation_steps == 0
+            cutn //= params.gradient_accumulation_steps
+        logger.debug(cutn)
+
         embedder = HDMultiClipEmbedder(
-            cutn=params.cutouts,
+            # cutn=params.cutouts,
+            cutn=cutn,
             cut_pow=params.cut_pow,
             padding=params.cutout_border,
             border_mode=params.border_mode,

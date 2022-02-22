@@ -3,7 +3,8 @@ from typing import Tuple
 import pytti
 from pytti import DEVICE, format_input, cat_with_pad, format_module, normalize
 
-from pytti.ImageGuide import DirectImageGuide
+# from pytti.ImageGuide import DirectImageGuide
+from pytti.Image import DifferentiableImage
 
 import torch
 from torch import nn
@@ -129,7 +130,11 @@ class HDMultiClipEmbedder(nn.Module):
         return cutouts, offsets, sizes
 
     def forward(
-        self, diff_image: DirectImageGuide, input=None, device=DEVICE
+        self,
+        # diff_image: DirectImageGuide,
+        diff_image: DifferentiableImage,
+        input=None,
+        device=DEVICE,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         diff_image: (DifferentiableImage) input image
