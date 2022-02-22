@@ -1,16 +1,19 @@
 import math
-import pandas as pd
-from pytti.Notebook import tqdm
-from pytti import format_input
-from scipy.signal import savgol_filter
-from torch import optim, nn
-
-from pytti.Image import DifferentiableImage
-
-from PIL import Image
+import subprocess
 
 import einops as eo
 from loguru import logger
+import numpy as np
+import pandas as pd
+from PIL import Image
+from scipy.signal import savgol_filter
+import torch
+from torch import optim, nn
+
+from pytti import format_input
+from pytti.Image import DifferentiableImage
+from pytti.Notebook import tqdm
+
 
 # deprecate this
 from labellines import labelLines
@@ -328,3 +331,51 @@ class DirectImageGuide:
             if show_palette and isinstance(img, PixelImage):
                 logger.debug("Palette:")
                 display.display(img.render_pallet())
+
+    def save_out(
+        self,
+        i,
+        # img,
+        writer,
+        OUTPATH,
+        base_name,
+        save_every,
+        file_namespace,
+        backups,
+    ):
+        img = self.image_rep
+        # save
+        if i > 0 and save_every > 0 and i % save_every == 0:
+            im = (
+                img.decode_image()
+            )  # let's turn this into a property so decoding is cheap
+            n = i // save_every
+            filename = f"{OUTPATH}/{file_namespace}/{base_name}_{n}.png"
+            im.save(filename)
+
+            im_np = np.array(im)
+            writer.add_image(
+                tag="pytti output",
+                # img_tensor=filename, # thought this would work?
+                img_tensor=im_np,
+                global_step=i,
+                dataformats="HWC",  # this was the key
+            )
+
+            if backups > 0:
+                filename = f"backup/{file_namespace}/{base_name}_{n}.bak"
+                torch.save(img.state_dict(), filename)
+                if n > backups:
+
+                    # YOOOOOOO let's not start shell processes unnecessarily
+                    # and then execute commands using string interpolation.
+                    # Replace this with a pythonic folder removal, then see
+                    # if we can't deprecate the folder removal entirely. What
+                    # is the purpose of "backups" here? Just use the frames that
+                    # are being written to disk.
+                    subprocess.run(
+                        [
+                            "rm",
+                            f"backup/{file_namespace}/{base_name}_{n-backups}.bak",
+                        ]
+                    )

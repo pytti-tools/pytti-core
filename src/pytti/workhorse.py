@@ -508,54 +508,6 @@ def _main(cfg: DictConfig):
             params=params,
             writer=writer,
         ):
-            def save_out(
-                i,
-                img,
-                writer,
-                OUTPATH,
-                base_name,
-                save_every,
-                file_namespace,
-                backups,
-            ):
-                # save
-                if i > 0 and save_every > 0 and i % save_every == 0:
-                    try:
-                        im
-                    except NameError:
-                        im = img.decode_image()
-                    n = i // save_every
-                    filename = f"{OUTPATH}/{file_namespace}/{base_name}_{n}.png"
-                    im.save(filename)
-
-                    im_np = np.array(im)
-                    writer.add_image(
-                        tag="pytti output",
-                        # img_tensor=filename, # thought this would work?
-                        img_tensor=im_np,
-                        global_step=i,
-                        dataformats="HWC",  # this was the key
-                    )
-
-                    if backups > 0:
-                        filename = f"backup/{file_namespace}/{base_name}_{n}.bak"
-                        torch.save(img.state_dict(), filename)
-                        if n > backups:
-
-                            # YOOOOOOO let's not start shell processes unnecessarily
-                            # and then execute commands using string interpolation.
-                            # Replace this with a pythonic folder removal, then see
-                            # if we can't deprecate the folder removal entirely. What
-                            # is the purpose of "backups" here? Just use the frames that
-                            # are being written to disk.
-                            subprocess.run(
-                                [
-                                    "rm",
-                                    f"backup/{file_namespace}/{base_name}_{n-backups}.bak",
-                                ]
-                            )
-
-            ###########################################################
 
             model.report_out(
                 i=i,
@@ -572,9 +524,9 @@ def _main(cfg: DictConfig):
                 show_palette=params.show_palette,
             )
 
-            save_out(
+            model.save_out(
                 i=i,
-                img=img,
+                # img=img,
                 writer=writer,
                 OUTPATH=OUTPATH,
                 base_name=base_name,
