@@ -142,7 +142,15 @@ def _main(cfg: DictConfig):
 
         cutn = params.cutouts
         if params.gradient_accumulation_steps > 1:
-            assert cutn % params.gradient_accumulation_steps == 0
+            try:
+                assert cutn % params.gradient_accumulation_steps == 0
+            except:
+                logger.warning(
+                    "To use GRADIENT_ACCUMULATION_STEPS > 1, "
+                    "the CUTOUTS parameter must be a scalar multiple of "
+                    "GRADIENT_ACCUMULATION_STEPS. I.e `STEPS/CUTS` must have no remainder."
+                )
+                raise
             cutn //= params.gradient_accumulation_steps
         logger.debug(cutn)
 
