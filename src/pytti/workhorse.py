@@ -139,8 +139,24 @@ def _main(cfg: DictConfig):
 
         # load CLIP
         load_clip(params)
+
+        cutn = params.cutouts
+        if params.gradient_accumulation_steps > 1:
+            try:
+                assert cutn % params.gradient_accumulation_steps == 0
+            except:
+                logger.warning(
+                    "To use GRADIENT_ACCUMULATION_STEPS > 1, "
+                    "the CUTOUTS parameter must be a scalar multiple of "
+                    "GRADIENT_ACCUMULATION_STEPS. I.e `STEPS/CUTS` must have no remainder."
+                )
+                raise
+            cutn //= params.gradient_accumulation_steps
+        logger.debug(cutn)
+
         embedder = HDMultiClipEmbedder(
-            cutn=params.cutouts,
+            # cutn=params.cutouts,
+            cutn=cutn,
             cut_pow=params.cut_pow,
             padding=params.cutout_border,
             border_mode=params.border_mode,
@@ -669,6 +685,7 @@ def _main(cfg: DictConfig):
                 interp_steps=params.interpolation_steps,
                 i_offset=i,
                 skipped_steps=skip_steps,
+                gradient_accumulation_steps=params.gradient_accumulation_steps,
             )
             skip_steps = 0
             model.clear_dataframe()

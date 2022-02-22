@@ -1,5 +1,10 @@
+from typing import Tuple
+
 import pytti
 from pytti import DEVICE, format_input, cat_with_pad, format_module, normalize
+
+# from pytti.ImageGuide import DirectImageGuide
+from pytti.Image import DifferentiableImage
 
 import torch
 from torch import nn
@@ -58,7 +63,9 @@ class HDMultiClipEmbedder(nn.Module):
         self.cut_pow = cut_pow
         self.border_mode = border_mode
 
-    def make_cutouts(self, input, side_x, side_y, cut_size, device=DEVICE):
+    def make_cutouts(
+        self, input: torch.Tensor, side_x, side_y, cut_size, device=DEVICE
+    ) -> Tuple[list, list, list]:
         min_size = min(side_x, side_y, cut_size)
         max_size = min(side_x, side_y)
         paddingx = min(round(side_x * self.padding), side_x)
@@ -122,7 +129,13 @@ class HDMultiClipEmbedder(nn.Module):
             cutouts.add_(facs * torch.randn_like(cutouts))
         return cutouts, offsets, sizes
 
-    def forward(self, diff_image, input=None, device=DEVICE):
+    def forward(
+        self,
+        # diff_image: DirectImageGuide,
+        diff_image: DifferentiableImage,
+        input=None,
+        device=DEVICE,
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         diff_image: (DifferentiableImage) input image
         returns images embeds
