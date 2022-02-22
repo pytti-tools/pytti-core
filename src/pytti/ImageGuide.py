@@ -123,6 +123,11 @@ class DirectImageGuide:
         for i in tqdm(range(n_steps)):
             # not a huge fan of this.
             # currently need it for PixelImage.encode_image
+            # TO DO: all that stuff we just moved around:
+            #        let's attach it to a "Renderer" class,
+            #        and here we can check if the DirectImageGuide was
+            #        initialized with a renderer or not, and call self.renderer.update()
+            #        if appropriate
             if not self.null_update:
                 self.update(i + i_offset, i + skipped_steps)
             losses = self.train(
