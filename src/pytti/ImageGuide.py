@@ -10,9 +10,19 @@ from scipy.signal import savgol_filter
 import torch
 from torch import optim, nn
 
-from pytti import format_input
+from pytti import (
+    format_input,
+    set_t,
+    print_vram_usage,
+    freeze_vram_usage,
+)
 from pytti.Image import DifferentiableImage
-from pytti.Notebook import tqdm
+from pytti.Notebook import tqdm, make_hbox, update_rotoscopers
+from pytti.Transforms import (
+    animate_2d,
+    zoom_3d,
+    animate_video_source,
+)
 
 
 # deprecate this
@@ -60,7 +70,17 @@ class DirectImageGuide:
         embedder: nn.Module,
         optimizer: optim.Optimizer = None,
         lr: float = None,
+        null_update=True,
+        params=None,
+        writer=None,
+        OUTPATH=None,
+        base_name=None,
+        fig=None,
+        axs=None,
         **optimizer_params,
+        # pretty sure passing in optimizer_params isn't being used anywhere
+        # We pass in the optimizer object itself anyway... why not just give it
+        # initialize it with `**optimizer_params`` before passing it to this?
     ):
         self.image_rep = image_rep
         self.embedder = embedder
@@ -73,6 +93,14 @@ class DirectImageGuide:
         else:
             self.optimizer = optimizer
         self.dataframe = []
+
+        self.null_update = null_update
+        self.params = params
+        self.writer = writer
+        self.OUTPATH = OUTPATH
+        self.base_name = base_name
+        self.fig = fig
+        self.axs = axs
 
     def run_steps(
         self,
@@ -93,7 +121,10 @@ class DirectImageGuide:
         returns: the number of steps run
         """
         for i in tqdm(range(n_steps)):
-            self.update(i + i_offset, i + skipped_steps)
+            # not a huge fan of this.
+            # currently need it for PixelImage.encode_image
+            if not self.null_update:
+                self.update(i + i_offset, i + skipped_steps)
             losses = self.train(
                 i + skipped_steps,
                 prompts,
@@ -167,12 +198,6 @@ class DirectImageGuide:
             ax.set_ylabel("Loss")
             ax.set_xlabel("Step")
         return True
-
-    def update(self, i, stage_i):
-        """
-        update hook called ever step
-        """
-        pass
 
     def train(
         self,
@@ -379,3 +404,139 @@ class DirectImageGuide:
                             f"backup/{file_namespace}/{base_name}_{n-backups}.bak",
                         ]
                     )
+
+    def update(
+        self,
+        # params,
+        # move to class
+        i,
+        stage_i,
+    ):
+        """
+        Orchestrates animation transformations and reporting
+        """
+        params = self.params
+        writer = self.writer
+        OUTPATH = self.OUTPATH
+        base_name = self.base_name
+        fig = self.fig
+        axs = self.axs
+
+        model = self
+
+        model.report_out(
+            i=i,
+            stage_i=stage_i,
+            # model=model,
+            writer=writer,
+            fig=fig,  # default to None...
+            axs=axs,  # default to None...
+            clear_every=params.clear_every,
+            display_every=params.display_every,
+            approximate_vram_usage=params.approximate_vram_usage,
+            display_scale=params.display_scale,
+            show_graphs=params.show_graphs,
+            show_palette=params.show_palette,
+        )
+
+        model.save_out(
+            i=i,
+            # img=img,
+            writer=writer,
+            OUTPATH=OUTPATH,
+            base_name=base_name,
+            save_every=params.save_every,
+            file_namespace=params.file_namespace,
+            backups=params.backups,
+        )
+
+        # animate
+        ################
+        ## TO DO: attach T as a class attribute
+        t = (i - params.pre_animation_steps) / (
+            params.steps_per_frame * params.frames_per_second
+        )
+        set_t(t)  # this won't need to be a thing with `t`` attached to the class
+        if i >= params.pre_animation_steps:
+
+            if (i - params.pre_animation_steps) % params.steps_per_frame == 0:
+                logger.debug(f"Time: {t:.4f} seconds")
+                update_rotoscopers(
+                    ((i - params.pre_animation_steps) // params.steps_per_frame + 1)
+                    * params.frame_stride
+                )
+                if params.reset_lr_each_frame:
+                    model.set_optim(None)
+
+                if params.animation_mode == "2D":
+
+                    next_step_pil = animate_2d(
+                        translate_y=params.translate_y,
+                        translate_x=params.translate_x,
+                        rotate_2d=params.rotate_2d,
+                        zoom_x_2d=params.zoom_x_2d,
+                        zoom_y_2d=params.zoom_y_2d,
+                        infill_mode=params.infill_mode,
+                        sampling_mode=params.sampling_mode,
+                        writer=writer,
+                        i=i,
+                        img=img,
+                    )
+
+                    ###########################
+                elif params.animation_mode == "3D":
+                    try:
+                        im
+                    except NameError:
+                        im = img.decode_image()
+                    with vram_usage_mode("Optical Flow Loss"):
+                        # zoom_3d -> rename to animate_3d or transform_3d
+                        flow, next_step_pil = zoom_3d(
+                            img,
+                            (
+                                params.translate_x,
+                                params.translate_y,
+                                params.translate_z_3d,
+                            ),
+                            params.rotate_3d,
+                            params.field_of_view,
+                            params.near_plane,
+                            params.far_plane,
+                            border_mode=params.infill_mode,
+                            sampling_mode=params.sampling_mode,
+                            stabilize=params.lock_camera,
+                        )
+                        freeze_vram_usage()
+
+                    for optical_flow in optical_flows:
+                        optical_flow.set_last_step(im)
+                        optical_flow.set_target_flow(flow)
+                        optical_flow.set_enabled(True)
+
+                elif params.animation_mode == "Video Source":
+
+                    flow, next_step_pil = animate_video_source(
+                        i=i,
+                        img=img,
+                        video_frames=video_frames,
+                        optical_flows=optical_flows,
+                        base_name=base_name,
+                        pre_animation_steps=params.pre_animation_steps,
+                        frame_stride=params.frame_stride,
+                        steps_per_frame=params.steps_per_frame,
+                        file_namespace=params.file_namespace,
+                        reencode_each_frame=params.reencode_each_frame,
+                        lock_palette=params.lock_palette,
+                    )
+
+                if params.animation_mode != "off":
+                    for aug in stabilization_augs:
+                        aug.set_comp(next_step_pil)
+                        aug.set_enabled(True)
+                    if last_frame_semantic is not None:
+                        last_frame_semantic.set_image(embedder, next_step_pil)
+                        last_frame_semantic.set_enabled(True)
+                    for aug in init_augs:
+                        aug.set_enabled(False)
+                    if semantic_init_prompt is not None:
+                        semantic_init_prompt.set_enabled(False)

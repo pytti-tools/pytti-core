@@ -32,7 +32,6 @@ from pytti.Notebook import (
     change_tqdm_color,  # why though?
     get_last_file,
     get_next_file,
-    make_hbox,
     load_settings,  # hydra should handle this stuff
     save_settings,
     save_batch,
@@ -42,7 +41,6 @@ from pytti.Notebook import (
     build_loss,
     format_params,
     clear_rotoscopers,
-    update_rotoscopers,
 )
 
 from pytti.Image import PixelImage, RGBImage, VQGANImage
@@ -53,15 +51,12 @@ from pytti.Perceptor.Prompt import parse_prompt
 # HSVLoss no longer available to users?
 # ... nm, gets used in PixelImage
 from pytti.LossAug import TVLoss, HSVLoss, OpticalFlowLoss, TargetFlowLoss
-from pytti.Transforms import animate_2d, zoom_3d, animate_video_source
+
 from pytti import (
-    DEVICE,
     fetch,
-    set_t,
     vram_usage_mode,
     print_vram_usage,
     reset_vram_usage,
-    freeze_vram_usage,
     vram_profiling,
 )
 from pytti.LossAug.DepthLoss import init_AdaBins
@@ -83,14 +78,14 @@ TB_LOGDIR = "logs"  # to do: make this more easily configurable
 writer = SummaryWriter(TB_LOGDIR)
 OUTPATH = f"{os.getcwd()}/images_out/"
 
-
-class Renderer:
-    """
-    High-level orchestrator for pytti rendering procedure.
-    """
-
-    def __init__(self, params):
-        pass
+# To do: ove remaining gunk into this...
+# class Renderer:
+#    """
+#    High-level orchestrator for pytti rendering procedure.
+#    """
+#
+#    def __init__(self, params):
+#        pass
 
 
 # this is the only place `parse_prompt` is invoked.
@@ -497,143 +492,17 @@ def _main(cfg: DictConfig):
         ############################
 
         # make the main model object
-        model = DirectImageGuide(img, embedder, lr=params.learning_rate)
-
-        # Update is called each step.
-        # NB: Update and 'report_out' should probably get attached to DirectImageGuide
-        # ...or maybe `Renderer`?
-        def update(
-            i,
-            stage_i,
+        model = DirectImageGuide(
+            img,
+            embedder,
+            lr=params.learning_rate,
             params=params,
             writer=writer,
-        ):
-
-            model.report_out(
-                i=i,
-                stage_i=stage_i,
-                # model=model,
-                writer=writer,
-                fig=fig,  # default to None...
-                axs=axs,  # default to None...
-                clear_every=params.clear_every,
-                display_every=params.display_every,
-                approximate_vram_usage=params.approximate_vram_usage,
-                display_scale=params.display_scale,
-                show_graphs=params.show_graphs,
-                show_palette=params.show_palette,
-            )
-
-            model.save_out(
-                i=i,
-                # img=img,
-                writer=writer,
-                OUTPATH=OUTPATH,
-                base_name=base_name,
-                save_every=params.save_every,
-                file_namespace=params.file_namespace,
-                backups=params.backups,
-            )
-
-            # animate
-            ################
-            t = (i - params.pre_animation_steps) / (
-                params.steps_per_frame * params.frames_per_second
-            )
-            set_t(t)
-            if i >= params.pre_animation_steps:
-
-                if (i - params.pre_animation_steps) % params.steps_per_frame == 0:
-                    logger.debug(f"Time: {t:.4f} seconds")
-                    update_rotoscopers(
-                        ((i - params.pre_animation_steps) // params.steps_per_frame + 1)
-                        * params.frame_stride
-                    )
-                    if params.reset_lr_each_frame:
-                        model.set_optim(None)
-
-                    if params.animation_mode == "2D":
-
-                        next_step_pil = animate_2d(
-                            translate_y=params.translate_y,
-                            translate_x=params.translate_x,
-                            rotate_2d=params.rotate_2d,
-                            zoom_x_2d=params.zoom_x_2d,
-                            zoom_y_2d=params.zoom_y_2d,
-                            infill_mode=params.infill_mode,
-                            sampling_mode=params.sampling_mode,
-                            writer=writer,
-                            i=i,
-                            img=img,
-                        )
-
-                        ###########################
-                    elif params.animation_mode == "3D":
-                        try:
-                            im
-                        except NameError:
-                            im = img.decode_image()
-                        with vram_usage_mode("Optical Flow Loss"):
-                            # zoom_3d -> rename to animate_3d or transform_3d
-                            flow, next_step_pil = zoom_3d(
-                                img,
-                                (
-                                    params.translate_x,
-                                    params.translate_y,
-                                    params.translate_z_3d,
-                                ),
-                                params.rotate_3d,
-                                params.field_of_view,
-                                params.near_plane,
-                                params.far_plane,
-                                border_mode=params.infill_mode,
-                                sampling_mode=params.sampling_mode,
-                                stabilize=params.lock_camera,
-                            )
-                            freeze_vram_usage()
-
-                        for optical_flow in optical_flows:
-                            optical_flow.set_last_step(im)
-                            optical_flow.set_target_flow(flow)
-                            optical_flow.set_enabled(True)
-
-                    elif params.animation_mode == "Video Source":
-
-                        flow, next_step_pil = animate_video_source(
-                            i=i,
-                            img=img,
-                            video_frames=video_frames,
-                            optical_flows=optical_flows,
-                            base_name=base_name,
-                            pre_animation_steps=params.pre_animation_steps,
-                            frame_stride=params.frame_stride,
-                            steps_per_frame=params.steps_per_frame,
-                            file_namespace=params.file_namespace,
-                            reencode_each_frame=params.reencode_each_frame,
-                            lock_palette=params.lock_palette,
-                        )
-
-                    if params.animation_mode != "off":
-                        for aug in stabilization_augs:
-                            aug.set_comp(next_step_pil)
-                            aug.set_enabled(True)
-                        if last_frame_semantic is not None:
-                            last_frame_semantic.set_image(embedder, next_step_pil)
-                            last_frame_semantic.set_enabled(True)
-                        for aug in init_augs:
-                            aug.set_enabled(False)
-                        if semantic_init_prompt is not None:
-                            semantic_init_prompt.set_enabled(False)
-
-        ###############################################################
-        ###
-
-        # Wait.... we literally instantiated the model just before
-        # defining update here.
-        # I bet all of this can go in the DirectImageGuide class and then
-        # we can just instantiate that class with the config object.
-
-        model.update = update
+            OUTPATH=OUTPATH,
+            base_name=base_name,
+            fig=fig,
+            axs=axs,
+        )
 
         # Pretty sure this isn't necessary, Hydra should take care of saving
         # the run settings now
