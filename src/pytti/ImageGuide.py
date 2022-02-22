@@ -196,11 +196,6 @@ class DirectImageGuide:
                 # logger.debug(mb_i)
                 image_embeds, offsets, sizes = self.embedder(self.image_rep, input=z)
 
-                # image_embeds = image_embeds_batched[mb_i, ...].unsqueeze(0)
-                # offsets = offsets_batched[mb_i, ...].unsqueeze(0)
-                # sizes = sizes_batched[mb_i, ...].unsqueeze(0)
-
-                # logger.debug('interp_losses')
                 t = 1
                 interp_losses = [0]
                 if i < interp_steps:
@@ -215,7 +210,6 @@ class DirectImageGuide:
                         for prompt in interp_prompts
                     ]
 
-                # logger.debug('prompt_losses')
                 prompt_losses = {
                     prompt: prompt(
                         format_input(image_embeds, self.embedder, prompt),
@@ -225,7 +219,6 @@ class DirectImageGuide:
                     for prompt in prompts
                 }
 
-                # logger.debug('unpack_dict')
                 losses, losses_raw = zip(
                     *map(unpack_dict, [prompt_losses, aug_losses, image_losses])
                     # *map(unpack_dict, [prompt_losses])
@@ -233,31 +226,24 @@ class DirectImageGuide:
 
                 losses = list(losses)
                 losses_raw = list(losses_raw)
-                # logger.debug('.mul(t)')
+
                 for v in prompt_losses.values():
                     v[0].mul_(t)
 
-                # logger.debug("total_loss_mb")
-                total_loss_mb = (
-                    sum(map(lambda x: sum(x.values()), losses))
-                    + sum(interp_losses) / gradient_accumulation_steps
+                total_loss_mb = sum(map(lambda x: sum(x.values()), losses)) + sum(
+                    interp_losses
                 )
 
-                # total_loss_mb /= gradient_accumulation_steps
+                total_loss_mb /= gradient_accumulation_steps
 
-                # logger.debug(".backward")
                 # total_loss_mb.backward()
                 total_loss_mb.backward(retain_graph=True)
-                # logger.debug("+=")
-                # total_loss += total_loss_mb
+                # total_loss += total_loss_mb # this is causing it to break
                 # total_loss = total_loss_mb
 
         losses_raw.append({"TOTAL": total_loss})
-        # logger.debug("out of loop. calling .step()")
         self.optimizer.step()
-        # logger.debug("update()")
         self.image_rep.update()
-        # logger.debug("zero_grad()")
         self.optimizer.zero_grad()
         # if t != 0:
         #  for v in prompt_losses.values():
