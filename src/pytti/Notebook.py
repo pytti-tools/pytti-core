@@ -15,6 +15,8 @@ import json, random
 import os, re
 from PIL import Image
 
+from pytti.LossAug import Loss as LossType
+
 # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
 def is_notebook():
     try:
@@ -77,6 +79,21 @@ def get_last_file(directory, pattern):
 
 # this doesn't belong in here
 def get_next_file(directory, pattern, templates):
+    """
+    Given a directory, a file pattern, and a list of templates,
+    return the next file name and index that matches the pattern.
+
+    If no files match the pattern, return the first template and 0.
+
+    If multiple files match the pattern, sort the files by index and return the next index.
+
+    If the index is the last index in the list of templates, return the first template and 0
+
+    :param directory: The directory where the files are located
+    :param pattern: The pattern to match files against
+    :param templates: A list of file names that are used to create the new file
+    :return: The next file name and the next index.
+    """
 
     files = [f for f in os.listdir(directory) if re.match(pattern, f)]
     if len(files) == 0:
@@ -248,7 +265,17 @@ def get_frames(path):
 
 
 # this doesn't belong in here ...LossAug? also... let's fix those capitalized folder names...
-def build_loss(weight_name, weight, name, img, pil_target):
+def build_loss(weight_name, weight, name, img, pil_target) -> LossType:
+    """
+    Given a weight name, weight, name, image, and target image, returns a loss object
+
+    :param weight_name: The name of the loss function
+    :param weight: The weight of the loss
+    :param name: The name of the loss function
+    :param img: The image to be optimized
+    :param pil_target: The target image
+    :return: The loss function.
+    """
     from pytti.LossAug import LOSS_DICT
 
     weight_name, suffix = weight_name.split("_", 1)
@@ -266,6 +293,13 @@ def build_loss(weight_name, weight, name, img, pil_target):
 # what is this even doing?
 # should probably deprecate in favor of hydra-idiomatic object intantiation
 def format_params(params, *args):
+    """
+    Given a dictionary of parameters and a list of keys, return a list of values in the same order as
+    the keys
+
+    :param params: a dictionary of parameters that we're going to pass into our function
+    :return: A list of the values of the parameters in the same order as the args.
+    """
     return [params[x] for x in args]
 
 
@@ -283,7 +317,12 @@ def clear_rotoscopers():
 
 
 # this is... weird. also why the globals?
-def update_rotoscopers(frame_n):
+def update_rotoscopers(frame_n: int):
+    """
+    For each rotoscope in the global list of rotoscopes, call the update function
+
+    :param frame_n: The current frame number
+    """
     global rotoscopers
     for r in rotoscopers:
         r.update(frame_n)
@@ -304,6 +343,12 @@ class Rotoscoper:
         rotoscopers.append(self)
 
     def update(self, frame_n):
+        """
+        Updates the mask of the attached target.
+
+        :param frame_n: The frame number to update the mask for
+        :return: Nothing.
+        """
         if self.target is None:
             return
         mask_pil = Image.fromarray(self.frames.get_data(frame_n)).convert("L")

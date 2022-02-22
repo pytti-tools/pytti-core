@@ -5,16 +5,12 @@ Thank you for your patience.-- The Management
 """
 
 import gc
-import glob
 import json
 from pathlib import Path
-import math
 import os
-from os.path import exists as path_exists
 import re
 import sys
 import subprocess
-import warnings
 
 import hydra
 from loguru import logger
@@ -22,10 +18,9 @@ from omegaconf import OmegaConf, DictConfig
 
 import numpy as np
 import pandas as pd
-from PIL import Image, ImageEnhance
+from PIL import Image
 import torch
 from torch.utils.tensorboard import SummaryWriter
-from torchvision.transforms import functional as TF
 
 # Deprecate or move functionality somewhere less general
 import matplotlib.pyplot as plt
@@ -34,13 +29,11 @@ from IPython import display
 
 logger.info("Loading pytti...")
 from pytti.Notebook import (
-    is_notebook,
     change_tqdm_color,  # why though?
     get_last_file,
     get_next_file,
     make_hbox,
     load_settings,  # hydra should handle this stuff
-    write_settings,
     save_settings,
     save_batch,
     CLIP_MODEL_NAMES,
@@ -48,19 +41,19 @@ from pytti.Notebook import (
     get_frames,
     build_loss,
     format_params,
-    rotoscopers,
     clear_rotoscopers,
     update_rotoscopers,
-    Rotoscoper,
 )
 
-from pytti import Perceptor
 from pytti.Image import PixelImage, RGBImage, VQGANImage
 from pytti.ImageGuide import DirectImageGuide
 from pytti.Perceptor.Embedder import HDMultiClipEmbedder
 from pytti.Perceptor.Prompt import parse_prompt
+
+# HSVLoss no longer available to users?
+# ... nm, gets used in PixelImage
 from pytti.LossAug import TVLoss, HSVLoss, OpticalFlowLoss, TargetFlowLoss
-from pytti.Transforms import zoom_2d, zoom_3d, apply_flow
+from pytti.Transforms import zoom_2d, zoom_3d
 from pytti import (
     DEVICE,
     fetch,
@@ -243,6 +236,10 @@ def _main(cfg: DictConfig):
             img = VQGANImage(params.width, params.height, params.pixel_size)
             img.encode_random()
 
+        #######################################
+
+        # set up losses
+
         loss_augs = []
 
         if init_image_pil is not None:
@@ -423,6 +420,8 @@ def _main(cfg: DictConfig):
         model = DirectImageGuide(img, embedder, lr=params.learning_rate)
 
         # Update is called each step.
+        # NB: Update and 'report_out' should probably get attached to DirectImageGuide
+        # ...or maybe `Renderer`?
         def update(i, stage_i):
             # display
 
@@ -434,6 +433,7 @@ def _main(cfg: DictConfig):
             # DM: I bet this could be abstracted out into a report_out() function or whatever
             if params.clear_every > 0 and i > 0 and i % params.clear_every == 0:
                 display.clear_output()
+
             if params.display_every > 0 and i % params.display_every == 0:
                 logger.debug(f"Step {i} losses:")
                 if model.dataframe:
@@ -443,10 +443,12 @@ def _main(cfg: DictConfig):
                         writer.add_scalar(
                             tag=f"losses/{k}", scalar_value=v, global_step=i
                         )
+
                 # does this VRAM stuff even do anything?
                 if params.approximate_vram_usage:
                     logger.debug("VRAM Usage:")
                     print_vram_usage()  # update this function to use logger
+                # update this stuff to use/rely on tensorboard
                 display_width = int(img.image_shape[0] * params.display_scale)
                 display_height = int(img.image_shape[1] * params.display_scale)
                 if stage_i > 0 and params.show_graphs:
@@ -464,6 +466,7 @@ def _main(cfg: DictConfig):
                 if params.show_palette and isinstance(img, PixelImage):
                     logger.debug("Palette:")
                     display.display(img.render_pallet())
+
             # save
             if i > 0 and params.save_every > 0 and i % params.save_every == 0:
                 try:
@@ -671,7 +674,9 @@ def _main(cfg: DictConfig):
         # Run the training loop
         ########################
 
-        # what are these skip variables doing?
+        # `i`: current iteration
+        # `skip_X`: number of _X that have already been processed to completion (per the current iteration)
+        # `last_scene`: previously processed scene/prompt (or current prompt if on first/only scene)
         skip_prompts = i // params.steps_per_scene
         skip_steps = i % params.steps_per_scene
         last_scene = prompts[0] if skip_prompts == 0 else prompts[skip_prompts - 1]
