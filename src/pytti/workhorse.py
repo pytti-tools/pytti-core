@@ -612,6 +612,7 @@ def _main(cfg: DictConfig):
                 zoom_y_2d,
                 infill_mode,
                 sampling_mode,
+                img=img,
                 writer=writer,
                 i=i,
             ):
@@ -697,6 +698,7 @@ def _main(cfg: DictConfig):
                             sampling_mode=params.sampling_mode,
                             writer=writer,
                             i=i,
+                            img=img,
                         )
 
                         ###########################
@@ -706,6 +708,7 @@ def _main(cfg: DictConfig):
                         except NameError:
                             im = img.decode_image()
                         with vram_usage_mode("Optical Flow Loss"):
+                            # zoom_3d -> rename to animate_3d or transform_3d
                             flow, next_step_pil = zoom_3d(
                                 img,
                                 (
@@ -729,64 +732,111 @@ def _main(cfg: DictConfig):
                             optical_flow.set_enabled(True)
 
                     elif params.animation_mode == "Video Source":
-                        frame_n = min(
-                            (i - params.pre_animation_steps)
-                            * params.frame_stride
-                            // params.steps_per_frame,
-                            len(video_frames) - 1,
-                        )
-                        next_frame_n = min(
-                            frame_n + params.frame_stride, len(video_frames) - 1
-                        )
-                        next_step_pil = (
-                            Image.fromarray(video_frames.get_data(next_frame_n))
-                            .convert("RGB")
-                            .resize(img.image_shape, Image.LANCZOS)
-                        )
-                        for j, optical_flow in enumerate(optical_flows):
-                            old_frame_n = frame_n - (2 ** j - 1) * params.frame_stride
-                            save_n = i // params.save_every - (2 ** j - 1)
-                            if old_frame_n < 0 or save_n < 1:
-                                break
-                            current_step_pil = (
-                                Image.fromarray(video_frames.get_data(old_frame_n))
+
+                        def animate_video_source(
+                            i=i,
+                            img=img,
+                            video_frames=video_frames,
+                            optical_flows=optical_flows,
+                            base_name=base_name,
+                            pre_animation_steps=params.pre_animation_steps,
+                            frame_stride=params.frame_stride,
+                            steps_per_frame=params.steps_per_frame,
+                            file_namespace=params.file_namespace,
+                            reencode_each_frame=params.reencode_each_frame,
+                            lock_palette=params.lock_palette,
+                        ):
+                            # current frame index
+                            frame_n = min(
+                                (i - pre_animation_steps)
+                                * frame_stride
+                                // steps_per_frame,
+                                len(video_frames) - 1,
+                            )
+
+                            # Next frame index (for forrward flow)
+                            next_frame_n = min(
+                                frame_n + frame_stride, len(video_frames) - 1
+                            )
+
+                            # get next frame of video
+                            # * will be used as init_image
+                            # * will be used to estimate forward flow
+                            # Q: what is type of video_frames[i]? np.array? list?
+                            #    ... probably some imageio class
+                            next_step_pil = (
+                                Image.fromarray(video_frames.get_data(next_frame_n))
                                 .convert("RGB")
                                 .resize(img.image_shape, Image.LANCZOS)
                             )
-                            filename = f"backup/{params.file_namespace}/{base_name}_{save_n}.bak"
-                            filename = None if j == 0 else filename
-                            flow_im, mask_tensor = optical_flow.set_flow(
-                                current_step_pil,
-                                next_step_pil,
-                                img,
-                                filename,
-                                params.infill_mode,
-                                params.sampling_mode,
-                            )
-                            optical_flow.set_enabled(True)
-                            # first flow is previous frame
-                            if j == 0:
-                                mask_accum = mask_tensor.detach()
-                                valid = mask_tensor.mean()
-                                logger.debug("valid pixels:", valid)
-                                if params.reencode_each_frame or valid < 0.03:
-                                    if isinstance(img, PixelImage) and valid >= 0.03:
-                                        img.lock_pallet()
-                                        img.encode_image(
-                                            next_step_pil, smart_encode=False
-                                        )
-                                        img.lock_pallet(params.lock_palette)
+
+                            # Apply flows
+                            for j, optical_flow in enumerate(optical_flows):
+                                # This looks like something that we shouldn't have to recompute
+                                # but rather could be attached to the flow object as an attribute
+                                old_frame_n = frame_n - (2 ** j - 1) * frame_stride
+                                save_n = i // params.save_every - (2 ** j - 1)
+                                if old_frame_n < 0 or save_n < 1:
+                                    break
+
+                                current_step_pil = (
+                                    Image.fromarray(video_frames.get_data(old_frame_n))
+                                    .convert("RGB")
+                                    .resize(img.image_shape, Image.LANCZOS)
+                                )
+
+                                filename = (
+                                    f"backup/{file_namespace}/{base_name}_{save_n}.bak"
+                                )
+                                filename = None if j == 0 else filename
+                                # `flow_im` isn't being used for anything.
+                                # Might be interesting to log it for monitoring
+                                # Q: why does this function take `_step_pil` objects
+                                #    as well as a filename? `set_flow` automatically writes a
+                                #    backup file? That seems like something that should be
+                                #    configurable.
+                                flow_im, mask_tensor = optical_flow.set_flow(
+                                    current_step_pil,
+                                    next_step_pil,
+                                    img,
+                                    filename,
+                                    params.infill_mode,
+                                    params.sampling_mode,
+                                )
+
+                                optical_flow.set_enabled(True)
+                                # first flow is previous frame
+                                if j == 0:
+                                    mask_accum = mask_tensor.detach()
+                                    valid = mask_tensor.mean()
+                                    logger.debug("valid pixels:", valid)
+                                    # what is this magic number here?
+                                    if reencode_each_frame or valid < 0.03:
+                                        if (
+                                            isinstance(img, PixelImage)
+                                            and valid >= 0.03
+                                        ):
+                                            img.lock_pallet()
+                                            img.encode_image(
+                                                next_step_pil, smart_encode=False
+                                            )
+                                            img.lock_pallet(lock_palette)
+                                        else:
+                                            img.encode_image(next_step_pil)
+                                        # this variable is unused...
+                                        reencoded = True
                                     else:
-                                        img.encode_image(next_step_pil)
-                                    reencoded = True
+                                        reencoded = False
                                 else:
-                                    reencoded = False
-                            else:
-                                with torch.no_grad():
-                                    optical_flow.set_mask(
-                                        (mask_tensor - mask_accum).clamp(0, 1)
-                                    )
-                                    mask_accum.add_(mask_tensor)
+                                    with torch.no_grad():
+                                        optical_flow.set_mask(
+                                            (mask_tensor - mask_accum).clamp(0, 1)
+                                        )
+                                        mask_accum.add_(mask_tensor)
+
+                            return flow, next_step_pil
+
+                        flow, next_step_pil = animate_video_source()
 
                     if params.animation_mode != "off":
                         for aug in stabilization_augs:
