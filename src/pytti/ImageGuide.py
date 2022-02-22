@@ -7,11 +7,14 @@ from torch import optim, nn
 
 from pytti.Image import DifferentiableImage
 
+from PIL import Image
+
 import einops as eo
 from loguru import logger
 
 # deprecate this
 from labellines import labelLines
+from IPython import display
 
 
 def unpack_dict(D, n=2):
@@ -272,3 +275,56 @@ class DirectImageGuide:
                     self.dataframe[j].name = "Step"
 
         return {"TOTAL": float(total_loss)}
+
+    def report_out(
+        self,
+        i,
+        stage_i,
+        # model,
+        writer,
+        fig,  # default to None...
+        axs,  # default to None...
+        clear_every,
+        display_every,
+        approximate_vram_usage,
+        display_scale,
+        show_graphs,
+        show_palette,
+    ):
+        model = self
+        img = self.image_rep  # pretty sure this is right
+        # DM: I bet this could be abstracted out into a report_out() function or whatever
+        if clear_every > 0 and i > 0 and i % clear_every == 0:
+            display.clear_output()
+
+        if display_every > 0 and i % display_every == 0:
+            logger.debug(f"Step {i} losses:")
+            if model.dataframe:
+                rec = model.dataframe[0].iloc[-1]
+                logger.debug(rec)
+                for k, v in rec.iteritems():
+                    writer.add_scalar(tag=f"losses/{k}", scalar_value=v, global_step=i)
+
+            # does this VRAM stuff even do anything?
+            if approximate_vram_usage:
+                logger.debug("VRAM Usage:")
+                print_vram_usage()  # update this function to use logger
+            # update this stuff to use/rely on tensorboard
+            display_width = int(img.image_shape[0] * display_scale)
+            display_height = int(img.image_shape[1] * display_scale)
+            if stage_i > 0 and show_graphs:
+                model.plot_losses(axs)
+                im = img.decode_image()
+                sidebyside = make_hbox(
+                    im.resize((display_width, display_height), Image.LANCZOS),
+                    fig,
+                )
+                display.display(sidebyside)
+            else:
+                im = img.decode_image()
+                display.display(
+                    im.resize((display_width, display_height), Image.LANCZOS)
+                )
+            if show_palette and isinstance(img, PixelImage):
+                logger.debug("Palette:")
+                display.display(img.render_pallet())
