@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from pytti.rotoscoper import Rotoscoper
 from torchvision.transforms import functional as TF
 
+import gma
 from gma.core.network import RAFTGMA
 from gma.core.utils import flow_viz
 from gma.core.utils.utils import InputPadder
@@ -28,8 +29,13 @@ from pytti.Image.RGBImage import RGBImage
 
 GMA = None
 
+from importlib.resources import files as ir_files
 
-def init_GMA(checkpoint_path):
+
+def init_GMA(checkpoint_path=None):
+    if checkpoint_path is None:
+        root = ir_files(gma)
+        checkpoint_path = str(next(root.glob("**/*sintel.pth")))
     global GMA
     if GMA is None:
         with vram_usage_mode("GMA"):
@@ -127,7 +133,7 @@ class TargetFlowLoss(MSELoss):
         :return: The loss function.
         """
         init_GMA(
-            "GMA/checkpoints/gma-sintel.pth"
+            # "GMA/checkpoints/gma-sintel.pth"
         )  # update this to use model dir from config
         image1 = self.last_step
         image2 = input
@@ -233,7 +239,8 @@ class OpticalFlowLoss(MSELoss):
         :param device: The device to run the model on
         :return: the flow field.
         """
-        init_GMA("GMA/checkpoints/gma-sintel.pth")
+        # init_GMA("GMA/checkpoints/gma-sintel.pth")
+        init_GMA()
         if isinstance(image1, Image.Image):
             image1 = TF.to_tensor(image1).unsqueeze(0).to(device)
         if isinstance(image2, Image.Image):
