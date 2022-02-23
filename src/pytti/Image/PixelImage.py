@@ -427,9 +427,13 @@ class PixelImage(DifferentiableImage):
             if self.hdr_loss is not None:
                 before_weight = self.hdr_loss.weight.detach()
                 self.hdr_loss.set_weight(0.01)
+            # no embedder, no prompts... we don't really need an "ImageGuide" class instance here, do we?
+            # We could probably optimize a DifferentiableImage object directly here. I guess maybe
+            # cutouts gets applied? Wait no, there's no embedder so there's no cutouts, right?
             guide = DirectImageGuide(
                 self, None, optimizer=optim.Adam([self.pallet, self.tensor], lr=0.1)
             )
+            # why is there a magic number here?
             guide.run_steps(201, [], [], [mse])
             if self.hdr_loss is not None:
                 self.hdr_loss.set_weight(before_weight)

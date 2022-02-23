@@ -245,6 +245,8 @@ def load_clip(params):
 
 
 # this doesn't belong in here (animation)
+# also, surprised we're not using opencv here.
+# let's call this another unnecessary subprocess call to deprecate.
 def get_frames(path):
     """reads the frames of the mp4 file `path` and returns them as a list of PIL images"""
     import imageio, subprocess

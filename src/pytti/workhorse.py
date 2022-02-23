@@ -32,7 +32,6 @@ from pytti.Notebook import (
     change_tqdm_color,  # why though?
     get_last_file,
     get_next_file,
-    make_hbox,
     load_settings,  # hydra should handle this stuff
     save_settings,
     save_batch,
@@ -42,7 +41,6 @@ from pytti.Notebook import (
     build_loss,
     format_params,
     clear_rotoscopers,
-    update_rotoscopers,
 )
 
 from pytti.Image import PixelImage, RGBImage, VQGANImage
@@ -53,16 +51,12 @@ from pytti.Perceptor.Prompt import parse_prompt
 # HSVLoss no longer available to users?
 # ... nm, gets used in PixelImage
 from pytti.LossAug import TVLoss, HSVLoss, OpticalFlowLoss, TargetFlowLoss
-from pytti.Transforms import zoom_2d, zoom_3d
+
 from pytti import (
-    DEVICE,
     fetch,
-    parametric_eval,
-    set_t,
     vram_usage_mode,
     print_vram_usage,
     reset_vram_usage,
-    freeze_vram_usage,
     vram_profiling,
 )
 from pytti.LossAug.DepthLoss import init_AdaBins
@@ -83,6 +77,105 @@ pd.options.display.width = 175
 TB_LOGDIR = "logs"  # to do: make this more easily configurable
 writer = SummaryWriter(TB_LOGDIR)
 OUTPATH = f"{os.getcwd()}/images_out/"
+
+# To do: ove remaining gunk into this...
+# class Renderer:
+#    """
+#    High-level orchestrator for pytti rendering procedure.
+#    """
+#
+#    def __init__(self, params):
+#        pass
+
+
+# this is the only place `parse_prompt` is invoked.
+# combine load_scenes, parse_prompt, and parse into a unified, generic parser.
+# generic here means the output of the parsing process shouldn't be bound to
+# modules yet, just a collection of settings.
+def parse_scenes(
+    embedder,
+    scenes,
+    scene_prefix,
+    scene_suffix,
+):
+    """
+    Parses scenes separated by || and applies provided prefixes and suffixes to each scene.
+
+    :param embedder: The embedder object
+    :param params: The experiment parameters
+    :return: The embedder and the prompts.
+    """
+    logger.info("Loading prompts...")
+    prompts = [
+        [
+            parse_prompt(embedder, p.strip())
+            for p in (scene_prefix + stage + scene_suffix).strip().split("|")
+            if p.strip()
+        ]
+        for stage in scenes.split("||")
+        if stage
+    ]
+    logger.info("Prompts loaded.")
+    return embedder, prompts
+
+
+def load_init_image(
+    init_image_path=None,
+    height: int = -1,  # why '-1'? should be None. Or btter yet, assert that it's greater than zero
+    width: int = -1,
+):
+    """
+    If the user has specified an image to use as the initial image, load it. Otherwise, if the
+    user has specified a width or height, create a blank image of the specified size
+
+    :param init_image_path: A local path or URL describing where to load the image from
+    :param height: height of the image to be generated.
+    :return: the initial image and the size of the initial image.
+    """
+    if init_image_path:
+        init_image_pil = Image.open(fetch(init_image_path)).convert("RGB")
+        init_size = init_image_pil.size
+        # automatic aspect ratio matching
+        if width == -1:
+            width = int(height * init_size[0] / init_size[1])
+        if height == -1:
+            height = int(width * init_size[1] / init_size[0])
+    else:
+        init_image_pil = None
+    return init_image_pil, height, width
+
+
+def load_video_source(
+    video_path: str,
+    pre_animation_steps: int,
+    steps_per_frame: int,
+    height: int,
+    width: int,
+    init_image_pil: Image.Image,
+):
+    """
+    Loads a video file and returns a PIL image of the first frame
+
+    :param video_path: The path to the video file
+    :param pre_animation_steps: The number of frames to skip at the beginning of the video
+    :param steps_per_frame: How many steps to take per frame
+    :param height: the height of the output image
+    :param width: the width of the output image
+    :return: The video frames, the initial image, the height and width of the image.
+    """
+    logger.info(f"loading {video_path}...")
+    video_frames = get_frames(video_path)
+    pre_animation_steps = max(steps_per_frame, pre_animation_steps)
+    if init_image_pil is None:
+        init_image_pil = Image.fromarray(video_frames.get_data(0)).convert("RGB")
+        # enhancer = ImageEnhance.Contrast(init_image_pil)
+        # init_image_pil = enhancer.enhance(2)
+        init_size = init_image_pil.size
+        if width == -1:
+            width = int(height * init_size[0] / init_size[1])
+        if height == -1:
+            height = int(width * init_size[1] / init_size[0])
+    return video_frames, init_image_pil, height, width
 
 
 @hydra.main(config_path="config", config_name="default")
@@ -115,7 +208,6 @@ def _main(cfg: DictConfig):
 
         # Phase 1 - reset state
         ########################
-
         clear_rotoscopers()  # what a silly name
         vram_profiling(params.approximate_vram_usage)
         reset_vram_usage()
@@ -156,51 +248,38 @@ def _main(cfg: DictConfig):
         )
 
         # load scenes
+
         with vram_usage_mode("Text Prompts"):
-            logger.info("Loading prompts...")
-            prompts = [
-                [
-                    parse_prompt(embedder, p.strip())
-                    for p in (params.scene_prefix + stage + params.scene_suffix)
-                    .strip()
-                    .split("|")
-                    if p.strip()
-                ]
-                for stage in params.scenes.split("||")
-                if stage
-            ]
-            logger.info("Prompts loaded.")
+            embedder, prompts = parse_scenes(
+                embedder,
+                scenes=params.scenes,
+                scene_prefix=params.scene_prefix,
+                scene_suffix=params.scene_suffix,
+            )
 
         # load init image
-        if params.init_image != "":
-            init_image_pil = Image.open(fetch(params.init_image)).convert("RGB")
-            init_size = init_image_pil.size
-            # automatic aspect ratio matching
-            if params.width == -1:
-                params.width = int(params.height * init_size[0] / init_size[1])
-            if params.height == -1:
-                params.height = int(params.width * init_size[1] / init_size[0])
-        else:
-            init_image_pil = None
+
+        init_image_pil, height, width = load_init_image(
+            init_image_path=params.init_image,
+            height=params.height,
+            width=params.width,
+        )
 
         # video source
+
         if params.animation_mode == "Video Source":
-            logger.info(f"loading {params.video_path}...")
-            video_frames = get_frames(params.video_path)
-            params.pre_animation_steps = max(
-                params.steps_per_frame, params.pre_animation_steps
+
+            video_frames, init_image_pil, height, width = load_video_source(
+                video_path=params.video_path,
+                pre_animation_steps=params.pre_animation_steps,
+                steps_per_frame=params.steps_per_frame,
+                height=params.height,
+                width=params.width,
+                init_image_pil=init_image_pil,
             )
-            if init_image_pil is None:
-                init_image_pil = Image.fromarray(video_frames.get_data(0)).convert(
-                    "RGB"
-                )
-                # enhancer = ImageEnhance.Contrast(init_image_pil)
-                # init_image_pil = enhancer.enhance(2)
-                init_size = init_image_pil.size
-                if params.width == -1:
-                    params.width = int(params.height * init_size[0] / init_size[1])
-                if params.height == -1:
-                    params.height = int(params.width * init_size[1] / init_size[0])
+
+        # not a fan of modifying the params object like this, but may as well be consistent for now...
+        params.height, params.width = height, width
 
         # Phase 3 - Setup Optimization
         ###############################
@@ -406,264 +485,26 @@ def _main(cfg: DictConfig):
         ## tensorboard should handle this stuff.
 
         # graphs
+        fig, axs = None, None
         if params.show_graphs:
             fig, axs = plt.subplots(4, 1, figsize=(21, 13))
             axs = np.asarray(axs).flatten()
-            # fig.facecolor = (0,0,0)
-        else:
-            fig, axs = None, None
 
         # Phase 5 - setup optimizer
         ############################
 
         # make the main model object
-        model = DirectImageGuide(img, embedder, lr=params.learning_rate)
-
-        # Update is called each step.
-        # NB: Update and 'report_out' should probably get attached to DirectImageGuide
-        # ...or maybe `Renderer`?
-        def update(i, stage_i):
-            # display
-
-            #
-            #
-            #
-            #
-
-            # DM: I bet this could be abstracted out into a report_out() function or whatever
-            if params.clear_every > 0 and i > 0 and i % params.clear_every == 0:
-                display.clear_output()
-
-            if params.display_every > 0 and i % params.display_every == 0:
-                logger.debug(f"Step {i} losses:")
-                if model.dataframe:
-                    rec = model.dataframe[0].iloc[-1]
-                    logger.debug(rec)
-                    for k, v in rec.iteritems():
-                        writer.add_scalar(
-                            tag=f"losses/{k}", scalar_value=v, global_step=i
-                        )
-
-                # does this VRAM stuff even do anything?
-                if params.approximate_vram_usage:
-                    logger.debug("VRAM Usage:")
-                    print_vram_usage()  # update this function to use logger
-                # update this stuff to use/rely on tensorboard
-                display_width = int(img.image_shape[0] * params.display_scale)
-                display_height = int(img.image_shape[1] * params.display_scale)
-                if stage_i > 0 and params.show_graphs:
-                    model.plot_losses(axs)
-                    im = img.decode_image()
-                    sidebyside = make_hbox(
-                        im.resize((display_width, display_height), Image.LANCZOS), fig
-                    )
-                    display.display(sidebyside)
-                else:
-                    im = img.decode_image()
-                    display.display(
-                        im.resize((display_width, display_height), Image.LANCZOS)
-                    )
-                if params.show_palette and isinstance(img, PixelImage):
-                    logger.debug("Palette:")
-                    display.display(img.render_pallet())
-
-            # save
-            if i > 0 and params.save_every > 0 and i % params.save_every == 0:
-                try:
-                    im
-                except NameError:
-                    im = img.decode_image()
-                n = i // params.save_every
-                filename = f"{OUTPATH}/{params.file_namespace}/{base_name}_{n}.png"
-                im.save(filename)
-
-                im_np = np.array(im)
-                writer.add_image(
-                    tag="pytti output",
-                    # img_tensor=filename, # thought this would work?
-                    img_tensor=im_np,
-                    global_step=i,
-                    dataformats="HWC",  # this was the key
-                )
-
-                if params.backups > 0:
-                    filename = f"backup/{params.file_namespace}/{base_name}_{n}.bak"
-                    torch.save(img.state_dict(), filename)
-                    if n > params.backups:
-
-                        # YOOOOOOO let's not start shell processes unnecessarily
-                        # and then execute commands using string interpolation.
-                        # Replace this with a pythonic folder removal, then see
-                        # if we can't deprecate the folder removal entirely. What
-                        # is the purpose of "backups" here? Just use the frames that
-                        # are being written to disk.
-                        subprocess.run(
-                            [
-                                "rm",
-                                f"backup/{params.file_namespace}/{base_name}_{n-params.backups}.bak",
-                            ]
-                        )
-
-            ### DM: report_out() would probably end down here
-
-            #
-            #
-            #
-            #
-
-            # animate
-            ################
-            t = (i - params.pre_animation_steps) / (
-                params.steps_per_frame * params.frames_per_second
-            )
-            set_t(t)
-            if i >= params.pre_animation_steps:
-                if (i - params.pre_animation_steps) % params.steps_per_frame == 0:
-                    logger.debug(f"Time: {t:.4f} seconds")
-                    update_rotoscopers(
-                        ((i - params.pre_animation_steps) // params.steps_per_frame + 1)
-                        * params.frame_stride
-                    )
-                    if params.reset_lr_each_frame:
-                        model.set_optim(None)
-                    if params.animation_mode == "2D":
-                        tx, ty = parametric_eval(params.translate_x), parametric_eval(
-                            params.translate_y
-                        )
-                        theta = parametric_eval(params.rotate_2d)
-                        zx, zy = parametric_eval(params.zoom_x_2d), parametric_eval(
-                            params.zoom_y_2d
-                        )
-                        next_step_pil = zoom_2d(
-                            img,
-                            (tx, ty),
-                            (zx, zy),
-                            theta,
-                            border_mode=params.infill_mode,
-                            sampling_mode=params.sampling_mode,
-                        )
-                        ################
-                        for k, v in {
-                            "tx": tx,
-                            "ty": ty,
-                            "theta": theta,
-                            "zx": zx,
-                            "zy": zy,
-                            "t": t,
-                        }.items():
-
-                            writer.add_scalar(
-                                tag=f"translation_2d/{k}", scalar_value=v, global_step=i
-                            )
-
-                        ###########################
-                    elif params.animation_mode == "3D":
-                        try:
-                            im
-                        except NameError:
-                            im = img.decode_image()
-                        with vram_usage_mode("Optical Flow Loss"):
-                            flow, next_step_pil = zoom_3d(
-                                img,
-                                (
-                                    params.translate_x,
-                                    params.translate_y,
-                                    params.translate_z_3d,
-                                ),
-                                params.rotate_3d,
-                                params.field_of_view,
-                                params.near_plane,
-                                params.far_plane,
-                                border_mode=params.infill_mode,
-                                sampling_mode=params.sampling_mode,
-                                stabilize=params.lock_camera,
-                            )
-                            freeze_vram_usage()
-
-                        for optical_flow in optical_flows:
-                            optical_flow.set_last_step(im)
-                            optical_flow.set_target_flow(flow)
-                            optical_flow.set_enabled(True)
-                    elif params.animation_mode == "Video Source":
-                        frame_n = min(
-                            (i - params.pre_animation_steps)
-                            * params.frame_stride
-                            // params.steps_per_frame,
-                            len(video_frames) - 1,
-                        )
-                        next_frame_n = min(
-                            frame_n + params.frame_stride, len(video_frames) - 1
-                        )
-                        next_step_pil = (
-                            Image.fromarray(video_frames.get_data(next_frame_n))
-                            .convert("RGB")
-                            .resize(img.image_shape, Image.LANCZOS)
-                        )
-                        for j, optical_flow in enumerate(optical_flows):
-                            old_frame_n = frame_n - (2 ** j - 1) * params.frame_stride
-                            save_n = i // params.save_every - (2 ** j - 1)
-                            if old_frame_n < 0 or save_n < 1:
-                                break
-                            current_step_pil = (
-                                Image.fromarray(video_frames.get_data(old_frame_n))
-                                .convert("RGB")
-                                .resize(img.image_shape, Image.LANCZOS)
-                            )
-                            filename = f"backup/{params.file_namespace}/{base_name}_{save_n}.bak"
-                            filename = None if j == 0 else filename
-                            flow_im, mask_tensor = optical_flow.set_flow(
-                                current_step_pil,
-                                next_step_pil,
-                                img,
-                                filename,
-                                params.infill_mode,
-                                params.sampling_mode,
-                            )
-                            optical_flow.set_enabled(True)
-                            # first flow is previous frame
-                            if j == 0:
-                                mask_accum = mask_tensor.detach()
-                                valid = mask_tensor.mean()
-                                logger.debug("valid pixels:", valid)
-                                if params.reencode_each_frame or valid < 0.03:
-                                    if isinstance(img, PixelImage) and valid >= 0.03:
-                                        img.lock_pallet()
-                                        img.encode_image(
-                                            next_step_pil, smart_encode=False
-                                        )
-                                        img.lock_pallet(params.lock_palette)
-                                    else:
-                                        img.encode_image(next_step_pil)
-                                    reencoded = True
-                                else:
-                                    reencoded = False
-                            else:
-                                with torch.no_grad():
-                                    optical_flow.set_mask(
-                                        (mask_tensor - mask_accum).clamp(0, 1)
-                                    )
-                                    mask_accum.add_(mask_tensor)
-                    if params.animation_mode != "off":
-                        for aug in stabilization_augs:
-                            aug.set_comp(next_step_pil)
-                            aug.set_enabled(True)
-                        if last_frame_semantic is not None:
-                            last_frame_semantic.set_image(embedder, next_step_pil)
-                            last_frame_semantic.set_enabled(True)
-                        for aug in init_augs:
-                            aug.set_enabled(False)
-                        if semantic_init_prompt is not None:
-                            semantic_init_prompt.set_enabled(False)
-
-        ###############################################################
-        ###
-
-        # Wait.... we literally instantiated the model just before
-        # defining update here.
-        # I bet all of this can go in the DirectImageGuide class and then
-        # we can just instantiate that class with the config object.
-
-        model.update = update
+        model = DirectImageGuide(
+            img,
+            embedder,
+            lr=params.learning_rate,
+            params=params,
+            writer=writer,
+            OUTPATH=OUTPATH,
+            base_name=base_name,
+            fig=fig,
+            axs=axs,
+        )
 
         # Pretty sure this isn't necessary, Hydra should take care of saving
         # the run settings now
