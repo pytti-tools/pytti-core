@@ -17,6 +17,7 @@ from pytti import (
     set_t,
     print_vram_usage,
     freeze_vram_usage,
+    vram_usage_mode,
 )
 from pytti.Image import DifferentiableImage
 from pytti.Notebook import tqdm, make_hbox
@@ -80,6 +81,12 @@ class DirectImageGuide:
         base_name=None,
         fig=None,
         axs=None,
+        video_frames=None,
+        optical_flows=None,
+        stabilization_augs=None,
+        last_frame_semantic=None,
+        semantic_init_prompt=None,
+        init_augs=None,
         **optimizer_params,
         # pretty sure passing in optimizer_params isn't being used anywhere
         # We pass in the optimizer object itself anyway... why not just give it
@@ -104,6 +111,16 @@ class DirectImageGuide:
         self.base_name = base_name
         self.fig = fig
         self.axs = axs
+        self.video_frames = video_frames
+        self.optical_flows = optical_flows
+        if stabilization_augs is None:
+            stabilization_augs = []
+        self.stabilization_augs = stabilization_augs
+        self.last_frame_semantic = last_frame_semantic
+        self.semantic_init_prompt = semantic_init_prompt
+        if init_augs is None:
+            init_augs = []
+        self.init_augs = init_augs
 
     def run_steps(
         self,
@@ -388,12 +405,15 @@ class DirectImageGuide:
     ):
         img = self.image_rep
         # save
-        if i > 0 and save_every > 0 and i % save_every == 0:
+        # if i > 0 and save_every > 0 and i % save_every == 0:
+        if i > 0 and save_every > 0 and (i + 1) % save_every == 0:
             im = (
                 img.decode_image()
             )  # let's turn this into a property so decoding is cheap
-            n = i // save_every
+            # n = i // save_every
+            n = (i + 1) // save_every
             filename = f"{OUTPATH}/{file_namespace}/{base_name}_{n}.png"
+            logger.debug(filename)
             im.save(filename)
 
             im_np = np.array(im)
@@ -433,14 +453,24 @@ class DirectImageGuide:
         """
         Orchestrates animation transformations and reporting
         """
+        logger.debug("model.update called")
+
+        # ... I have regrets.
         params = self.params
         writer = self.writer
         OUTPATH = self.OUTPATH
         base_name = self.base_name
         fig = self.fig
         axs = self.axs
+        video_frames = self.video_frames
+        optical_flows = self.optical_flows
+        stabilization_augs = self.stabilization_augs
+        last_frame_semantic = self.last_frame_semantic
+        semantic_init_prompt = self.semantic_init_prompt
+        init_augs = self.init_augs
 
         model = self
+        img = self.image_rep
 
         model.report_out(
             i=i,
@@ -499,6 +529,7 @@ class DirectImageGuide:
                         writer=writer,
                         i=i,
                         img=img,
+                        t=t,  # just here for logging
                     )
 
                     ###########################
@@ -533,7 +564,7 @@ class DirectImageGuide:
 
                 elif params.animation_mode == "Video Source":
 
-                    flow, next_step_pil = animate_video_source(
+                    flow_im, next_step_pil = animate_video_source(
                         i=i,
                         img=img,
                         video_frames=video_frames,
@@ -545,6 +576,9 @@ class DirectImageGuide:
                         file_namespace=params.file_namespace,
                         reencode_each_frame=params.reencode_each_frame,
                         lock_palette=params.lock_palette,
+                        save_every=params.save_every,
+                        infill_mode=params.infill_mode,
+                        sampling_mode=params.sampling_mode,
                     )
 
                 if params.animation_mode != "off":

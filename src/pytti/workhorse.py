@@ -268,7 +268,7 @@ def _main(cfg: DictConfig):
         )
 
         # video source
-
+        video_frames = None
         if params.animation_mode == "Video Source":
 
             video_frames, init_image_pil, height, width = load_video_source(
@@ -506,6 +506,12 @@ def _main(cfg: DictConfig):
             base_name=base_name,
             fig=fig,
             axs=axs,
+            video_frames=video_frames,
+            optical_flows=optical_flows,
+            last_frame_semantic=last_frame_semantic,  # fml...
+            semantic_init_prompt=semantic_init_prompt,
+            init_augs=init_augs,
+            null_update=False,  # uh... we can do better.
         )
 
         # Pretty sure this isn't necessary, Hydra should take care of saving

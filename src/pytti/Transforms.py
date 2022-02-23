@@ -5,6 +5,8 @@ from PIL import Image, ImageFilter
 import numpy as np
 from pytti import DEVICE, parametric_eval
 from pytti.LossAug.DepthLoss import DepthLoss
+
+# from pytti.Image.PixelImage import PixelImage
 from adabins.infer import InferenceHelper  # Not used here
 
 TB_LOGDIR = "logs"  # to do: make this more easily configurable
@@ -339,6 +341,7 @@ def animate_2d(
     img,
     writer,
     i,
+    t=-1,
 ):
     tx, ty = parametric_eval(translate_x), parametric_eval(translate_y)
     theta = parametric_eval(rotate_2d)
@@ -377,7 +380,14 @@ def animate_video_source(
     file_namespace,
     reencode_each_frame,
     lock_palette,
+    save_every,
+    ##
+    infill_mode,
+    sampling_mode,
 ):
+    # ugh this is GROSSSSS....
+    from pytti.Image.PixelImage import PixelImage
+
     # current frame index
     frame_n = min(
         (i - pre_animation_steps) * frame_stride // steps_per_frame,
@@ -399,11 +409,12 @@ def animate_video_source(
     )
 
     # Apply flows
+    flow_im = None
     for j, optical_flow in enumerate(optical_flows):
         # This looks like something that we shouldn't have to recompute
         # but rather could be attached to the flow object as an attribute
         old_frame_n = frame_n - (2 ** j - 1) * frame_stride
-        save_n = i // params.save_every - (2 ** j - 1)
+        save_n = i // save_every - (2 ** j - 1)
         if old_frame_n < 0 or save_n < 1:
             break
 
@@ -426,8 +437,8 @@ def animate_video_source(
             next_step_pil,
             img,
             filename,
-            params.infill_mode,
-            params.sampling_mode,
+            infill_mode,
+            sampling_mode,
         )
 
         optical_flow.set_enabled(True)
@@ -453,4 +464,4 @@ def animate_video_source(
                 optical_flow.set_mask((mask_tensor - mask_accum).clamp(0, 1))
                 mask_accum.add_(mask_tensor)
 
-    return flow, next_step_pil
+    return flow_im, next_step_pil
