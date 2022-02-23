@@ -40,8 +40,9 @@ from pytti.Notebook import (
     get_frames,
     build_loss,
     format_params,
-    clear_rotoscopers,
+    # clear_rotoscopers,
 )
+from pytti.rotoscoper import clear_rotoscopers
 
 from pytti.Image import PixelImage, RGBImage, VQGANImage
 from pytti.ImageGuide import DirectImageGuide
