@@ -59,12 +59,19 @@ class TestE2e_ImageModels_FromYaml(_E2e_FromYaml):
     [{"animation_mode": v} for v in ("off", "2D", "3D", "Video Source")],
 )
 class TestE2e_AnimationModes_FromYaml(_E2e_FromYaml):
-    # pass
+    def _add_video_path_to_kwargs(self, kwargs):
+        if kwargs["animation_mode"] == "Video Source":
+            kwargs["video_path"] = "./src/pytti/assets/HebyMorgongava_512kb.mp4"
+        return kwargs
+
     def test_limited(self, kwargs):
+        kwargs = self._add_video_path_to_kwargs(kwargs)
         super().test_limited(**kwargs)
 
     def test_unlimited(self, kwargs):
+        kwargs = self._add_video_path_to_kwargs(kwargs)
         super().test_unlimited(**kwargs)
 
     def test_vqgan(self, kwargs):
+        kwargs = self._add_video_path_to_kwargs(kwargs)
         super().test_vqgan(**kwargs)
