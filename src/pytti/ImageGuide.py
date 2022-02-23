@@ -19,7 +19,8 @@ from pytti import (
     freeze_vram_usage,
 )
 from pytti.Image import DifferentiableImage
-from pytti.Notebook import tqdm, make_hbox, update_rotoscopers
+from pytti.Notebook import tqdm, make_hbox
+from pytti.rotoscoper import update_rotoscopers
 from pytti.Transforms import (
     animate_2d,
     zoom_3d,
