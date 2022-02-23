@@ -151,6 +151,7 @@ def load_video_source(
     steps_per_frame: int,
     height: int,
     width: int,
+    init_image_pil: Image.Image,
 ):
     """
     Loads a video file and returns a PIL image of the first frame
@@ -274,6 +275,7 @@ def _main(cfg: DictConfig):
                 steps_per_frame=params.steps_per_frame,
                 height=params.height,
                 width=params.width,
+                init_image_pil=init_image_pil,
             )
 
         # not a fan of modifying the params object like this, but may as well be consistent for now...

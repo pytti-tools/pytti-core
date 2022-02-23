@@ -10,6 +10,8 @@ from scipy.signal import savgol_filter
 import torch
 from torch import optim, nn
 
+from collections import Counter
+
 from pytti import (
     format_input,
     set_t,
@@ -231,6 +233,8 @@ class DirectImageGuide:
         image_augs = self.image_rep.image_loss()
         image_losses = {aug: aug(self.image_rep) for aug in image_augs}
 
+        # losses_accumulator, losses_raw_accumulator = Counter(), Counter()
+        losses, losses_raw = [], []  # just... don't care
         total_loss = 0
         if self.embedder is not None:
             for mb_i in range(gradient_accumulation_steps):
@@ -264,9 +268,15 @@ class DirectImageGuide:
                     *map(unpack_dict, [prompt_losses, aug_losses, image_losses])
                     # *map(unpack_dict, [prompt_losses])
                 )
-
+                # logger.debug(losses)
                 losses = list(losses)
+                # logger.debug(losses)
+                # losses = Counter(losses)
+                # logger.debug(losses)
                 losses_raw = list(losses_raw)
+                # losses_raw = Counter(losses_raw)
+                # losses_accumulator += losses
+                # losses_raw_accumulator += losses_raw
 
                 for v in prompt_losses.values():
                     v[0].mul_(t)
@@ -282,7 +292,9 @@ class DirectImageGuide:
                 # total_loss += total_loss_mb # this is causing it to break
                 # total_loss = total_loss_mb
 
-        losses_raw.append({"TOTAL": total_loss})
+        # losses = [{k:v} for k,v in losses_accumulator.items()]
+        # losses_raw = [{k:v} for k,v in losses_raw_accumulator.items()]
+        losses_raw.append({"TOTAL": total_loss})  # this needs to be fixed
         self.optimizer.step()
         self.image_rep.update()
         self.optimizer.zero_grad()
