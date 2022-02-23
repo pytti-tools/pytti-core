@@ -19,7 +19,7 @@ from pytti import (
     freeze_vram_usage,
     vram_usage_mode,
 )
-from pytti.Image import DifferentiableImage
+from pytti.Image import DifferentiableImage, PixelImage
 from pytti.Notebook import tqdm, make_hbox
 from pytti.rotoscoper import update_rotoscopers
 from pytti.Transforms import (
@@ -471,6 +471,7 @@ class DirectImageGuide:
 
         model = self
         img = self.image_rep
+        embedder = self.embedder
 
         model.report_out(
             i=i,
