@@ -15,7 +15,7 @@ import json, random
 import os, re
 from PIL import Image
 
-from pytti.LossAug import Loss as LossType
+# from pytti.LossAug import Loss as LossType
 
 # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
 def is_notebook():
@@ -244,54 +244,6 @@ def load_clip(params):
         logger.debug("CLIP loaded.")
 
 
-# this doesn't belong in here (animation)
-# also, surprised we're not using opencv here.
-# let's call this another unnecessary subprocess call to deprecate.
-def get_frames(path):
-    """reads the frames of the mp4 file `path` and returns them as a list of PIL images"""
-    import imageio, subprocess
-    from PIL import Image
-    from os.path import exists as path_exists
-
-    if not path_exists(path + "_converted.mp4"):
-        logger.debug(f"Converting {path}...")
-        subprocess.run(["ffmpeg", "-i", path, path + "_converted.mp4"])
-        logger.debug(f"Converted {path} to {path}_converted.mp4.")
-        logger.warning(
-            f"WARNING: future runs will automatically use {path}_converted.mp4, unless you delete it."
-        )
-    vid = imageio.get_reader(path + "_converted.mp4", "ffmpeg")
-    n_frames = vid._meta["nframes"]
-    logger.info(f"loaded {n_frames} frames. for {path}")
-    return vid
-
-
-# this doesn't belong in here ...LossAug? also... let's fix those capitalized folder names...
-def build_loss(weight_name, weight, name, img, pil_target) -> LossType:
-    """
-    Given a weight name, weight, name, image, and target image, returns a loss object
-
-    :param weight_name: The name of the loss function
-    :param weight: The weight of the loss
-    :param name: The name of the loss function
-    :param img: The image to be optimized
-    :param pil_target: The target image
-    :return: The loss function.
-    """
-    from pytti.LossAug import LOSS_DICT
-
-    weight_name, suffix = weight_name.split("_", 1)
-    if weight_name == "direct":
-        Loss = type(img).get_preferred_loss()
-    else:
-        Loss = LOSS_DICT[weight_name]
-    out = Loss.TargetImage(
-        f"{weight_name} {name}:{weight}", img.image_shape, pil_target
-    )
-    out.set_enabled(pil_target is not None)
-    return out
-
-
 # what is this even doing?
 # should probably deprecate in favor of hydra-idiomatic object intantiation
 def format_params(params, *args):
@@ -303,55 +255,3 @@ def format_params(params, *args):
     :return: A list of the values of the parameters in the same order as the args.
     """
     return [params[x] for x in args]
-
-
-#########################################
-
-# Nothing about rotoscopers is specific to notebooks.
-# Move this somewhere better.
-
-rotoscopers = []
-
-
-def clear_rotoscopers():
-    global rotoscopers
-    rotoscopers = []
-
-
-# this is... weird. also why the globals?
-def update_rotoscopers(frame_n: int):
-    """
-    For each rotoscope in the global list of rotoscopes, call the update function
-
-    :param frame_n: The current frame number
-    """
-    global rotoscopers
-    for r in rotoscopers:
-        r.update(frame_n)
-
-
-class Rotoscoper:
-    def __init__(self, video_path, target=None, thresh=None):
-        global rotoscopers
-        if video_path[0] == "-":
-            video_path = video_path[1:]
-            inverted = True
-        else:
-            inverted = False
-
-        self.frames = get_frames(video_path)
-        self.target = target
-        self.inverted = inverted
-        rotoscopers.append(self)
-
-    def update(self, frame_n):
-        """
-        Updates the mask of the attached target.
-
-        :param frame_n: The frame number to update the mask for
-        :return: Nothing.
-        """
-        if self.target is None:
-            return
-        mask_pil = Image.fromarray(self.frames.get_data(frame_n)).convert("L")
-        self.target.set_mask(mask_pil, self.inverted)

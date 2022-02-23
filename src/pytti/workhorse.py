@@ -38,11 +38,12 @@ from pytti.Notebook import (
     CLIP_MODEL_NAMES,
     load_clip,
     # get_frames,
-    build_loss,
+    # build_loss,
     format_params,
     # clear_rotoscopers,
 )
 from pytti.rotoscoper import clear_rotoscopers, get_frames
+from pytti.LossAug import build_loss
 
 from pytti.Image import PixelImage, RGBImage, VQGANImage
 from pytti.ImageGuide import DirectImageGuide
