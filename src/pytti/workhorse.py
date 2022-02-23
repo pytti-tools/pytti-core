@@ -37,12 +37,12 @@ from pytti.Notebook import (
     save_batch,
     CLIP_MODEL_NAMES,
     load_clip,
-    get_frames,
+    # get_frames,
     build_loss,
     format_params,
     # clear_rotoscopers,
 )
-from pytti.rotoscoper import clear_rotoscopers
+from pytti.rotoscoper import clear_rotoscopers, get_frames
 
 from pytti.Image import PixelImage, RGBImage, VQGANImage
 from pytti.ImageGuide import DirectImageGuide
