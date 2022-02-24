@@ -212,6 +212,31 @@ def save_batch(settings_list, path):
             f.write("\n\n")
 
 
+# ugh... just for now.
+# k:v :: configName:clipName
+# SUPPORTED_CLIP_MODELS = {
+#    'RN50x4':'RN50x4',
+#    'RN50':'RN50',
+#    'ViTB32':'ViT-B/32',
+#    'ViTB16':'ViT-B/16',
+# }
+
+import clip
+
+
+def _sanitize_for_config(in_str):
+    for char in ("/", "-"):
+        in_str = in_str.replace(char, "")
+    return in_str
+
+
+SUPPORTED_CLIP_MODELS = {
+    _sanitize_for_config(model_name): model_name
+    for model_name in clip.available_models()
+}
+
+logger.debug(SUPPORTED_CLIP_MODELS)
+
 # this doesn't belong here
 CLIP_MODEL_NAMES = None
 
@@ -226,14 +251,14 @@ def load_clip(params):
     else:
         last_names = []
     CLIP_MODEL_NAMES = []
-    if params.RN50x4:
-        CLIP_MODEL_NAMES.append("RN50x4")
-    if params.RN50:
-        CLIP_MODEL_NAMES.append("RN50")
-    if params.ViTB32:
-        CLIP_MODEL_NAMES.append("ViT-B/32")
-    if params.ViTB16:
-        CLIP_MODEL_NAMES.append("ViT-B/16")
+    # this "last_names" thing is way over complicated,
+    # and also a notebook-specific... pattern. deprecate this later as part of
+    # cleaning up globals.
+
+    for config_name, clip_name in SUPPORTED_CLIP_MODELS.items():
+        if params.get(config_name):
+            CLIP_MODEL_NAMES.append(clip_name)
+
     if last_names != CLIP_MODEL_NAMES or Perceptor.CLIP_PERCEPTORS is None:
         if CLIP_MODEL_NAMES == []:
             Perceptor.free_clip()
