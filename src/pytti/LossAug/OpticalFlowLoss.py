@@ -29,7 +29,21 @@ from pytti.Image.RGBImage import RGBImage
 
 GMA = None
 
-from importlib.resources import files as ir_files
+try:
+    from importlib.resources import files as ir_files
+except:
+    # Patch for colab using old importlib version
+    import pkg_resources
+
+    def ir_files(module):
+        if pkg_resources.resource_exists(
+            gma.__name__, "data/checkpoints/gma-sintel.pth"
+        ):
+            return pkg_resources.resource_stringsource_filename(
+                gma.__name__, "data/checkpoints/gma-sintel.pth"
+            )
+        else:
+            raise ValueError("Unable to locate GMA checkpoint.")
 
 
 def init_GMA(checkpoint_path=None):
