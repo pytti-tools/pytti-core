@@ -453,7 +453,7 @@ class DirectImageGuide:
         """
         Orchestrates animation transformations and reporting
         """
-        logger.debug("model.update called")
+        # logger.debug("model.update called")
 
         # ... I have regrets.
         params = self.params
