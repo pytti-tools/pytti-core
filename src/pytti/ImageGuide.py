@@ -507,7 +507,7 @@ class DirectImageGuide:
         )
         set_t(t)  # this won't need to be a thing with `t`` attached to the class
         if i >= params.pre_animation_steps:
-
+            # next_step_pil = None
             if (i - params.pre_animation_steps) % params.steps_per_frame == 0:
                 logger.debug(f"Time: {t:.4f} seconds")
                 update_rotoscopers(
@@ -583,13 +583,26 @@ class DirectImageGuide:
                     )
 
                 if params.animation_mode != "off":
-                    for aug in stabilization_augs:
-                        aug.set_comp(next_step_pil)
-                        aug.set_enabled(True)
-                    if last_frame_semantic is not None:
-                        last_frame_semantic.set_image(embedder, next_step_pil)
-                        last_frame_semantic.set_enabled(True)
-                    for aug in init_augs:
-                        aug.set_enabled(False)
-                    if semantic_init_prompt is not None:
-                        semantic_init_prompt.set_enabled(False)
+                    try:
+                        for aug in stabilization_augs:
+                            aug.set_comp(next_step_pil)
+                            aug.set_enabled(True)
+                        if last_frame_semantic is not None:
+                            last_frame_semantic.set_image(embedder, next_step_pil)
+                            last_frame_semantic.set_enabled(True)
+                        for aug in init_augs:
+                            aug.set_enabled(False)
+                        if semantic_init_prompt is not None:
+                            semantic_init_prompt.set_enabled(False)
+                    except UnboundLocalError:
+                        logger.critical(
+                            "\n\n-----< PYTTI-TOOLS > ------"
+                            "If you are seeing this error, it might mean "
+                            "you are using an option that expects you have "
+                            "provided an init_image or video_file.\n\nIf you "
+                            "think you are seeing this message in error, please "
+                            "file an issue here: "
+                            "https://github.com/pytti-tools/pytti-core/issues/new"
+                            "-----< PYTTI-TOOLS > ------\n\n"
+                        )
+                        raise
