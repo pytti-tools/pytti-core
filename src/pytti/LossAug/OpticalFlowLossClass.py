@@ -1,3 +1,5 @@
+from pathlib import Path
+
 # ton of unused imports in here...
 # from pytti.LossAug import MSELoss, LatentLoss
 from pytti.LossAug.MSELossClass import MSELoss
@@ -41,9 +43,10 @@ except:
         if pkg_resources.resource_exists(
             gma.__name__, "data/checkpoints/gma-sintel.pth"
         ):
-            return pkg_resources.resource_filename(
+            pathstr = pkg_resources.resource_filename(
                 gma.__name__, "data/checkpoints/gma-sintel.pth"
             )
+            return Path(pathstr)
         else:
             raise ValueError("Unable to locate GMA checkpoint.")
 
