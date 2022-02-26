@@ -15,7 +15,7 @@ import json, random
 import os, re
 from PIL import Image
 
-# from pytti.LossAug import Loss as LossType
+# from pytti.LossAug.BaseLossClass import Loss as LossType
 
 # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
 def is_notebook():

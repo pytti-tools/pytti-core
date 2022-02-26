@@ -1,5 +1,7 @@
 # ton of unused imports in here...
-from pytti.LossAug import MSELoss, LatentLoss
+# from pytti.LossAug import MSELoss, LatentLoss
+from pytti.LossAug.MSELossClass import MSELoss
+from pytti.LossAug.LatentLossClass import LatentLoss
 import sys, os, gc
 import argparse
 import os

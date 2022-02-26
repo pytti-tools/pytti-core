@@ -1,4 +1,4 @@
-from pytti.LossAug import MSELoss
+from pytti.LossAug.MSELossClass import MSELoss
 import gc, torch, os, math
 from torchvision.transforms import functional as TF
 from torch.nn import functional as F

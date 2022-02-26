@@ -61,7 +61,7 @@ from pytti import (
     reset_vram_usage,
     vram_profiling,
 )
-from pytti.LossAug.DepthLoss import init_AdaBins
+from pytti.LossAug.DepthLossClass import init_AdaBins
 
 logger.info("pytti loaded.")
 

@@ -1,12 +1,12 @@
 # This all goes down here because it'll want to import Loss from LossAug...
 # ugh, these circular imports.
 from pytti.LossAug.BaseLossClass import Loss
-from pytti.LossAug.TVLoss import TVLoss
+from pytti.LossAug.TVLossClass import TVLoss
 from pytti.LossAug.MSELossClass import MSELoss
-from pytti.LossAug.OpticalFlowLoss import OpticalFlowLoss, TargetFlowLoss
-from pytti.LossAug.DepthLoss import DepthLoss
-from pytti.LossAug.EdgeLoss import EdgeLoss
-from pytti.LossAug.LatentLoss import LatentLoss
+from pytti.LossAug.OpticalFlowLossClass import OpticalFlowLoss, TargetFlowLoss
+from pytti.LossAug.DepthLossClass import DepthLoss
+from pytti.LossAug.EdgeLossClass import EdgeLoss
+from pytti.LossAug.LatentLossClass import LatentLoss
 from pytti.LossAug.HSVLossClass import HSVLoss
 
 # from loguru import logger

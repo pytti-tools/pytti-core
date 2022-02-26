@@ -1,4 +1,4 @@
-from pytti.LossAug import MSELoss
+from pytti.LossAug.MSELossClass import MSELoss
 import gc, torch, os, math
 from pytti import DEVICE, vram_usage_mode
 from torchvision.transforms import functional as TF

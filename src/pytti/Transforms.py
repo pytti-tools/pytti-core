@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from PIL import Image, ImageFilter
 import numpy as np
 from pytti import DEVICE, parametric_eval
-from pytti.LossAug.DepthLoss import DepthLoss
+from pytti.LossAug.DepthLossClass import DepthLoss
 
 # from pytti.Image.PixelImage import PixelImage
 from adabins.infer import InferenceHelper  # Not used here
