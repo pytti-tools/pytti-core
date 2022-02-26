@@ -41,7 +41,7 @@ except:
         if pkg_resources.resource_exists(
             gma.__name__, "data/checkpoints/gma-sintel.pth"
         ):
-            return pkg_resources.resource_stringsource_filename(
+            return pkg_resources.resource_filename(
                 gma.__name__, "data/checkpoints/gma-sintel.pth"
             )
         else:
