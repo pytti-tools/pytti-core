@@ -1,60 +1,67 @@
+import argparse
+import gc
+import math
 from pathlib import Path
 
-# ton of unused imports in here...
-# from pytti.LossAug import MSELoss, LatentLoss
-from pytti.LossAug.MSELossClass import MSELoss
-from pytti.LossAug.LatentLossClass import LatentLoss
-import sys, os, gc
-import argparse
-import os
-import cv2
-import glob
-import math, copy
+from loguru import logger
 import numpy as np
 import torch
 from torch import nn
 from torch.nn import functional as F
 from PIL import Image
-import imageio
-import matplotlib.pyplot as plt
 
-# from pytti.Notebook import Rotoscoper
-from pytti.rotoscoper import Rotoscoper
+
 from torchvision.transforms import functional as TF
 
 import gma
 from gma.core.network import RAFTGMA
-from gma.core.utils import flow_viz
+
+# from gma.core.utils import flow_viz
 from gma.core.utils.utils import InputPadder
 
-from pytti.Transforms import apply_flow
 from pytti import fetch, to_pil, DEVICE, vram_usage_mode
-from pytti.Image.RGBImage import RGBImage
+from pytti.LossAug.MSELossClass import MSELoss
+from pytti.rotoscoper import Rotoscoper
+from pytti.Transforms import apply_flow
 
 GMA = None
 
 try:
-    from importlib.resources import files as ir_files
+    from importlib.resources import files as ir_files0
+
+    logger.debug("using importlib.resources.files")
+
+    def get_gma_checkpoint_path():
+        root = ir_files0(gma)
+        checkpoint_path = str(next(root.glob("**/*sintel.pth")))
+        return checkpoint_path
+
 except:
     # Patch for colab using old importlib version
     import pkg_resources
 
-    def ir_files(module):
+    def ir_files1(module):
         if pkg_resources.resource_exists(
             gma.__name__, "data/checkpoints/gma-sintel.pth"
         ):
             pathstr = pkg_resources.resource_filename(
                 gma.__name__, "data/checkpoints/gma-sintel.pth"
             )
+            logger.debug(pathstr)
             return Path(pathstr)
         else:
             raise ValueError("Unable to locate GMA checkpoint.")
 
+    logger.debug("using pkg_resources.resource_filename")
+
+    def get_gma_checkpoint_path():
+        return ir_files1(gma)
+
 
 def init_GMA(checkpoint_path=None):
     if checkpoint_path is None:
-        root = ir_files(gma)
-        checkpoint_path = str(next(root.glob("**/*sintel.pth")))
+        checkpoint_path = get_gma_checkpoint_path()
+        logger.debug(checkpoint_path)
     global GMA
     if GMA is None:
         with vram_usage_mode("GMA"):
