@@ -75,3 +75,34 @@ class TestE2e_AnimationModes_FromYaml(_E2e_FromYaml):
     def test_vqgan(self, kwargs):
         kwargs = self._add_video_path_to_kwargs(kwargs)
         super().test_vqgan(**kwargs)
+
+
+@pytest.mark.parametrize(
+    # "animation_mode", ["off","2D","3D","Video Source",
+    # ("foobar", pytest.mark.fail), ("", pytest.mark.fail), (None, pytest.mark.fail)]
+    "kwargs",
+    [
+        {"depth_stabilization_weight": 1},
+        {"flow_stabilization_weight": 1},
+        {"direct_stabilization_weight": 1},
+        {"semantic_stabilization_weight": 1},
+        {"edge_stabilization_weight": 1},
+    ],
+)
+class TestE2e_StabilizationModes_FromYaml(_E2e_FromYaml):
+    def _add_video_path_to_kwargs(self, kwargs):
+        if kwargs.get("animation_mode") == "Video Source":
+            kwargs["video_path"] = "./src/pytti/assets/HebyMorgongava_512kb.mp4"
+        return kwargs
+
+    def test_limited(self, kwargs):
+        kwargs = self._add_video_path_to_kwargs(kwargs)
+        super().test_limited(**kwargs)
+
+    def test_unlimited(self, kwargs):
+        kwargs = self._add_video_path_to_kwargs(kwargs)
+        super().test_unlimited(**kwargs)
+
+    def test_vqgan(self, kwargs):
+        kwargs = self._add_video_path_to_kwargs(kwargs)
+        super().test_vqgan(**kwargs)
