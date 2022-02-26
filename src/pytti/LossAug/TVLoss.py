@@ -1,6 +1,6 @@
 from torch.nn import functional as F
 import math
-from pytti.LossAug import Loss
+from pytti.LossAug.BaseLossClass import Loss
 
 
 def tv_loss(input):

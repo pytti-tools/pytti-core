@@ -2,7 +2,7 @@ import math, re
 from PIL import Image
 from torchvision.transforms import functional as TF
 from torch.nn import functional as F
-from pytti.LossAug import Loss
+from pytti.LossAug.BaseLossClass import Loss
 
 # from pytti.Notebook import Rotoscoper
 from pytti.rotoscoper import Rotoscoper
@@ -36,6 +36,8 @@ class MSELoss(Loss):
     def TargetImage(
         cls, prompt_string, image_shape, pil_image=None, is_path=False, device=DEVICE
     ):
+        # Why is this prompt parsing stuff here? Deprecate in favor of centralized
+        # parsing functions (if feasible)
         text, weight, stop = parse(
             prompt_string, r"(?<!^http)(?<!s):|:(?!/)", ["", "1", "-inf"]
         )

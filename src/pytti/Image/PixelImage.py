@@ -1,6 +1,6 @@
 from pytti import DEVICE, named_rearrange, replace_grad, vram_usage_mode
 from pytti.Image import DifferentiableImage
-from pytti.LossAug import HSVLoss
+from pytti.LossAug.HSVLossClass import HSVLoss
 from pytti.ImageGuide import DirectImageGuide
 import numpy as np
 import torch, math

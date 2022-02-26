@@ -15,7 +15,7 @@ params = {
     "scene_prefix": "",
     "scene_suffix": "",
     "interpolation_steps": 0,
-    "steps_per_scene": 4530,
+    "steps_per_scene": 100,  # 4530,
     "direct_image_prompts": "",
     "init_image": "",
     "direct_init_weight": "",

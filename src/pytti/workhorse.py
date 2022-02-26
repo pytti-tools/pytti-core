@@ -326,6 +326,8 @@ def _main(cfg: DictConfig):
         if init_image_pil is not None:
             if not restore:
                 logger.info("Encoding image...")
+                # logger.debug(type(img)) # pytti.Image.PixelImage.PixelImage
+                # logger.debug(type(init_image_pil)) # PIL.Image.Image
                 img.encode_image(init_image_pil)
                 logger.info("Encoded Image:")
                 # pretty sure this assumes we're in a notebook
