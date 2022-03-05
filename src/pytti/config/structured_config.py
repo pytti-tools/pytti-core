@@ -2,8 +2,11 @@ from dataclasses import MISSING
 from attrs import define, field
 import hydra
 from hydra.core.config_store import ConfigStore
+from functools import partial
 
-
+def check_input_against_list(attribute, value, valid_values):
+    if value not in valid_values:
+        raise ValueError(f"{value} is not a valid input for {attribute.name} Valid inputs are {valid_values}")
 
 @define(auto_attribs=True)
 class ConfigSchema:
@@ -26,9 +29,7 @@ class ConfigSchema:
     animation_mode: str =  field(default='3D')
     @animation_mode.validator
     def check(self, attribute, value):
-        valid_inputs = ['off', '2D', '3D', 'Video Source']
-        if value not in valid_inputs:
-            raise ValueError(f"""{value} is not a valid input for {attribute.name} Valid inputs are {valid_inputs}""")
+        check_input_against_list(attribute, value, valid_inputs=['off', '2D', '3D', 'Video Source'])
 
     ##################################
 
@@ -46,7 +47,9 @@ class ConfigSchema:
     cut_pow: int = 2
     cutout_border: float = 0.25
     border_mode: str = 'clamp'
-
+    @border_mode.validator
+    def check(self, attribute, value):
+        check_input_against_list(attribute, value, valid_inputs=['clamp', 'mirror', 'wrap', 'black', 'smear'])
     ##################################
 
     ##########
@@ -72,7 +75,13 @@ class ConfigSchema:
     zoom_y_2d: str = '0'
 
     sampling_mode: str = 'bicubic'
+    @sampling_mode.validator
+    def check(self, attribute, value):
+        check_input_against_list(attribute, value, valid_inputs=['nearest', 'bilinear', 'bicubic'])
     infill_mode: str = 'wrap'
+    @infill_mode.validator
+    def check(self, attribute, value):
+        check_input_against_list(attribute, value, valid_inputs=['mirror', 'wrap', 'black', 'smear'])
     pre_animation_steps: int =  100
     lock_camera: bool = True
 
