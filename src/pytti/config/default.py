@@ -1,0 +1,166 @@
+from dataclasses import MISSING
+from attrs import define, field
+import hydra
+from hydra.core.config_store import ConfigStore
+
+
+
+@define(auto_attribs=True)
+class ConfigSchema:
+    #############
+    ## Prompts ##
+    #############
+    scenes: str = None
+    scene_prefix:str = ''
+    scene_suffix:str =  ''
+
+    direct_image_prompts: str = ''
+    init_image: str = ''
+    direct_init_weight: str = ''
+    semantic_init_weight: str = ''
+
+    ##################################
+
+    image_model: str = 'Limited Palette'
+    vqgan_model: str =  'sflckr'
+    animation_mode: str =  field(default='3D')
+    @animation_mode.validator
+    def check(self, attribute, value):
+        valid_inputs = ['off', '2D', '3D', 'Video Source']
+        if value not in valid_inputs:
+            raise ValueError(f"""{value} is not a valid input for {attribute.name} Valid inputs are {valid_inputs}""")
+
+    ##################################
+
+    width: int = 180
+    height: int = 112
+
+    steps_per_scene: int = 100
+    steps_per_frame: int = 50
+    interpolation_steps: int = 0
+
+    learning_rate: float = 0.02  # based on pytti.Image.DifferentiableImage
+    reset_lr_each_frame: bool = True
+    seed: str = '${now:%f}' # microsecond component of timestamp. Basically random.
+    cutouts: int = 40
+    cut_pow: int = 2
+    cutout_border: float = 0.25
+    border_mode: str = 'clamp'
+
+    ##################################
+
+    ##########
+    # Camera #
+    ##########
+
+    field_of_view: int = 60
+    near_plane: int = 1
+    far_plane: int = 10000
+
+    ######################
+    ### Induced Motion ###
+    ######################
+
+    #  _2d and _3d only apply to those animation modes
+
+    translate_x: str = '-1700*sin(radians(1.5))'
+    translate_y: str = '0'
+    translate_z_3d: str = '(50+10*t)*sin(t/10*pi)**2'
+    rotate_3d: str = '[cos(radians(1.5)), 0, -sin(radians(1.5))/sqrt(2), sin(radians(1.5))/sqrt(2)]'
+    rotate_2d: str = '5'
+    zoom_x_2d: str = '0'
+    zoom_y_2d: str = '0'
+
+    sampling_mode: str = 'bicubic'
+    infill_mode: str = 'wrap'
+    pre_animation_steps: int =  100
+    lock_camera: bool = True
+
+    ##################################
+
+    #######################
+    ### Limited Palette ###
+    #######################
+
+    pixel_size: int = 4
+    smoothing_weight: float = 0.02
+    random_initial_palette: bool = False
+    palette_size: int = 6
+    palettes: int = 9
+    gamma: int = 1
+    hdr_weight: float = 0.01
+    palette_normalization_weight: float = 0.2
+    show_palette: bool = False
+    target_palette: str = ''
+    lock_palette: bool = False
+
+    ##############
+    ### ffmpeg ###
+    ##############
+
+    frames_per_second: int = 12
+
+    direct_stabilization_weight: str = ''
+    semantic_stabilization_weight: str = ''
+    depth_stabilization_weight: str = ''
+    edge_stabilization_weight: str = ''
+    flow_stabilization_weight: str = ''
+
+    #####################################
+    ### animation_mode = Video Source ###
+    #####################################
+
+    video_path: str = ''
+    frame_stride: int = 1
+    reencode_each_frame: bool = True
+    flow_long_term_samples: int = 1
+
+    ############
+    ### CLIP ###
+    ############
+
+    ViTB32: bool = True
+    ViTB16: bool = False
+    RN50: bool = False
+    RN50x4: bool =False
+
+    ###############
+    ### Outputs ###
+    ###############
+
+    file_namespace: str = 'default'
+    allow_overwrite: bool = False
+    display_every: int = 50
+    clear_every: int = 0
+    display_scale: int = 1
+    save_every: int = 50
+
+    backups: int = 5
+    show_graphs: bool = False
+    approximate_vram_usage: bool = False
+
+    #####################################
+
+    #################
+    ### Model I/O ###
+    #################
+
+    # This is where pytti will expect to find model weights.
+    # Each model will be assigned a separate subdirectory within this folder
+    # If the expected model artifacts are not present, pytti will attempt to download them.
+    models_parent_dir: str = '${user_cache:}'
+
+    ######################################
+
+    ##########################
+    ### Performance tuning ###
+    ##########################
+
+    gradient_accumulation_steps: int = 1
+    
+    
+def register():
+    cs = ConfigStore.instance()
+    cs.store(name="config_schema", node=ConfigSchema)
+    
+register()
