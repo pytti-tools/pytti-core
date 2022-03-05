@@ -2,10 +2,9 @@
 #  - https://github.com/facebookresearch/vissl/blob/main/vissl/config/defaults.yaml
 #  - https://vissl.readthedocs.io/en/latest/hydra_config.html
 
-# not positive that this is the right way to work the structured config validation into this
 defaults:
-  - config_schema
   - _self_
+  - conf: ???
 #  - conf: demo
 
 #############
@@ -25,7 +24,7 @@ semantic_init_weight: ''
 
 image_model: Limited Palette
 vqgan_model: sflckr
-animation_mode: 2D
+animation_mode: 3D
 
 ##################################
 
