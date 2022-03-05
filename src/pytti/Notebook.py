@@ -15,6 +15,8 @@ import json, random
 import os, re
 from PIL import Image
 
+# from pytti.LossAug.BaseLossClass import Loss as LossType
+
 # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
 def is_notebook():
     try:
@@ -77,6 +79,21 @@ def get_last_file(directory, pattern):
 
 # this doesn't belong in here
 def get_next_file(directory, pattern, templates):
+    """
+    Given a directory, a file pattern, and a list of templates,
+    return the next file name and index that matches the pattern.
+
+    If no files match the pattern, return the first template and 0.
+
+    If multiple files match the pattern, sort the files by index and return the next index.
+
+    If the index is the last index in the list of templates, return the first template and 0
+
+    :param directory: The directory where the files are located
+    :param pattern: The pattern to match files against
+    :param templates: A list of file names that are used to create the new file
+    :return: The next file name and the next index.
+    """
 
     files = [f for f in os.listdir(directory) if re.match(pattern, f)]
     if len(files) == 0:
@@ -195,6 +212,31 @@ def save_batch(settings_list, path):
             f.write("\n\n")
 
 
+# ugh... just for now.
+# k:v :: configName:clipName
+# SUPPORTED_CLIP_MODELS = {
+#    'RN50x4':'RN50x4',
+#    'RN50':'RN50',
+#    'ViTB32':'ViT-B/32',
+#    'ViTB16':'ViT-B/16',
+# }
+
+import clip
+
+
+def _sanitize_for_config(in_str):
+    for char in ("/", "-"):
+        in_str = in_str.replace(char, "")
+    return in_str
+
+
+SUPPORTED_CLIP_MODELS = {
+    _sanitize_for_config(model_name): model_name
+    for model_name in clip.available_models()
+}
+
+logger.debug(SUPPORTED_CLIP_MODELS)
+
 # this doesn't belong here
 CLIP_MODEL_NAMES = None
 
@@ -209,14 +251,14 @@ def load_clip(params):
     else:
         last_names = []
     CLIP_MODEL_NAMES = []
-    if params.RN50x4:
-        CLIP_MODEL_NAMES.append("RN50x4")
-    if params.RN50:
-        CLIP_MODEL_NAMES.append("RN50")
-    if params.ViTB32:
-        CLIP_MODEL_NAMES.append("ViT-B/32")
-    if params.ViTB16:
-        CLIP_MODEL_NAMES.append("ViT-B/16")
+    # this "last_names" thing is way over complicated,
+    # and also a notebook-specific... pattern. deprecate this later as part of
+    # cleaning up globals.
+
+    for config_name, clip_name in SUPPORTED_CLIP_MODELS.items():
+        if params.get(config_name):
+            CLIP_MODEL_NAMES.append(clip_name)
+
     if last_names != CLIP_MODEL_NAMES or Perceptor.CLIP_PERCEPTORS is None:
         if CLIP_MODEL_NAMES == []:
             Perceptor.free_clip()
@@ -227,84 +269,14 @@ def load_clip(params):
         logger.debug("CLIP loaded.")
 
 
-# this doesn't belong in here (animation)
-def get_frames(path):
-    """reads the frames of the mp4 file `path` and returns them as a list of PIL images"""
-    import imageio, subprocess
-    from PIL import Image
-    from os.path import exists as path_exists
-
-    if not path_exists(path + "_converted.mp4"):
-        logger.debug(f"Converting {path}...")
-        subprocess.run(["ffmpeg", "-i", path, path + "_converted.mp4"])
-        logger.debug(f"Converted {path} to {path}_converted.mp4.")
-        logger.warning(
-            f"WARNING: future runs will automatically use {path}_converted.mp4, unless you delete it."
-        )
-    vid = imageio.get_reader(path + "_converted.mp4", "ffmpeg")
-    n_frames = vid._meta["nframes"]
-    logger.info(f"loaded {n_frames} frames. for {path}")
-    return vid
-
-
-# this doesn't belong in here ...LossAug? also... let's fix those capitalized folder names...
-def build_loss(weight_name, weight, name, img, pil_target):
-    from pytti.LossAug import LOSS_DICT
-
-    weight_name, suffix = weight_name.split("_", 1)
-    if weight_name == "direct":
-        Loss = type(img).get_preferred_loss()
-    else:
-        Loss = LOSS_DICT[weight_name]
-    out = Loss.TargetImage(
-        f"{weight_name} {name}:{weight}", img.image_shape, pil_target
-    )
-    out.set_enabled(pil_target is not None)
-    return out
-
-
 # what is this even doing?
 # should probably deprecate in favor of hydra-idiomatic object intantiation
 def format_params(params, *args):
+    """
+    Given a dictionary of parameters and a list of keys, return a list of values in the same order as
+    the keys
+
+    :param params: a dictionary of parameters that we're going to pass into our function
+    :return: A list of the values of the parameters in the same order as the args.
+    """
     return [params[x] for x in args]
-
-
-#########################################
-
-# Nothing about rotoscopers is specific to notebooks.
-# Move this somewhere better.
-
-rotoscopers = []
-
-
-def clear_rotoscopers():
-    global rotoscopers
-    rotoscopers = []
-
-
-# this is... weird. also why the globals?
-def update_rotoscopers(frame_n):
-    global rotoscopers
-    for r in rotoscopers:
-        r.update(frame_n)
-
-
-class Rotoscoper:
-    def __init__(self, video_path, target=None, thresh=None):
-        global rotoscopers
-        if video_path[0] == "-":
-            video_path = video_path[1:]
-            inverted = True
-        else:
-            inverted = False
-
-        self.frames = get_frames(video_path)
-        self.target = target
-        self.inverted = inverted
-        rotoscopers.append(self)
-
-    def update(self, frame_n):
-        if self.target is None:
-            return
-        mask_pil = Image.fromarray(self.frames.get_data(frame_n)).convert("L")
-        self.target.set_mask(mask_pil, self.inverted)

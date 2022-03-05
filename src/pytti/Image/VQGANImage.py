@@ -169,7 +169,7 @@ class VQGANImage(EMAImage):
 
     @classmethod
     def get_preferred_loss(cls):
-        from pytti.LossAug import LatentLoss
+        from pytti.LossAug.LatentLossClass import LatentLoss
 
         return LatentLoss
 

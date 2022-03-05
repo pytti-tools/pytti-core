@@ -19,3 +19,11 @@
 # Documentation
 
 Detailed setup and usage instructions can be found here: https://pytti-tools.github.io/pytti-book/intro.html
+
+# Development
+
+* Rebuild, reinstall, and run tests:
+    ```
+    pip uninstall -y pyttitools-core; rm -rf build; pip install .
+    python -m pytest --ignore=vendor -v -s
+    ```

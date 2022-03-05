@@ -27,7 +27,9 @@ from pytti import (
     vram_usage_mode,
 )
 from pytti.Image import RGBImage
-from pytti.Notebook import Rotoscoper
+
+# from pytti.Notebook import Rotoscoper
+from pytti.rotoscoper import Rotoscoper
 
 
 def spherical_dist_loss(x, y):
