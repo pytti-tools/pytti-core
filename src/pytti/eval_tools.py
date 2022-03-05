@@ -57,6 +57,18 @@ def fetch(url_or_path):
 
 
 def parse(string, split, defaults):
+    """
+    Given a string, a regex pattern, and a list of defaults,
+    split the string using the regex pattern,
+    and return the split string + the defaults
+
+    :param string: The string to be parsed
+    :param split: The regex that defines where to split the string
+    :param defaults: A list of default values for the tokens
+    :return: A list of the tokens.
+    """
     tokens = re.split(split, string, len(defaults) - 1)
-    tokens = tokens + defaults[len(tokens) :]
+    tokens = (
+        tokens + defaults[len(tokens) :]
+    )  # this is just a weird way to backfill defaults.
     return tokens

@@ -90,7 +90,7 @@ class DifferentiableImage(nn.Module):
 
     @classmethod
     def get_preferred_loss(cls):
-        from pytti.LossAug import HSVLoss
+        from pytti.LossAug.HSVLossClass import HSVLoss
 
         return HSVLoss
 

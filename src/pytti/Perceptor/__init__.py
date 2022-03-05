@@ -4,7 +4,7 @@ from pytti import DEVICE, vram_usage_mode
 
 CLIP_PERCEPTORS = None
 
-
+# this should probably be a method on the multiperceptor guide
 @vram_usage_mode("CLIP")
 def init_clip(clip_models):
     global CLIP_PERCEPTORS
