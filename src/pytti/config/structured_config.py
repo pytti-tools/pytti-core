@@ -1,5 +1,6 @@
 from dataclasses import MISSING
 from functools import partial
+from typing import Optional
 
 import hydra
 from attrs import define, field
@@ -29,9 +30,9 @@ class ConfigSchema:
 
     ##################################
 
-    image_model: str = "Limited Palette"
+    image_model: str = "VQGAN"
     vqgan_model: str = "sflckr"
-    animation_mode: str = field(default="3D")
+    animation_mode: str = field(default="off")
     @animation_mode.validator
     def check(self, attribute, value):
         check_input_against_list(
@@ -47,7 +48,7 @@ class ConfigSchema:
     steps_per_frame: int = 50
     interpolation_steps: int = 0
 
-    learning_rate: float = 0.02  # based on pytti.Image.DifferentiableImage
+    learning_rate: Optional[float] = None  # based on pytti.Image.DifferentiableImage
     reset_lr_each_frame: bool = True
     seed: str = "${now:%f}"  # microsecond component of timestamp. Basically random.
     cutouts: int = 40
@@ -76,13 +77,13 @@ class ConfigSchema:
 
     #  _2d and _3d only apply to those animation modes
 
-    translate_x: str = "-1700*sin(radians(1.5))"
+    translate_x: str = "0"
     translate_y: str = "0"
-    translate_z_3d: str = "(50+10*t)*sin(t/10*pi)**2"
+    translate_z_3d: str = "0"
     rotate_3d: str = (
-        "[cos(radians(1.5)), 0, -sin(radians(1.5))/sqrt(2), sin(radians(1.5))/sqrt(2)]"
+        "[1, 0, 0, 0]"
     )
-    rotate_2d: str = "5"
+    rotate_2d: str = "0"
     zoom_x_2d: str = "0"
     zoom_y_2d: str = "0"
 
@@ -148,8 +149,12 @@ class ConfigSchema:
 
     ViTB32: bool = True
     ViTB16: bool = False
+    ViTL14: bool = False
     RN50: bool = False
+    RN101: bool = False
     RN50x4: bool = False
+    RN50x16: bool = False
+    RN50x64: bool = False
 
     ###############
     ### Outputs ###
@@ -162,7 +167,7 @@ class ConfigSchema:
     display_scale: int = 1
     save_every: int = 50
 
-    backups: int = 5
+    backups: int = 0
     show_graphs: bool = False
     approximate_vram_usage: bool = False
 
