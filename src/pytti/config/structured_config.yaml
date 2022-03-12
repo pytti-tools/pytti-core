@@ -1,0 +1,3 @@
+# not super sure this is the right way to do this
+defaults:
+  - config_schema
