@@ -329,12 +329,10 @@ class DirectImageGuide:
                     df.index.name = "Step"
             else:
                 for j, (df, loss) in enumerate(zip(self.dataframe, losses_raw)):
-                    self.dataframe[j] = df.append(
-                        pd.DataFrame(
-                            {str(k): float(v) for k, v in loss.items()}, index=[i]
-                        ),
-                        ignore_index=False,
-                    )
+                    frames = [df] + [pd.DataFrame(
+                        {str(k): float(v) for k, v in loss.items()}, index=[i]
+                    )]
+                    self.dataframe[j] = pd.concat(frames, ignore_index=False)
                     self.dataframe[j].name = "Step"
 
         return {"TOTAL": float(total_loss)}
