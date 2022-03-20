@@ -1,7 +1,8 @@
 from pytti import DEVICE, named_rearrange, replace_grad, vram_usage_mode
 from pytti.Image.differentiable_image import DifferentiableImage
 from pytti.LossAug.HSVLossClass import HSVLoss
-from pytti.ImageGuide import DirectImageGuide
+
+# from pytti.ImageGuide import DirectImageGuide
 import numpy as np
 import torch, math
 from torch import nn, optim
@@ -430,6 +431,8 @@ class PixelImage(DifferentiableImage):
             # no embedder, no prompts... we don't really need an "ImageGuide" class instance here, do we?
             # We could probably optimize a DifferentiableImage object directly here. I guess maybe
             # cutouts gets applied? Wait no, there's no embedder so there's no cutouts, right?
+            from pytti.ImageGuide import DirectImageGuide
+
             guide = DirectImageGuide(
                 self, None, optimizer=optim.Adam([self.pallet, self.tensor], lr=0.1)
             )
