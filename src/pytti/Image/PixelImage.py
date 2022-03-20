@@ -370,7 +370,7 @@ class PixelImage(DifferentiableImage):
         value_fracs = value_fracs.unsqueeze(-1).unsqueeze(-1)
 
         pallet_weights = self.tensor.movedim(0, 2)
-        pallets = F.one_hot(pallet_weights.argmax(dim=2), num_classes=self.n_pallets)
+        # pallets = F.one_hot(pallet_weights.argmax(dim=2), num_classes=self.n_pallets)
         pallet_weights = pallet_weights.softmax(dim=2).unsqueeze(-1)
 
         colors_cont = (
