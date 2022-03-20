@@ -232,10 +232,13 @@ class VQGANImage(EMAImage):
         vqgan_config = model_artifacts_path / f"{model_name}.yaml"
         vqgan_checkpoint = model_artifacts_path / f"{model_name}.ckpt"
         logger.debug(vqgan_config)
+        logger.debug(vqgan_config.absolute())
+        logger.debug(vqgan_checkpoint.absolute())
         logger.debug(vqgan_checkpoint)
         # good lord... the nested if statements and calling curl with subprocess... so much about this needs to change.
         # for now, let's just use it the way it is and copy the file where it needs to go.
-        if not path_exists(vqgan_config):
+        # if not path_exists(vqgan_config):
+        if not vqgan_config.exists():
             logger.warning(
                 f"WARNING: VQGAN config file {vqgan_config} not found. Initializing download."
             )
@@ -248,7 +251,8 @@ class VQGANImage(EMAImage):
                     f"ERROR: VQGAN model {model_name} config failed to download! Please contact model host or find a new one."
                 )
                 raise FileNotFoundError(f"VQGAN {model_name} config not found")
-        if not path_exists(vqgan_checkpoint):
+        # if not path_exists(vqgan_checkpoint):
+        if not vqgan_checkpoint.exists():
             logger.warning(
                 f"WARNING: VQGAN checkpoint file {vqgan_checkpoint} not found. Initializing download."
             )
