@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 from pytti.Image.differentiable_image import DifferentiableImage
 
