@@ -1,4 +1,5 @@
 from torch import nn
+from pytti.Image.differentiable_image import DifferentiableImage
 
 
 class EMAImage(DifferentiableImage):
