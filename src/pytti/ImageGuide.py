@@ -19,7 +19,8 @@ from pytti import (
     freeze_vram_usage,
     vram_usage_mode,
 )
-from pytti.Image import DifferentiableImage, PixelImage
+from pytti.Image.differentiable_image import DifferentiableImage
+from pytti.Image.PixelImage import PixelImage
 from pytti.Notebook import tqdm, make_hbox
 from pytti.rotoscoper import update_rotoscopers
 from pytti.Transforms import (
@@ -329,9 +330,11 @@ class DirectImageGuide:
                     df.index.name = "Step"
             else:
                 for j, (df, loss) in enumerate(zip(self.dataframe, losses_raw)):
-                    frames = [df] + [pd.DataFrame(
-                        {str(k): float(v) for k, v in loss.items()}, index=[i]
-                    )]
+                    frames = [df] + [
+                        pd.DataFrame(
+                            {str(k): float(v) for k, v in loss.items()}, index=[i]
+                        )
+                    ]
                     self.dataframe[j] = pd.concat(frames, ignore_index=False)
                     self.dataframe[j].name = "Step"
 
@@ -386,6 +389,8 @@ class DirectImageGuide:
                 display.display(
                     im.resize((display_width, display_height), Image.LANCZOS)
                 )
+            logger.debug(PixelImage)
+            logger.debug(type(PixelImage))
             if show_palette and isinstance(img, PixelImage):
                 logger.debug("Palette:")
                 display.display(img.render_pallet())
