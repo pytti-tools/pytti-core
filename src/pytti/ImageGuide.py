@@ -19,6 +19,7 @@ from pytti import (
     freeze_vram_usage,
     vram_usage_mode,
 )
+from pytti.AudioParse import SpectralAudioParser
 from pytti.Image.differentiable_image import DifferentiableImage
 from pytti.Image.PixelImage import PixelImage
 from pytti.Notebook import tqdm, make_hbox
@@ -107,6 +108,11 @@ class DirectImageGuide:
         else:
             self.optimizer = optimizer
         self.dataframe = []
+
+        if params.input_audio:
+            self.audio_parser = SpectralAudioParser(params)
+        else:
+            self.audio_parser = None
 
         self.null_update = null_update
         self.params = params
@@ -515,8 +521,14 @@ class DirectImageGuide:
         t = (i - params.pre_animation_steps) / (
             params.steps_per_frame * params.frames_per_second
         )
-        set_t(t)  # this won't need to be a thing with `t`` attached to the class
+        if self.audio_parser is None:
+            set_t(t, 0, 0, 0)
+        # set_t(t)  # this won't need to be a thing with `t`` attached to the class
         if i >= params.pre_animation_steps:
+            if self.audio_parser is not None:
+                lo, mid, hi = self.audio_parser.get_params(t)
+                logger.debug(f"Time: {t:.4f} seconds, audio params: lo: {lo:.4f}, mid: {mid:.4f}, hi: {hi:.4f}")
+                set_t(t, lo, mid, hi)
             # next_step_pil = None
             if (i - params.pre_animation_steps) % params.steps_per_frame == 0:
                 logger.debug(f"Time: {t:.4f} seconds")
