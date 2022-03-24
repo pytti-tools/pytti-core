@@ -19,6 +19,7 @@ from pytti import (
     freeze_vram_usage,
     vram_usage_mode,
 )
+from pytti.AudioParse import SpectralAudioParser
 from pytti.Image.differentiable_image import DifferentiableImage
 from pytti.Image.PixelImage import PixelImage
 from pytti.Notebook import tqdm, make_hbox
@@ -107,6 +108,11 @@ class DirectImageGuide:
         else:
             self.optimizer = optimizer
         self.dataframe = []
+
+        if params.input_audio:
+            self.audio_parser = SpectralAudioParser(params)
+        else:
+            self.audio_parser = None
 
         # self.null_update = null_update
         self.params = params
@@ -365,4 +371,167 @@ class DirectImageGuide:
         """
         update hook called ever step
         """
+<<<<<<< HEAD
         pass
+=======
+        # logger.debug("model.update called")
+
+        # ... I have regrets.
+        params = self.params
+        writer = self.writer
+        OUTPATH = self.OUTPATH
+        base_name = self.base_name
+        fig = self.fig
+        axs = self.axs
+        video_frames = self.video_frames
+        optical_flows = self.optical_flows
+        stabilization_augs = self.stabilization_augs
+        last_frame_semantic = self.last_frame_semantic
+        semantic_init_prompt = self.semantic_init_prompt
+        init_augs = self.init_augs
+
+        model = self
+        img = self.image_rep
+        embedder = self.embedder
+
+        model.report_out(
+            i=i,
+            stage_i=stage_i,
+            # model=model,
+            writer=writer,
+            fig=fig,  # default to None...
+            axs=axs,  # default to None...
+            clear_every=params.clear_every,
+            display_every=params.display_every,
+            approximate_vram_usage=params.approximate_vram_usage,
+            display_scale=params.display_scale,
+            show_graphs=params.show_graphs,
+            show_palette=params.show_palette,
+        )
+
+        model.save_out(
+            i=i,
+            # img=img,
+            writer=writer,
+            OUTPATH=OUTPATH,
+            base_name=base_name,
+            save_every=params.save_every,
+            file_namespace=params.file_namespace,
+            backups=params.backups,
+        )
+
+        # animate
+        ################
+        ## TO DO: attach T as a class attribute
+        t = (i - params.pre_animation_steps) / (
+            params.steps_per_frame * params.frames_per_second
+        )
+        if self.audio_parser is None:
+            set_t(t, 0, 0, 0)
+        # set_t(t)  # this won't need to be a thing with `t`` attached to the class
+        if i >= params.pre_animation_steps:
+            if self.audio_parser is not None:
+                lo, mid, hi = self.audio_parser.get_params(t)
+                logger.debug(f"Time: {t:.4f} seconds, audio params: lo: {lo:.4f}, mid: {mid:.4f}, hi: {hi:.4f}")
+                set_t(t, lo, mid, hi)
+            # next_step_pil = None
+            if (i - params.pre_animation_steps) % params.steps_per_frame == 0:
+                logger.debug(f"Time: {t:.4f} seconds")
+                # update_rotoscopers(
+                ROTOSCOPERS.update_rotoscopers(
+                    ((i - params.pre_animation_steps) // params.steps_per_frame + 1)
+                    * params.frame_stride
+                )
+                if params.reset_lr_each_frame:
+                    model.set_optim(None)
+
+                if params.animation_mode == "2D":
+
+                    next_step_pil = animate_2d(
+                        translate_y=params.translate_y,
+                        translate_x=params.translate_x,
+                        rotate_2d=params.rotate_2d,
+                        zoom_x_2d=params.zoom_x_2d,
+                        zoom_y_2d=params.zoom_y_2d,
+                        infill_mode=params.infill_mode,
+                        sampling_mode=params.sampling_mode,
+                        writer=writer,
+                        i=i,
+                        img=img,
+                        t=t,  # just here for logging
+                    )
+
+                    ###########################
+                elif params.animation_mode == "3D":
+                    try:
+                        im
+                    except NameError:
+                        im = img.decode_image()
+                    with vram_usage_mode("Optical Flow Loss"):
+                        # zoom_3d -> rename to animate_3d or transform_3d
+                        flow, next_step_pil = zoom_3d(
+                            img,
+                            (
+                                params.translate_x,
+                                params.translate_y,
+                                params.translate_z_3d,
+                            ),
+                            params.rotate_3d,
+                            params.field_of_view,
+                            params.near_plane,
+                            params.far_plane,
+                            border_mode=params.infill_mode,
+                            sampling_mode=params.sampling_mode,
+                            stabilize=params.lock_camera,
+                        )
+                        freeze_vram_usage()
+
+                    for optical_flow in optical_flows:
+                        optical_flow.set_last_step(im)
+                        optical_flow.set_target_flow(flow)
+                        optical_flow.set_enabled(True)
+
+                elif params.animation_mode == "Video Source":
+
+                    flow_im, next_step_pil = animate_video_source(
+                        i=i,
+                        img=img,
+                        video_frames=video_frames,
+                        optical_flows=optical_flows,
+                        base_name=base_name,
+                        pre_animation_steps=params.pre_animation_steps,
+                        frame_stride=params.frame_stride,
+                        steps_per_frame=params.steps_per_frame,
+                        file_namespace=params.file_namespace,
+                        reencode_each_frame=params.reencode_each_frame,
+                        lock_palette=params.lock_palette,
+                        save_every=params.save_every,
+                        infill_mode=params.infill_mode,
+                        sampling_mode=params.sampling_mode,
+                    )
+
+                if params.animation_mode != "off":
+                    try:
+                        for aug in stabilization_augs:
+                            aug.set_comp(next_step_pil)
+                            aug.set_enabled(True)
+                        if last_frame_semantic is not None:
+                            last_frame_semantic.set_image(embedder, next_step_pil)
+                            last_frame_semantic.set_enabled(True)
+                        for aug in init_augs:
+                            aug.set_enabled(False)
+                        if semantic_init_prompt is not None:
+                            semantic_init_prompt.set_enabled(False)
+                    except UnboundLocalError:
+                        logger.critical(
+                            "\n\n-----< PYTTI-TOOLS > ------"
+                            "If you are seeing this error, it might mean "
+                            "you are using an option that expects you have "
+                            "provided an init_image or video_file.\n\nIf you "
+                            "think you are seeing this message in error, please "
+                            "file an issue here: "
+                            "https://github.com/pytti-tools/pytti-core/issues/new"
+                            "-----< PYTTI-TOOLS > ------\n\n"
+                        )
+                        raise
+>>>>>>> 57553a3 (feat: initial rough audio parsing logic)

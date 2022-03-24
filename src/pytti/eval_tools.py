@@ -5,6 +5,9 @@ import io
 
 math_env = None
 global_t = 0
+global_fLo = 0
+global_fMid = 0
+global_fHi = 0
 eval_memo = {}
 
 
@@ -27,6 +30,9 @@ def parametric_eval(string, **vals):
             )
         math_env.update(vals)
         math_env["t"] = global_t
+        math_env["fLo"] = global_fLo
+        math_env["fMid"] = global_fMid
+        math_env["fHi"] = global_fHi
         try:
             output = eval(string, math_env)
         except SyntaxError as e:
@@ -37,9 +43,12 @@ def parametric_eval(string, **vals):
         return string
 
 
-def set_t(t):
-    global global_t, eval_memo
+def set_t(t, fLo, fMid, fHi):
+    global global_t, global_fLo, global_fMid, global_fHi, eval_memo
     global_t = t
+    global_fLo = fLo
+    global_fMid = fMid
+    global_fHi = fHi
     eval_memo = {}
 
 
