@@ -86,14 +86,20 @@ class SpectralAudioParser:
                     high_bucket += fft[i]
                     high_count += 1
             # mean energy per bucket
-            low_bucket = low_bucket / low_count
-            mid_bucket = mid_bucket / mid_count
-            high_bucket = high_bucket / high_count
+            if low_count > 0 and mid_count > 0 and high_count > 0:    
+                low_bucket = low_bucket / low_count
+                mid_bucket = mid_bucket / mid_count
+                high_bucket = high_bucket / high_count
+            else:
+                return (0,0,0)
             # normalize to [0,1] range
             max_val = np.max(fft)
-            low_bucket = low_bucket / max_val
-            mid_bucket = mid_bucket / max_val
-            high_bucket = high_bucket / max_val
-            return (low_bucket, mid_bucket, high_bucket)
+            if max_val > 0:
+                low_bucket = low_bucket / max_val
+                mid_bucket = mid_bucket / max_val
+                high_bucket = high_bucket / max_val
+            else:
+                return (0,0,0)
+            return (float(low_bucket), float(mid_bucket), float(high_bucket))
         else:
             return (0, 0, 0)
