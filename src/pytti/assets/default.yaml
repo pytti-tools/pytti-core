@@ -81,6 +81,11 @@ far_plane: 10000
 ######################
 ### Induced Motion ###
 ######################
+input_audio: ""
+input_audio_offset: 0
+input_audio_window_size: 8192
+input_audio_band_split_low_medium: 150
+input_audio_band_split_medium_high: 300
 
 pre_animation_steps: 100
 lock_camera: true
