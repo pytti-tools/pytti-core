@@ -54,6 +54,7 @@ class SpectralAudioParser:
             if len(window_samples) < self.window_size:
                 # audio input file has likely ended
                 # TODO could round down to the next pow2 then do it anyway. not a critical case though IMO.
+                logger.debug(f"Warning: sample offset is out of range at time offset {t+self.input_audio_offset}s. Returning 0 vector")
                 return (0, 0, 0)
             # fade-in / fade-out window
             window_samples = window_samples * np.hamming(len(window_samples))
