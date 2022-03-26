@@ -32,7 +32,7 @@ class SpectralAudioParser:
                     break
             if len(self.audio_samples) < 0:
                 raise RuntimeError("Audio samples are empty, assuming load failed")
-            logger.debug(f"initialized audio file {params.input_audio}")
+            logger.debug(f"initialized audio file {params.input_audio}, samples read: {len(self.audio_samples)}")
             self.input_audio_offset = params.input_audio_offset
             self.window_size = params.input_audio_window_size
             self.low_cutoff = params.input_audio_band_split_low_medium
