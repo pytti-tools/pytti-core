@@ -50,6 +50,7 @@ class SpectralAudioParser:
         """
         # Get the point in time (sample-offset) in the track in seconds based on sample-rate
         sample_offset = int(t * SAMPLERATE + self.input_audio_offset * SAMPLERATE)
+        logger.debug(f"Analyzing audio at {self.input_audio_offset+t}s")
         if sample_offset < len(self.audio_samples):
             window_samples = self.audio_samples[sample_offset:sample_offset+self.window_size]
             if len(window_samples) < self.window_size:
@@ -93,6 +94,7 @@ class SpectralAudioParser:
                 mid_bucket = mid_bucket / mid_count
                 high_bucket = high_bucket / high_count
             else:
+                logger.debug(f"Warning: There were empty buckets in the audio frequency analysis. Returning 0 vector")
                 return (0,0,0)
             # normalize to [0,1] range
             max_val = np.max(fft)
@@ -101,7 +103,10 @@ class SpectralAudioParser:
                 mid_bucket = mid_bucket / max_val
                 high_bucket = high_bucket / max_val
             else:
+                logger.debug(f"Warning: Max val was 0 in the audio frequency analysis. Returning 0 vector")
                 return (0,0,0)
             return (float(low_bucket), float(mid_bucket), float(high_bucket))
         else:
+
+            logger.debug(f"Warning: Audio input has ended. Returning 0 vector")
             return (0, 0, 0)
