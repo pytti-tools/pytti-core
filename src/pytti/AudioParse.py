@@ -30,7 +30,8 @@ class SpectralAudioParser:
                 self.audio_samples = np.append(self.audio_samples, np.frombuffer(buf, dtype=np.int16))
                 if len(buf) < SAMPLERATE:
                     break
-            
+            if len(self.audio_samples) < 0:
+                raise RuntimeError("Audio samples are empty, assuming load failed")
             logger.debug(f"initialized audio file {params.input_audio}")
             self.input_audio_offset = params.input_audio_offset
             self.window_size = params.input_audio_window_size
