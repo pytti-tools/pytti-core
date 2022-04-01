@@ -22,8 +22,26 @@ semantic_init_weight: ''
 
 ##################################
 
+# image_model:
+#   - Unlimited Palette
+#   - Limimted Palette
+#   - VQGAN
 image_model: VQGAN
+
+# vqgan_model:
+#   - sflickr
+#   - imagenet
+#   - coco
+#   - wikiart
+#   - sflckr
+#   - openimages
 vqgan_model: sflckr
+
+# animation_mode:
+#    - off
+#    - Video Source
+#    - 2D
+#    - 3D
 animation_mode: off
 
 ##################################
@@ -41,6 +59,13 @@ seed: ${now:%f} # microsecond component of timestamp. Basically random.
 cutouts: 40
 cut_pow: 2
 cutout_border: 0.25
+
+# border_mode:
+#    - clamp
+#    - mirror
+#    - wrap
+#    - black
+#    - smear
 border_mode: clamp
 
 ##################################
@@ -57,6 +82,9 @@ far_plane: 10000
 ### Induced Motion ###
 ######################
 
+pre_animation_steps: 100
+lock_camera: true
+
 #  _2d and _3d only apply to those animation modes
 
 translate_x: '0'
@@ -67,10 +95,19 @@ rotate_2d: '0'
 zoom_x_2d: '0'
 zoom_y_2d: '0'
 
+
+# sampling_mode:
+#    - nearest
+#    - bilinear
+#    - bicubic
 sampling_mode: bicubic
+
+# infill_mode:
+#    - mirror
+#    - wrap
+#    - black
+#    - smear
 infill_mode: wrap
-pre_animation_steps: 100
-lock_camera: true
 
 ##################################
 
