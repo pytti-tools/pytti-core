@@ -1,3 +1,4 @@
+import pytest
 import os
 from hydra import initialize, compose
 from loguru import logger
@@ -5,6 +6,11 @@ from pytti.workhorse import _main as render_frames
 
 
 def test_the_thing():
+    with pytest.raises(AssertionError):
+        reproduce_error()
+
+
+def reproduce_error():
     # url_seattle1 = "https://image.cnbcfm.com/api/v1/image/104540684-GettyImages-530874379.jpg"
     # url_seattle2 = "https://media.cntraveler.com/photos/60480c67ff9cba52f2a91899/16:9/w_2560%2Cc_limit/01-velo-header-seattle-needle.jpg"
     # url_original = "https://i0.wp.com/digital-photography-school.com/wp-content/uploads/2018/02/DSC00500-Edit.jpg"
