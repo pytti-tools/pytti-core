@@ -9,7 +9,6 @@ import json
 from pathlib import Path
 import os
 import re
-from sqlite3 import NotSupportedError
 import sys
 import subprocess
 
