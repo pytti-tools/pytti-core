@@ -366,8 +366,11 @@ class DirectImageGuide:
             if model.dataframe:
                 rec = model.dataframe[0].iloc[-1]
                 logger.debug(rec)
-                for k, v in rec.iteritems():
-                    writer.add_scalar(tag=f"losses/{k}", scalar_value=v, global_step=i)
+                if writer is not None:
+                    for k, v in rec.iteritems():
+                        writer.add_scalar(
+                            tag=f"losses/{k}", scalar_value=v, global_step=i
+                        )
 
             # does this VRAM stuff even do anything?
             if approximate_vram_usage:
@@ -420,13 +423,14 @@ class DirectImageGuide:
             im.save(filename)
 
             im_np = np.array(im)
-            writer.add_image(
-                tag="pytti output",
-                # img_tensor=filename, # thought this would work?
-                img_tensor=im_np,
-                global_step=i,
-                dataformats="HWC",  # this was the key
-            )
+            if writer is not None:
+                writer.add_image(
+                    tag="pytti output",
+                    # img_tensor=filename, # thought this would work?
+                    img_tensor=im_np,
+                    global_step=i,
+                    dataformats="HWC",  # this was the key
+                )
 
             if backups > 0:
                 filename = f"backup/{file_namespace}/{base_name}_{n}.bak"
