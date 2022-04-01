@@ -30,7 +30,7 @@ class ConfigSchema:
 
     ##################################
 
-    image_model: str = field(default="VQGAN")  # "VQGAN"
+    image_model: str = field(default="Unlimited Palette")
     vqgan_model: str = "sflckr"
     animation_mode: str = field(default="off")
 
