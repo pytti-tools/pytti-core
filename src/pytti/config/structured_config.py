@@ -30,9 +30,21 @@ class ConfigSchema:
 
     ##################################
 
-    image_model: str = "VQGAN"
+    image_model: str = field(default="VQGAN")  # "VQGAN"
     vqgan_model: str = "sflckr"
     animation_mode: str = field(default="off")
+
+    @image_model.validator
+    def check(self, attribute, value):
+        check_input_against_list(
+            attribute,
+            value,
+            valid_values=[
+                "Unlimited Palette",
+                "Limimted Palette",
+                "VQGAN",
+            ],
+        )
 
     @animation_mode.validator
     def check(self, attribute, value):
