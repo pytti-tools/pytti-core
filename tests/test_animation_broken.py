@@ -87,6 +87,9 @@ params = {
     "gradient_accumulation_steps": 1,
     "border_mode": "clamp",
     "models_parent_dir": ".",
+    ##########################
+    # adding new config items for backwards compatibility
+    "use_tensorboard": True,  # This should actually default to False. Prior to April2022, tb was non-optional
 }
 
 

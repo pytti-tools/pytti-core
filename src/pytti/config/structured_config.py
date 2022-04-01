@@ -33,6 +33,7 @@ class ConfigSchema:
     image_model: str = "VQGAN"
     vqgan_model: str = "sflckr"
     animation_mode: str = field(default="off")
+
     @animation_mode.validator
     def check(self, attribute, value):
         check_input_against_list(
@@ -55,6 +56,7 @@ class ConfigSchema:
     cut_pow: int = 2
     cutout_border: float = 0.25
     border_mode: str = field(default="clamp")
+
     @border_mode.validator
     def check(self, attribute, value):
         check_input_against_list(
@@ -80,14 +82,13 @@ class ConfigSchema:
     translate_x: str = "0"
     translate_y: str = "0"
     translate_z_3d: str = "0"
-    rotate_3d: str = (
-        "[1, 0, 0, 0]"
-    )
+    rotate_3d: str = "[1, 0, 0, 0]"
     rotate_2d: str = "0"
     zoom_x_2d: str = "0"
     zoom_y_2d: str = "0"
 
     sampling_mode: str = field(default="bicubic")
+
     @sampling_mode.validator
     def check(self, attribute, value):
         check_input_against_list(
@@ -95,6 +96,7 @@ class ConfigSchema:
         )
 
     infill_mode: str = field(default="wrap")
+
     @infill_mode.validator
     def check(self, attribute, value):
         check_input_against_list(
@@ -170,6 +172,7 @@ class ConfigSchema:
     backups: int = 0
     show_graphs: bool = False
     approximate_vram_usage: bool = False
+    use_tensorboard: bool = False
 
     #####################################
 
