@@ -6,6 +6,8 @@ import hydra
 from attrs import define, field
 from hydra.core.config_store import ConfigStore
 
+from pytti.Image.VQGANImage import VQGAN_MODEL_NAMES
+
 
 def check_input_against_list(attribute, value, valid_values):
     if value not in valid_values:
@@ -30,9 +32,30 @@ class ConfigSchema:
 
     ##################################
 
-    image_model: str = "VQGAN"
-    vqgan_model: str = "sflckr"
+    image_model: str = field(default="Unlimited Palette")
+    vqgan_model: str = field(default="sflckr")
     animation_mode: str = field(default="off")
+
+    @image_model.validator
+    def check(self, attribute, value):
+        check_input_against_list(
+            attribute,
+            value,
+            valid_values=[
+                "Unlimited Palette",
+                "Limimted Palette",
+                "VQGAN",
+            ],
+        )
+
+    # I feel like there should be a better way to do this...
+    @vqgan_model.validator
+    def check(self, attribute, value):
+        check_input_against_list(
+            attribute,
+            value,
+            valid_values=VQGAN_MODEL_NAMES,
+        )
 
     @animation_mode.validator
     def check(self, attribute, value):
