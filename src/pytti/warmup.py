@@ -25,7 +25,7 @@ dest_fpath_default = Path(local_path) / default_fname
 dest_fpath_demo = Path(full_local) / demo_fname
 
 logger.debug(__path__)
-install_dir = Path(__path__)  # uh... I hope this is correct?
+install_dir = Path(__path__)
 shipped_fpath = install_dir / "assets"
 
 src_fpath_default = Path(shipped_fpath) / default_fname
