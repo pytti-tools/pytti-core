@@ -77,7 +77,7 @@ pd.options.display.width = 175
 
 
 TB_LOGDIR = "logs"  # to do: make this more easily configurable
-writer = SummaryWriter(TB_LOGDIR)
+# writer = SummaryWriter(TB_LOGDIR)
 OUTPATH = f"{os.getcwd()}/images_out/"
 
 # To do: ove remaining gunk into this...
@@ -187,6 +187,10 @@ def _main(cfg: DictConfig):
     logger.debug(params)
     logger.debug(OmegaConf.to_container(cfg, resolve=True))
     latest = -1
+
+    writer = None
+    if params.use_tensorboard:
+        writer = SummaryWriter(TB_LOGDIR)
 
     batch_mode = False  # @param{type:"boolean"}
 
@@ -551,7 +555,8 @@ def _main(cfg: DictConfig):
         if fig:
             del fig, axs
         ############################# DMARX
-        writer.close()
+        if writer is not None:
+            writer.close()
         #############################
 
     ## Work on getting rid of this batch mode garbage. Hydra's got this.

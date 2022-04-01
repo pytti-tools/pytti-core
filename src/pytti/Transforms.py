@@ -9,11 +9,12 @@ from pytti.LossAug.DepthLossClass import DepthLoss
 # from pytti.Image.PixelImage import PixelImage
 from adabins.infer import InferenceHelper  # Not used here
 
-TB_LOGDIR = "logs"  # to do: make this more easily configurable
+# TB_LOGDIR = "logs"  # to do: make this more easily configurable
 from loguru import logger
-from torch.utils.tensorboard import SummaryWriter
 
-writer = SummaryWriter(TB_LOGDIR)
+# from torch.utils.tensorboard import SummaryWriter
+
+# writer = SummaryWriter(TB_LOGDIR)
 
 PADDING_MODES = {
     "mirror": "reflection",
@@ -339,8 +340,8 @@ def animate_2d(
     infill_mode,
     sampling_mode,
     img,
-    writer,
-    i,
+    writer=None,
+    i=0,
     t=-1,
 ):
     tx, ty = parametric_eval(translate_x), parametric_eval(translate_y)
@@ -355,16 +356,17 @@ def animate_2d(
         sampling_mode=sampling_mode,
     )
     ################
-    for k, v in {
-        "tx": tx,
-        "ty": ty,
-        "theta": theta,
-        "zx": zx,
-        "zy": zy,
-        "t": t,
-    }.items():
+    if writer is not None:
+        for k, v in {
+            "tx": tx,
+            "ty": ty,
+            "theta": theta,
+            "zx": zx,
+            "zy": zy,
+            "t": t,
+        }.items():
+            writer.add_scalar(tag=f"translation_2d/{k}", scalar_value=v, global_step=i)
 
-        writer.add_scalar(tag=f"translation_2d/{k}", scalar_value=v, global_step=i)
     return next_step_pil
 
 
