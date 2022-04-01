@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import os
 import re
+from sqlite3 import NotSupportedError
 import sys
 import subprocess
 
@@ -290,6 +291,11 @@ def _main(cfg: DictConfig):
         # Phase 3 - Setup Optimization
         ###############################
 
+        assert params.image_model in (
+            "Limited Palette",
+            "Unlimited Palette",
+            "VQGAN",
+        )
         # set up image
         if params.image_model == "Limited Palette":
             img = PixelImage(
@@ -320,6 +326,13 @@ def _main(cfg: DictConfig):
             VQGANImage.init_vqgan(params.vqgan_model, model_artifacts_path)
             img = VQGANImage(params.width, params.height, params.pixel_size)
             img.encode_random()
+        else:
+            logger.critical(
+                "You should never see this message."
+                "Please document the circumstances under which you observed this "
+                "message here: https://github.com/pytti-tools/pytti-core/issues/new"
+            )
+            raise NotSupportedError
 
         #######################################
 
