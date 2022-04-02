@@ -1,4 +1,8 @@
+import imageio, subprocess
+from os.path import exists as path_exists
+
 from loguru import logger
+from PIL import Image
 
 
 class RotoscopingOrchestrator:
@@ -23,17 +27,17 @@ ROTOSCOPERS = RotoscopingOrchestrator()  # fml...
 # let's call this another unnecessary subprocess call to deprecate.
 def get_frames(path):
     """reads the frames of the mp4 file `path` and returns them as a list of PIL images"""
-    import imageio, subprocess
-    from PIL import Image
-    from os.path import exists as path_exists
 
     if not path_exists(path + "_converted.mp4"):
         logger.debug(f"Converting {path}...")
         subprocess.run(["ffmpeg", "-i", path, path + "_converted.mp4"])
         logger.debug(f"Converted {path} to {path}_converted.mp4.")
+
+        # yeah I don't think this is actually true, but it probably should be.
         logger.warning(
             f"WARNING: future runs will automatically use {path}_converted.mp4, unless you delete it."
         )
+
     vid = imageio.get_reader(path + "_converted.mp4", "ffmpeg")
     n_frames = vid._meta["nframes"]
     logger.info(f"loaded {n_frames} frames. for {path}")
