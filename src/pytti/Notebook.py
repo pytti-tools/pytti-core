@@ -10,11 +10,14 @@
 # elsewhere (TBD)
 
 from loguru import logger
-from omegaconf import OmegaConf
+from omegaconf import OmegaConf, DictConfig
 import json, random
 import os, re
 from PIL import Image
 import clip
+
+from pytti import Perceptor
+
 
 # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
 def is_notebook():
@@ -31,6 +34,13 @@ def is_notebook():
             return False
     except NameError:
         return False  # Probably standard Python interpreter
+
+
+# what is this doing in here? This should be in the notebook...
+if is_notebook():
+    from tqdm.notebook import tqdm
+else:
+    from tqdm import tqdm
 
 
 def change_tqdm_color():
@@ -53,13 +63,6 @@ def change_tqdm_color():
         )
 
     get_ipython().events.register("pre_run_cell", set_css_in_cell_output)
-
-
-# what is this doing in here? This should be in the notebook
-if is_notebook():
-    from tqdm.notebook import tqdm
-else:
-    from tqdm import tqdm
 
 
 # this doesn't belong in here
@@ -188,8 +191,6 @@ def write_settings(settings_dict, f):
         f.write("\n")
 
 
-from omegaconf import OmegaConf, DictConfig
-
 # deprecate this (hydra)
 def save_settings(settings_dict, path):
     if isinstance(settings_dict, DictConfig):
@@ -229,7 +230,6 @@ CLIP_MODEL_NAMES = None
 
 
 def load_clip(params):
-    from pytti import Perceptor
 
     # refactor to specify this stuff in a config file
     global CLIP_MODEL_NAMES
