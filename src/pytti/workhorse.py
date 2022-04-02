@@ -56,7 +56,7 @@ from pytti import (
     vram_profiling,
 )
 from pytti.LossAug.DepthLossClass import init_AdaBins
-from pytti.LossAug.LossOrchestratorClass import configure_losses
+from pytti.LossAug.LossOrchestratorClass import LossOrchestrator  # configure_losses
 
 logger.info("pytti loaded.")
 
@@ -334,6 +334,13 @@ def _main(cfg: DictConfig):
         #######################################
 
         # set up losses
+        loss_orch = LossOrchestrator(
+            init_image_pil,
+            restore,
+            img,
+            embedder,
+            params,
+        )
 
         (
             loss_augs,
@@ -342,12 +349,7 @@ def _main(cfg: DictConfig):
             semantic_init_prompt,
             last_frame_semantic,
             img,
-        ) = configure_losses(
-            init_image_pil,
-            restore,
-            img,
-            params,
-        )
+        ) = loss_orch.configure_losses()
 
         # Phase 4 - setup outputs
         ##########################

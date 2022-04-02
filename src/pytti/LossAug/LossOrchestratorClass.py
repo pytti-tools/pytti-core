@@ -8,6 +8,88 @@ from pytti.LossAug import TVLoss, HSVLoss, OpticalFlowLoss, TargetFlowLoss
 from pytti.Perceptor.Prompt import parse_prompt
 
 
+class LossOrchestrator:
+    """
+    Groups together procedures for initializing losses
+    """
+
+    def __init__(
+        self,
+        init_image_pil: Image.Image,
+        restore: bool,
+        img: PixelImage,
+        embedder,
+        params,
+    ):
+        self.init_image_pil = init_image_pil
+        self.img = img
+        self.embedder = embedder
+        self.loss_augs = []
+
+        self.params = params
+        self.restore = restore
+
+    def configure_losses(self):
+        init_image_pil = self.init_image_pil
+        restore = self.restore
+        img = self.img
+        params = self.params
+        loss_augs = self.loss_augs
+        embedder = self.embedder
+
+        #####################
+        # set up init image #
+        #####################
+
+        (init_augs, semantic_init_prompt, loss_augs, img) = configure_init_image(
+            init_image_pil,
+            restore,
+            img,
+            params,
+            loss_augs,
+        )
+
+        # other image prompts
+
+        loss_augs.extend(
+            type(img)
+            .get_preferred_loss()
+            .TargetImage(p.strip(), img.image_shape, is_path=True)
+            for p in params.direct_image_prompts.split("|")
+            if p.strip()
+        )
+
+        loss_augs, img, init_image_pil = configure_stabilization_augs(
+            img, init_image_pil, params, loss_augs
+        )
+
+        # need to add tests for this I think
+        if params.semantic_stabilization_weight not in ["0", ""]:
+            last_frame_semantic = parse_prompt(
+                embedder,
+                f"stabilization:{params.semantic_stabilization_weight}",
+                init_image_pil if init_image_pil else img.decode_image(),
+            )
+            last_frame_semantic.set_enabled(init_image_pil is not None)
+            for scene in prompts:
+                scene.append(last_frame_semantic)
+        else:
+            last_frame_semantic = None
+
+        # optical flow
+
+        img, loss_augs, optical_flows = configure_optical_flows(img, params, loss_augs)
+
+        return (
+            loss_augs,
+            init_augs,
+            optical_flows,
+            semantic_init_prompt,
+            last_frame_semantic,
+            img,
+        )
+
+
 def configure_init_image(
     init_image_pil: Image.Image,
     restore: bool,
@@ -106,64 +188,3 @@ def configure_optical_flows(img, params, loss_augs):
         loss_augs.append(TVLoss(weight=params.smoothing_weight))
 
     return img, loss_augs, optical_flows
-
-
-def configure_losses(
-    init_image_pil: Image.Image,
-    restore: bool,
-    img: PixelImage,
-    params,
-):
-
-    loss_augs = []
-
-    #####################
-    # set up init image #
-    #####################
-
-    (init_augs, semantic_init_prompt, loss_augs, img) = configure_init_image(
-        init_image_pil,
-        restore,
-        img,
-        params,
-        loss_augs,
-    )
-
-    # other image prompts
-
-    loss_augs.extend(
-        type(img)
-        .get_preferred_loss()
-        .TargetImage(p.strip(), img.image_shape, is_path=True)
-        for p in params.direct_image_prompts.split("|")
-        if p.strip()
-    )
-
-    loss_augs, img, init_image_pil = configure_stabilization_augs(
-        img, init_image_pil, params, loss_augs
-    )
-
-    if params.semantic_stabilization_weight not in ["0", ""]:
-        last_frame_semantic = parse_prompt(
-            embedder,
-            f"stabilization:{params.semantic_stabilization_weight}",
-            init_image_pil if init_image_pil else img.decode_image(),
-        )
-        last_frame_semantic.set_enabled(init_image_pil is not None)
-        for scene in prompts:
-            scene.append(last_frame_semantic)
-    else:
-        last_frame_semantic = None
-
-    # optical flow
-
-    img, loss_augs, optical_flows = configure_optical_flows(img, params, loss_augs)
-
-    return (
-        loss_augs,
-        init_augs,
-        optical_flows,
-        semantic_init_prompt,
-        last_frame_semantic,
-        img,
-    )
