@@ -307,7 +307,10 @@ class DirectImageGuide:
                 total_loss_mb /= gradient_accumulation_steps
 
                 # total_loss_mb.backward()
-                total_loss_mb.backward(retain_graph=True)
+                if gradient_accumulation_steps - mb_i > 1:
+                    total_loss_mb.backward(retain_graph=True)
+                else:
+                    total_loss_mb.backward()
                 # total_loss += total_loss_mb # this is causing it to break
                 # total_loss = total_loss_mb
 
