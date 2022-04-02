@@ -34,12 +34,7 @@ from pytti.Notebook import (
     load_settings,  # hydra should handle this stuff
     save_settings,
     save_batch,
-    # CLIP_MODEL_NAMES,
     load_clip,
-    # get_frames,
-    # build_loss,
-    format_params,
-    # clear_rotoscopers,
 )
 
 from pytti.rotoscoper import ROTOSCOPERS, get_frames
@@ -296,17 +291,14 @@ def _main(cfg: DictConfig):
         # set up image
         if params.image_model == "Limited Palette":
             img = PixelImage(
-                *format_params(
-                    params,
-                    "width",
-                    "height",
-                    "pixel_size",
-                    "palette_size",
-                    "palettes",
-                    "gamma",
-                    "hdr_weight",
-                    "palette_normalization_weight",
-                )
+                width=params.width,
+                height=params.height,
+                scale=params.pixel_size,  # NB: inconsistent naming
+                pallet_size=params.palette_size,  # NB: inconsistent naming
+                n_pallets=params.palettes,  # NB: inconsistent naming
+                gamma=params.gamma,
+                hdr_weight=params.hdr_weight,
+                norm_weight=params.palette_normalization_weight,
             )
             img.encode_random(random_pallet=params.random_initial_palette)
             if params.target_palette.strip() != "":

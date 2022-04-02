@@ -254,16 +254,3 @@ def load_clip(params):
         logger.debug("Loading CLIP...")
         Perceptor.init_clip(CLIP_MODEL_NAMES)
         logger.debug("CLIP loaded.")
-
-
-# what is this even doing?
-# should probably deprecate in favor of hydra-idiomatic object intantiation
-def format_params(params, *args):
-    """
-    Given a dictionary of parameters and a list of keys, return a list of values in the same order as
-    the keys
-
-    :param params: a dictionary of parameters that we're going to pass into our function
-    :return: A list of the values of the parameters in the same order as the args.
-    """
-    return [params[x] for x in args]
