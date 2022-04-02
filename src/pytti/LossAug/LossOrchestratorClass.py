@@ -61,6 +61,15 @@ class LossBuilder:
         return out
 
 
+def _standardize_null(weight):
+    weight = str(weight).strip()
+    if weight in ("", "None"):
+        weight = "0"
+    if float(weight) == 0:
+        weight = ""
+    return weight
+
+
 class LossOrchestrator:
     """
     Groups together procedures for initializing losses
@@ -93,26 +102,35 @@ class LossOrchestrator:
         self.img = img
         self.embedder = embedder
         self.prompts = prompts
+
+        self.init_augs = []
         self.loss_augs = []
+        self.optical_flows = []
+        self.last_frame_semantic = None
+        self.semantic_init_prompt = None
 
         self.params = params
         self.restore = restore
 
         ### params
         self.direct_image_prompts = direct_image_prompts
-        self.semantic_stabilization_weight = semantic_stabilization_weight
+        self.semantic_stabilization_weight = _standardize_null(
+            semantic_stabilization_weight
+        )
         self.init_image = init_image
-        self.semantic_init_weight = semantic_init_weight
+        self.semantic_init_weight = _standardize_null(semantic_init_weight)
         self.animation_mode = animation_mode
-        self.flow_stabilization_weight = flow_stabilization_weight
+        self.flow_stabilization_weight = _standardize_null(flow_stabilization_weight)
         self.flow_long_term_samples = flow_long_term_samples
-        self.smoothing_weight = smoothing_weight
+        self.smoothing_weight = _standardize_null(smoothing_weight)
 
         ######
-        self.direct_init_weight = direct_init_weight
-        self.direct_stabilization_weight = direct_stabilization_weight
-        self.depth_stabilization_weight = depth_stabilization_weight
-        self.edge_stabilization_weight = edge_stabilization_weight
+        self.direct_init_weight = _standardize_null(direct_init_weight)
+        self.direct_stabilization_weight = _standardize_null(
+            direct_stabilization_weight
+        )
+        self.depth_stabilization_weight = _standardize_null(depth_stabilization_weight)
+        self.edge_stabilization_weight = _standardize_null(edge_stabilization_weight)
 
     def process_direct_image_prompts(self):
         # prompt parsing shouldn't go here.
@@ -125,30 +143,27 @@ class LossOrchestrator:
         )
 
     def process_semantic_stabilization(self):
-        # params = self.params
-        embedder = self.embedder
-        init_image_pil = self.init_image_pil
-        img = self.img
-        # need to add tests for this I think
-        if self.semantic_stabilization_weight not in ["0", ""]:
-            last_frame_semantic = parse_prompt(
-                embedder,
-                f"stabilization:{self.semantic_stabilization_weight}",
-                init_image_pil if init_image_pil else img.decode_image(),
-            )
-            last_frame_semantic.set_enabled(init_image_pil is not None)
-            for scene in self.prompts:
-                scene.append(last_frame_semantic)
-        else:
-            last_frame_semantic = None
-        self.last_frame_semantic = last_frame_semantic
+        last_frame_pil = self.init_image_pil
+        if not last_frame_pil:
+            last_frame_pil = self.img.decode_image()
+        self.last_frame_semantic = parse_prompt(
+            self.embedder,
+            f"stabilization:{self.semantic_stabilization_weight}",
+            last_frame_pil,
+        )
+        self.last_frame_semantic.set_enabled(self.init_image_pil is not None)
+        for scene in self.prompts:
+            scene.append(self.last_frame_semantic)
 
     def configure_losses(self):
-        self.configure_init_image()
+        if self.init_image_pil is not None:
+            self.configure_init_image()
         self.process_direct_image_prompts()
-        self.process_semantic_stabilization()
+        if self.semantic_stabilization_weight:
+            self.process_semantic_stabilization()
         self.configure_stabilization_augs()
         self.configure_optical_flows()
+        self.configure_aesthetic_losses()
 
         return (
             self.loss_augs,
@@ -160,59 +175,36 @@ class LossOrchestrator:
         )
 
     def configure_init_image(self):
-        init_image_pil = self.init_image_pil
-        restore = self.restore
-        img = self.img
-        params = self.params  # :(
-        loss_augs = self.loss_augs
-        embedder = self.embedder
-        prompts = self.prompts
 
-        if init_image_pil is not None:
-            if not restore:
-                # move these logging statements into .encode_image()
-                logger.info("Encoding image...")
-                img.encode_image(init_image_pil)
-                logger.info("Encoded Image:")
-                # pretty sure this assumes we're in a notebook
-                display.display(img.decode_image())
+        if not self.restore:
+            # move these logging statements into .encode_image()
+            logger.info("Encoding image...")
+            self.img.encode_image(self.init_image_pil)
+            logger.info("Encoded Image:")
+            # pretty sure this assumes we're in a notebook
+            display.display(self.img.decode_image())
 
-            ## wrap this for the flexibility that the loop is pretending to provide...
+        ## wrap this for the flexibility that the loop is pretending to provide...
+        # set up init image prompt
+        if self.direct_init_weight:
+            init_aug = LossBuilder(
+                "direct_init_weight",
+                self.direct_init_weight,
+                f"init image ({self.init_image})",
+                self.img,
+                self.init_image_pil,
+            ).build_loss()
+            self.loss_augs.append(init_aug)
+            self.init_augs.append(init_aug)
 
-            # set up init image prompt
-            # init_augs = ["direct_init_weight"]  # why are we iterating over this?
-            # init_augs=[]
-            if self.direct_init_weight not in ["", "0"]:
-                init_aug = LossBuilder(
-                    "direct_init_weight",
-                    self.direct_init_weight,
-                    f"init image ({self.init_image})",
-                    img,
-                    init_image_pil,
-                ).build_loss()
-                loss_augs.append(init_aug)
-
-            ########
-            semantic_init_prompt = None
-            if self.semantic_init_weight not in ["", "0"]:
-                semantic_init_prompt = parse_prompt(
-                    embedder,
-                    f"init image [{self.init_image}]:{self.semantic_init_weight}",
-                    init_image_pil,
-                )
-                prompts[0].append(semantic_init_prompt)
-
-        (
-            # self.init_augs,
-            # self.semantic_init_prompt,
-            self.loss_augs,
-            self.img,
-        ) = (
-            # init_augs,
-            # semantic_init_prompt,
-            loss_augs,
-            img,
-        )
+        ########
+        if self.semantic_init_weight:
+            self.semantic_init_prompt = parse_prompt(
+                self.embedder,
+                f"init image [{self.init_image}]:{self.semantic_init_weight}",
+                self.init_image_pil,
+            )
+            self.prompts[0].append(self.semantic_init_prompt)
 
     # stabilization
     def configure_stabilization_augs(self):
@@ -244,7 +236,6 @@ class LossOrchestrator:
         # return loss_augs, img, init_image_pil
 
     def configure_optical_flows(self):
-        (img, params, loss_augs) = (self.img, self.params, self.loss_augs)
 
         if self.animation_mode == "Video Source":
             if self.flow_stabilization_weight == "":
@@ -252,30 +243,25 @@ class LossOrchestrator:
             optical_flows = [
                 OpticalFlowLoss.TargetImage(
                     f"optical flow stabilization (frame {-2**i}):{self.flow_stabilization_weight}",
-                    img.image_shape,
+                    self.img.image_shape,
                 )
                 for i in range(self.flow_long_term_samples + 1)
             ]
             for optical_flow in optical_flows:
                 optical_flow.set_enabled(False)
-            loss_augs.extend(optical_flows)
-        elif self.animation_mode == "3D" and self.flow_stabilization_weight not in [
-            "0",
-            "",
-        ]:
+            self.loss_augs.extend(optical_flows)
+
+        elif self.animation_mode == "3D" and self.flow_stabilization_weight:
             optical_flows = [
                 TargetFlowLoss.TargetImage(
                     f"optical flow stabilization:{self.flow_stabilization_weight}",
-                    img.image_shape,
+                    self.img.image_shape,
                 )
             ]
             for optical_flow in optical_flows:
                 optical_flow.set_enabled(False)
-            loss_augs.extend(optical_flows)
-        else:
-            optical_flows = []
-        # other loss augs
-        if params.smoothing_weight != 0:
-            loss_augs.append(TVLoss(weight=self.smoothing_weight))
+            self.loss_augs.extend(optical_flows)
 
-        (self.img, self.loss_augs, self.optical_flows) = (img, loss_augs, optical_flows)
+    def configure_aesthetic_losses(self):
+        if self.smoothing_weight != 0:
+            self.loss_augs.append(TVLoss(weight=self.smoothing_weight))
