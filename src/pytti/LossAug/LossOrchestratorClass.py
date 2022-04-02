@@ -31,34 +31,21 @@ class LossOrchestrator:
         self.params = params
         self.restore = restore
 
-    def configure_losses(self):
-        init_image_pil = self.init_image_pil
-        restore = self.restore
-        img = self.img
-        params = self.params
-        loss_augs = self.loss_augs
-        embedder = self.embedder
-        prompts = self.prompts
-
-        #####################
-        # set up init image #
-        #####################
-
-        (init_augs, semantic_init_prompt, loss_augs, img) = self.configure_init_image()
-
-        # other image prompts
-
+    def process_direct_image_prompts(self):
         # prompt parsing shouldn't go here.
-        loss_augs.extend(
-            type(img)
+        self.loss_augs.extend(
+            type(self.img)
             .get_preferred_loss()
-            .TargetImage(p.strip(), img.image_shape, is_path=True)
-            for p in params.direct_image_prompts.split("|")
+            .TargetImage(p.strip(), self.img.image_shape, is_path=True)
+            for p in self.params.direct_image_prompts.split("|")
             if p.strip()
         )
 
-        loss_augs, img, init_image_pil = self.configure_stabilization_augs()
-
+    def process_semantic_stabilization(self):
+        params = self.params
+        embedder = self.embedder
+        init_image_pil = self.init_image_pil
+        img = self.img
         # need to add tests for this I think
         if params.semantic_stabilization_weight not in ["0", ""]:
             last_frame_semantic = parse_prompt(
@@ -71,18 +58,22 @@ class LossOrchestrator:
                 scene.append(last_frame_semantic)
         else:
             last_frame_semantic = None
+        self.last_frame_semantic = last_frame_semantic
 
-        # optical flow
-
-        img, loss_augs, optical_flows = self.configure_optical_flows()
+    def configure_losses(self):
+        self.configure_init_image()
+        self.process_direct_image_prompts()
+        self.process_semantic_stabilization()
+        self.configure_stabilization_augs()
+        self.configure_optical_flows()
 
         return (
-            loss_augs,
-            init_augs,
-            optical_flows,
-            semantic_init_prompt,
-            last_frame_semantic,
-            img,
+            self.loss_augs,
+            self.init_augs,
+            self.optical_flows,
+            self.semantic_init_prompt,
+            self.last_frame_semantic,
+            self.img,
         )
 
     def configure_init_image(self):
@@ -128,7 +119,12 @@ class LossOrchestrator:
         else:
             init_augs, semantic_init_prompt = [], None
 
-        return init_augs, semantic_init_prompt, loss_augs, img
+        (
+            self.init_augs,
+            self.semantic_init_prompt,
+            self.loss_augs,
+            self.img,
+        ) = (init_augs, semantic_init_prompt, loss_augs, img)
 
     # stabilization
     def configure_stabilization_augs(self):
@@ -151,7 +147,12 @@ class LossOrchestrator:
         ]
         loss_augs.extend(stabilization_augs)
 
-        return loss_augs, img, init_image_pil
+        (self.loss_augs, self.img, self.init_image_pil) = (
+            loss_augs,
+            img,
+            init_image_pil,
+        )
+        # return loss_augs, img, init_image_pil
 
     def configure_optical_flows(self):
         (img, params, loss_augs) = (self.img, self.params, self.loss_augs)
@@ -188,4 +189,4 @@ class LossOrchestrator:
         if params.smoothing_weight != 0:
             loss_augs.append(TVLoss(weight=params.smoothing_weight))
 
-        return img, loss_augs, optical_flows
+        (self.img, self.loss_augs, self.optical_flows) = (img, loss_augs, optical_flows)
