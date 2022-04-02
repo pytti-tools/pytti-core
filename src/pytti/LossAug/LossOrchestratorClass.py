@@ -208,23 +208,19 @@ class LossOrchestrator:
 
     # stabilization
     def configure_stabilization_augs(self):
-
-        # oh great this again...
-        stabilization_augs = [
-            "direct_stabilization_weight",
-            "depth_stabilization_weight",
-            "edge_stabilization_weight",
-        ]
+        d_augs = {
+            "direct_stabilization_weight": self.direct_stabilization_weight,
+            "depth_stabilization_weight": self.depth_stabilization_weight,
+            "edge_stabilization_weight": self.edge_stabilization_weight,
+        }
         stabilization_augs = [
             LossBuilder(
-                x, self.params[x], "stabilization", self.img, self.init_image_pil
+                k, v, "stabilization", self.img, self.init_image_pil
             ).build_loss()
-            for x in stabilization_augs
-            if self.params[x] not in ["", "0"]
+            for k, v in d_augs.items()
+            if v
         ]
         self.loss_augs.extend(stabilization_augs)
-
-        # return loss_augs, img, init_image_pil
 
     def configure_optical_flows(self):
 
