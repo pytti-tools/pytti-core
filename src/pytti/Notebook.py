@@ -14,8 +14,7 @@ from omegaconf import OmegaConf
 import json, random
 import os, re
 from PIL import Image
-
-# from pytti.LossAug.BaseLossClass import Loss as LossType
+import clip
 
 # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
 def is_notebook():
@@ -210,18 +209,6 @@ def save_batch(settings_list, path):
             f.write("\n")
             write_settings(dict(settings_dict), f)
             f.write("\n\n")
-
-
-# ugh... just for now.
-# k:v :: configName:clipName
-# SUPPORTED_CLIP_MODELS = {
-#    'RN50x4':'RN50x4',
-#    'RN50':'RN50',
-#    'ViTB32':'ViT-B/32',
-#    'ViTB16':'ViT-B/16',
-# }
-
-import clip
 
 
 def _sanitize_for_config(in_str):
