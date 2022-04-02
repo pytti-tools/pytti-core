@@ -343,14 +343,19 @@ def _main(cfg: DictConfig):
             params=params,
             ########
             # To do: group arguments into param groups
-            direct_image_prompts=params.direct_image_prompts,
-            semantic_stabilization_weight=params.semantic_stabilization_weight,
-            init_image=params.init_image,
-            semantic_init_weight=params.semantic_init_weight,
             animation_mode=params.animation_mode,
+            init_image=params.init_image,
+            direct_image_prompts=params.direct_image_prompts,
+            semantic_init_weight=params.semantic_init_weight,
+            semantic_stabilization_weight=params.semantic_stabilization_weight,
             flow_stabilization_weight=params.flow_stabilization_weight,
             flow_long_term_samples=params.flow_long_term_samples,
             smoothing_weight=params.smoothing_weight,
+            ###########
+            direct_init_weight=params.direct_init_weight,
+            direct_stabilization_weight=params.direct_stabilization_weight,
+            depth_stabilization_weight=params.depth_stabilization_weight,
+            edge_stabilization_weight=params.edge_stabilization_weight,
         )
 
         (

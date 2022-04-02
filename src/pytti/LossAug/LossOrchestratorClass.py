@@ -3,9 +3,62 @@ from loguru import logger
 from PIL import Image
 
 from pytti.Image import PixelImage
-from pytti.LossAug import build_loss
+
+# from pytti.LossAug import build_loss
 from pytti.LossAug import TVLoss, HSVLoss, OpticalFlowLoss, TargetFlowLoss
 from pytti.Perceptor.Prompt import parse_prompt
+
+from pytti.LossAug.BaseLossClass import Loss
+from pytti.LossAug.DepthLossClass import DepthLoss
+from pytti.LossAug.EdgeLossClass import EdgeLoss
+
+
+class LossBuilder:
+
+    LOSS_DICT = {"edge": EdgeLoss, "depth": DepthLoss}
+
+    def __init__(self, weight_name, weight, name, img, pil_target):
+        self.weight_name = weight_name
+        self.weight = weight
+        self.name = name
+        self.img = img
+        self.pil_target = pil_target
+
+    # uh.... should the places this is beind used maybe just use Loss.__init__?
+    # TO DO: let's make this a class attribute on something
+
+    @property
+    def weight_category(self):
+        return self.weight_name.split("_")[0]
+
+    @property
+    def loss_factory(self):
+        weight_name = self.weight_category
+        if weight_name == "direct":
+            Loss = type(self.img).get_preferred_loss()
+        else:
+            Loss = self.LOSS_DICT[weight_name]
+        return Loss
+
+    def build_loss(self) -> Loss:
+        """
+        Given a weight name, weight, name, image, and target image, returns a loss object
+
+        :param weight_name: The name of the loss function
+        :param weight: The weight of the loss
+        :param name: The name of the loss function
+        :param img: The image to be optimized
+        :param pil_target: The target image
+        :return: The loss function.
+        """
+        Loss = self.loss_factory
+        out = Loss.TargetImage(
+            f"{self.weight_category} {self.name}:{self.weight}",
+            self.img.image_shape,
+            self.pil_target,
+        )
+        out.set_enabled(self.pil_target is not None)
+        return out
 
 
 class LossOrchestrator:
@@ -30,6 +83,11 @@ class LossOrchestrator:
         flow_stabilization_weight,
         flow_long_term_samples,
         smoothing_weight,
+        ###########
+        direct_init_weight,
+        direct_stabilization_weight,
+        depth_stabilization_weight,
+        edge_stabilization_weight,
     ):
         self.init_image_pil = init_image_pil
         self.img = img
@@ -49,6 +107,12 @@ class LossOrchestrator:
         self.flow_stabilization_weight = flow_stabilization_weight
         self.flow_long_term_samples = flow_long_term_samples
         self.smoothing_weight = smoothing_weight
+
+        ######
+        self.direct_init_weight = direct_init_weight
+        self.direct_stabilization_weight = direct_stabilization_weight
+        self.depth_stabilization_weight = depth_stabilization_weight
+        self.edge_stabilization_weight = edge_stabilization_weight
 
     def process_direct_image_prompts(self):
         # prompt parsing shouldn't go here.
@@ -116,22 +180,20 @@ class LossOrchestrator:
             ## wrap this for the flexibility that the loop is pretending to provide...
 
             # set up init image prompt
-            init_augs = ["direct_init_weight"]  # why are we iterating over this?
-            init_augs = [
-                build_loss(
-                    x,
-                    params[x],  # uh.....
-                    f"init image ({params.init_image})",
+            # init_augs = ["direct_init_weight"]  # why are we iterating over this?
+            # init_augs=[]
+            if self.direct_init_weight not in ["", "0"]:
+                init_aug = LossBuilder(
+                    "direct_init_weight",
+                    self.direct_init_weight,
+                    f"init image ({self.init_image})",
                     img,
                     init_image_pil,
-                )
-                for x in init_augs
-                if params[x] not in ["", "0"]
-            ]
-            loss_augs.extend(init_augs)
+                ).build_loss()
+                loss_augs.append(init_aug)
 
             ########
-
+            semantic_init_prompt = None
             if self.semantic_init_weight not in ["", "0"]:
                 semantic_init_prompt = parse_prompt(
                     embedder,
@@ -139,17 +201,18 @@ class LossOrchestrator:
                     init_image_pil,
                 )
                 prompts[0].append(semantic_init_prompt)
-            else:
-                semantic_init_prompt = None
-        else:
-            init_augs, semantic_init_prompt = [], None
 
         (
-            self.init_augs,
-            self.semantic_init_prompt,
+            # self.init_augs,
+            # self.semantic_init_prompt,
             self.loss_augs,
             self.img,
-        ) = (init_augs, semantic_init_prompt, loss_augs, img)
+        ) = (
+            # init_augs,
+            # semantic_init_prompt,
+            loss_augs,
+            img,
+        )
 
     # stabilization
     def configure_stabilization_augs(self):
@@ -167,7 +230,7 @@ class LossOrchestrator:
             "edge_stabilization_weight",
         ]
         stabilization_augs = [
-            build_loss(x, params[x], "stabilization", img, init_image_pil)
+            LossBuilder(x, params[x], "stabilization", img, init_image_pil).build_loss()
             for x in stabilization_augs
             if params[x] not in ["", "0"]
         ]
