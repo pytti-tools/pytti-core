@@ -339,6 +339,7 @@ def _main(cfg: DictConfig):
             restore,
             img,
             embedder,
+            prompts,
             params,
         )
 
