@@ -21,6 +21,15 @@ class LossOrchestrator:
         embedder,
         prompts,
         params,
+        ########
+        direct_image_prompts,
+        semantic_stabilization_weight,
+        init_image,
+        semantic_init_weight,
+        animation_mode,
+        flow_stabilization_weight,
+        flow_long_term_samples,
+        smoothing_weight,
     ):
         self.init_image_pil = init_image_pil
         self.img = img
@@ -31,30 +40,40 @@ class LossOrchestrator:
         self.params = params
         self.restore = restore
 
+        ### params
+        self.direct_image_prompts = direct_image_prompts
+        self.semantic_stabilization_weight = semantic_stabilization_weight
+        self.init_image = init_image
+        self.semantic_init_weight = semantic_init_weight
+        self.animation_mode = animation_mode
+        self.flow_stabilization_weight = flow_stabilization_weight
+        self.flow_long_term_samples = flow_long_term_samples
+        self.smoothing_weight = smoothing_weight
+
     def process_direct_image_prompts(self):
         # prompt parsing shouldn't go here.
         self.loss_augs.extend(
             type(self.img)
             .get_preferred_loss()
             .TargetImage(p.strip(), self.img.image_shape, is_path=True)
-            for p in self.params.direct_image_prompts.split("|")
+            for p in self.direct_image_prompts.split("|")
             if p.strip()
         )
 
     def process_semantic_stabilization(self):
-        params = self.params
+        # params = self.params
         embedder = self.embedder
         init_image_pil = self.init_image_pil
         img = self.img
         # need to add tests for this I think
-        if params.semantic_stabilization_weight not in ["0", ""]:
+        if self.semantic_stabilization_weight not in ["0", ""]:
             last_frame_semantic = parse_prompt(
                 embedder,
-                f"stabilization:{params.semantic_stabilization_weight}",
+                f"stabilization:{self.semantic_stabilization_weight}",
                 init_image_pil if init_image_pil else img.decode_image(),
             )
             last_frame_semantic.set_enabled(init_image_pil is not None)
-            for scene in prompts:
+            for scene in self.prompts:
                 scene.append(last_frame_semantic)
         else:
             last_frame_semantic = None
@@ -80,7 +99,7 @@ class LossOrchestrator:
         init_image_pil = self.init_image_pil
         restore = self.restore
         img = self.img
-        params = self.params
+        params = self.params  # :(
         loss_augs = self.loss_augs
         embedder = self.embedder
         prompts = self.prompts
@@ -93,12 +112,15 @@ class LossOrchestrator:
                 logger.info("Encoded Image:")
                 # pretty sure this assumes we're in a notebook
                 display.display(img.decode_image())
+
+            ## wrap this for the flexibility that the loop is pretending to provide...
+
             # set up init image prompt
-            init_augs = ["direct_init_weight"]
+            init_augs = ["direct_init_weight"]  # why are we iterating over this?
             init_augs = [
                 build_loss(
                     x,
-                    params[x],
+                    params[x],  # uh.....
                     f"init image ({params.init_image})",
                     img,
                     init_image_pil,
@@ -107,10 +129,13 @@ class LossOrchestrator:
                 if params[x] not in ["", "0"]
             ]
             loss_augs.extend(init_augs)
-            if params.semantic_init_weight not in ["", "0"]:
+
+            ########
+
+            if self.semantic_init_weight not in ["", "0"]:
                 semantic_init_prompt = parse_prompt(
                     embedder,
-                    f"init image [{params.init_image}]:{params.semantic_init_weight}",
+                    f"init image [{self.init_image}]:{self.semantic_init_weight}",
                     init_image_pil,
                 )
                 prompts[0].append(semantic_init_prompt)
@@ -135,6 +160,7 @@ class LossOrchestrator:
             self.loss_augs,
         )
 
+        # oh great this again...
         stabilization_augs = [
             "direct_stabilization_weight",
             "depth_stabilization_weight",
@@ -157,26 +183,26 @@ class LossOrchestrator:
     def configure_optical_flows(self):
         (img, params, loss_augs) = (self.img, self.params, self.loss_augs)
 
-        if params.animation_mode == "Video Source":
-            if params.flow_stabilization_weight == "":
-                params.flow_stabilization_weight = "0"
+        if self.animation_mode == "Video Source":
+            if self.flow_stabilization_weight == "":
+                self.flow_stabilization_weight = "0"
             optical_flows = [
                 OpticalFlowLoss.TargetImage(
-                    f"optical flow stabilization (frame {-2**i}):{params.flow_stabilization_weight}",
+                    f"optical flow stabilization (frame {-2**i}):{self.flow_stabilization_weight}",
                     img.image_shape,
                 )
-                for i in range(params.flow_long_term_samples + 1)
+                for i in range(self.flow_long_term_samples + 1)
             ]
             for optical_flow in optical_flows:
                 optical_flow.set_enabled(False)
             loss_augs.extend(optical_flows)
-        elif params.animation_mode == "3D" and params.flow_stabilization_weight not in [
+        elif self.animation_mode == "3D" and self.flow_stabilization_weight not in [
             "0",
             "",
         ]:
             optical_flows = [
                 TargetFlowLoss.TargetImage(
-                    f"optical flow stabilization:{params.flow_stabilization_weight}",
+                    f"optical flow stabilization:{self.flow_stabilization_weight}",
                     img.image_shape,
                 )
             ]
@@ -187,6 +213,6 @@ class LossOrchestrator:
             optical_flows = []
         # other loss augs
         if params.smoothing_weight != 0:
-            loss_augs.append(TVLoss(weight=params.smoothing_weight))
+            loss_augs.append(TVLoss(weight=self.smoothing_weight))
 
         (self.img, self.loss_augs, self.optical_flows) = (img, loss_augs, optical_flows)

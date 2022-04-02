@@ -335,12 +335,22 @@ def _main(cfg: DictConfig):
 
         # set up losses
         loss_orch = LossOrchestrator(
-            init_image_pil,
-            restore,
-            img,
-            embedder,
-            prompts,
-            params,
+            init_image_pil=init_image_pil,
+            restore=restore,
+            img=img,
+            embedder=embedder,
+            prompts=prompts,
+            params=params,
+            ########
+            # To do: group arguments into param groups
+            direct_image_prompts=params.direct_image_prompts,
+            semantic_stabilization_weight=params.semantic_stabilization_weight,
+            init_image=params.init_image,
+            semantic_init_weight=params.semantic_init_weight,
+            animation_mode=params.animation_mode,
+            flow_stabilization_weight=params.flow_stabilization_weight,
+            flow_long_term_samples=params.flow_long_term_samples,
+            smoothing_weight=params.smoothing_weight,
         )
 
         (
