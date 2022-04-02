@@ -42,7 +42,9 @@ from pytti.Notebook import (
     format_params,
     # clear_rotoscopers,
 )
-from pytti.rotoscoper import clear_rotoscopers, get_frames
+
+# from pytti.rotoscoper import clear_rotoscopers, get_frames
+from pytti.rotoscoper import ROTOSCOPERS, get_frames
 from pytti.LossAug import build_loss
 
 from pytti.Image import PixelImage, RGBImage, VQGANImage
@@ -214,7 +216,8 @@ def _main(cfg: DictConfig):
 
         # Phase 1 - reset state
         ########################
-        clear_rotoscopers()  # what a silly name
+        # clear_rotoscopers()  # what a silly name
+        ROTOSCOPERS.clear_rotoscopers()
         vram_profiling(params.approximate_vram_usage)
         reset_vram_usage()
         # global CLIP_MODEL_NAMES  # we don't do anything with this...
