@@ -434,6 +434,7 @@ def _main(cfg: DictConfig):
             fig=fig,
             axs=axs,
             video_frames=video_frames,
+            # these can be passed in together as the loss orchestrator
             optical_flows=optical_flows,
             last_frame_semantic=last_frame_semantic,  # fml...
             semantic_init_prompt=semantic_init_prompt,
