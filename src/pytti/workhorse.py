@@ -35,7 +35,7 @@ from pytti.Notebook import (
     load_settings,  # hydra should handle this stuff
     save_settings,
     save_batch,
-    CLIP_MODEL_NAMES,
+    # CLIP_MODEL_NAMES,
     load_clip,
     # get_frames,
     # build_loss,
@@ -217,7 +217,7 @@ def _main(cfg: DictConfig):
         clear_rotoscopers()  # what a silly name
         vram_profiling(params.approximate_vram_usage)
         reset_vram_usage()
-        global CLIP_MODEL_NAMES  # We're gonna do something about these globals
+        # global CLIP_MODEL_NAMES  # we don't do anything with this...
         # @markdown which frame to restore from
         restore_frame = latest  # @param{type:"raw"}
 
