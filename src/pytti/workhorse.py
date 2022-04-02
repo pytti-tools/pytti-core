@@ -340,111 +340,147 @@ def _main(cfg: DictConfig):
 
         # set up losses
 
-        loss_augs = []
+        def configure_losses(
+            init_image_pil: Image.Image,
+            restore: bool,
+            img: PixelImage,
+            params,
+        ):
 
-        if init_image_pil is not None:
-            if not restore:
-                logger.info("Encoding image...")
-                # logger.debug(type(img)) # pytti.Image.PixelImage.PixelImage
-                # logger.debug(type(init_image_pil)) # PIL.Image.Image
-                img.encode_image(init_image_pil)
-                logger.info("Encoded Image:")
-                # pretty sure this assumes we're in a notebook
-                display.display(img.decode_image())
-            # set up init image prompt
-            init_augs = ["direct_init_weight"]
-            init_augs = [
-                build_loss(
-                    x,
-                    params[x],
-                    f"init image ({params.init_image})",
-                    img,
-                    init_image_pil,
-                )
-                for x in init_augs
+            loss_augs = []
+
+            #####################
+            # set up init image #
+            #####################
+
+            if init_image_pil is not None:
+                if not restore:
+                    # move these logging statements into .encode_image()
+                    logger.info("Encoding image...")
+                    img.encode_image(init_image_pil)
+                    logger.info("Encoded Image:")
+                    # pretty sure this assumes we're in a notebook
+                    display.display(img.decode_image())
+                # set up init image prompt
+                init_augs = ["direct_init_weight"]
+                init_augs = [
+                    build_loss(
+                        x,
+                        params[x],
+                        f"init image ({params.init_image})",
+                        img,
+                        init_image_pil,
+                    )
+                    for x in init_augs
+                    if params[x] not in ["", "0"]
+                ]
+                loss_augs.extend(init_augs)
+                if params.semantic_init_weight not in ["", "0"]:
+                    semantic_init_prompt = parse_prompt(
+                        embedder,
+                        f"init image [{params.init_image}]:{params.semantic_init_weight}",
+                        init_image_pil,
+                    )
+                    prompts[0].append(semantic_init_prompt)
+                else:
+                    semantic_init_prompt = None
+            else:
+                init_augs, semantic_init_prompt = [], None
+
+            # other image prompts
+
+            loss_augs.extend(
+                type(img)
+                .get_preferred_loss()
+                .TargetImage(p.strip(), img.image_shape, is_path=True)
+                for p in params.direct_image_prompts.split("|")
+                if p.strip()
+            )
+
+            # stabilization
+
+            stabilization_augs = [
+                "direct_stabilization_weight",
+                "depth_stabilization_weight",
+                "edge_stabilization_weight",
+            ]
+            stabilization_augs = [
+                build_loss(x, params[x], "stabilization", img, init_image_pil)
+                for x in stabilization_augs
                 if params[x] not in ["", "0"]
             ]
-            loss_augs.extend(init_augs)
-            if params.semantic_init_weight not in ["", "0"]:
-                semantic_init_prompt = parse_prompt(
+            loss_augs.extend(stabilization_augs)
+
+            if params.semantic_stabilization_weight not in ["0", ""]:
+                last_frame_semantic = parse_prompt(
                     embedder,
-                    f"init image [{params.init_image}]:{params.semantic_init_weight}",
-                    init_image_pil,
+                    f"stabilization:{params.semantic_stabilization_weight}",
+                    init_image_pil if init_image_pil else img.decode_image(),
                 )
-                prompts[0].append(semantic_init_prompt)
+                last_frame_semantic.set_enabled(init_image_pil is not None)
+                for scene in prompts:
+                    scene.append(last_frame_semantic)
             else:
-                semantic_init_prompt = None
-        else:
-            init_augs, semantic_init_prompt = [], None
+                last_frame_semantic = None
 
-        # other image prompts
+            # optical flow
 
-        loss_augs.extend(
-            type(img)
-            .get_preferred_loss()
-            .TargetImage(p.strip(), img.image_shape, is_path=True)
-            for p in params.direct_image_prompts.split("|")
-            if p.strip()
-        )
+            if params.animation_mode == "Video Source":
+                if params.flow_stabilization_weight == "":
+                    params.flow_stabilization_weight = "0"
+                optical_flows = [
+                    OpticalFlowLoss.TargetImage(
+                        f"optical flow stabilization (frame {-2**i}):{params.flow_stabilization_weight}",
+                        img.image_shape,
+                    )
+                    for i in range(params.flow_long_term_samples + 1)
+                ]
+                for optical_flow in optical_flows:
+                    optical_flow.set_enabled(False)
+                loss_augs.extend(optical_flows)
+            elif (
+                params.animation_mode == "3D"
+                and params.flow_stabilization_weight
+                not in [
+                    "0",
+                    "",
+                ]
+            ):
+                optical_flows = [
+                    TargetFlowLoss.TargetImage(
+                        f"optical flow stabilization:{params.flow_stabilization_weight}",
+                        img.image_shape,
+                    )
+                ]
+                for optical_flow in optical_flows:
+                    optical_flow.set_enabled(False)
+                loss_augs.extend(optical_flows)
+            else:
+                optical_flows = []
+            # other loss augs
+            if params.smoothing_weight != 0:
+                loss_augs.append(TVLoss(weight=params.smoothing_weight))
 
-        # stabilization
-
-        stabilization_augs = [
-            "direct_stabilization_weight",
-            "depth_stabilization_weight",
-            "edge_stabilization_weight",
-        ]
-        stabilization_augs = [
-            build_loss(x, params[x], "stabilization", img, init_image_pil)
-            for x in stabilization_augs
-            if params[x] not in ["", "0"]
-        ]
-        loss_augs.extend(stabilization_augs)
-
-        if params.semantic_stabilization_weight not in ["0", ""]:
-            last_frame_semantic = parse_prompt(
-                embedder,
-                f"stabilization:{params.semantic_stabilization_weight}",
-                init_image_pil if init_image_pil else img.decode_image(),
+            return (
+                loss_augs,
+                init_augs,
+                optical_flows,
+                semantic_init_prompt,
+                last_frame_semantic,
             )
-            last_frame_semantic.set_enabled(init_image_pil is not None)
-            for scene in prompts:
-                scene.append(last_frame_semantic)
-        else:
-            last_frame_semantic = None
 
-        # optical flow
-        if params.animation_mode == "Video Source":
-            if params.flow_stabilization_weight == "":
-                params.flow_stabilization_weight = "0"
-            optical_flows = [
-                OpticalFlowLoss.TargetImage(
-                    f"optical flow stabilization (frame {-2**i}):{params.flow_stabilization_weight}",
-                    img.image_shape,
-                )
-                for i in range(params.flow_long_term_samples + 1)
-            ]
-            for optical_flow in optical_flows:
-                optical_flow.set_enabled(False)
-            loss_augs.extend(optical_flows)
-        elif params.animation_mode == "3D" and params.flow_stabilization_weight not in [
-            "0",
-            "",
-        ]:
-            optical_flows = [
-                TargetFlowLoss.TargetImage(
-                    f"optical flow stabilization:{params.flow_stabilization_weight}",
-                    img.image_shape,
-                )
-            ]
-            for optical_flow in optical_flows:
-                optical_flow.set_enabled(False)
-            loss_augs.extend(optical_flows)
-        else:
-            optical_flows = []
-        # other loss augs
-        if params.smoothing_weight != 0:
-            loss_augs.append(TVLoss(weight=params.smoothing_weight))
+        (
+            loss_augs,
+            init_augs,
+            optical_flows,
+            semantic_init_prompt,
+            last_frame_semantic,
+        ) = configure_losses(
+            init_image_pil,
+            restore,
+            img,
+            params,
+        )
 
         # Phase 4 - setup outputs
         ##########################
