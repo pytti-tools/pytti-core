@@ -56,7 +56,7 @@ from pytti import (
     vram_profiling,
 )
 from pytti.LossAug.DepthLossClass import init_AdaBins
-from pytti.LossAug.LossOrchestratorClass import LossOrchestrator  # configure_losses
+from pytti.LossAug.LossOrchestratorClass import LossConfigurator
 
 logger.info("pytti loaded.")
 
@@ -334,13 +334,13 @@ def _main(cfg: DictConfig):
         #######################################
 
         # set up losses
-        loss_orch = LossOrchestrator(
+        loss_orch = LossConfigurator(
             init_image_pil=init_image_pil,
             restore=restore,
             img=img,
             embedder=embedder,
             prompts=prompts,
-            params=params,
+            # params=params,
             ########
             # To do: group arguments into param groups
             animation_mode=params.animation_mode,

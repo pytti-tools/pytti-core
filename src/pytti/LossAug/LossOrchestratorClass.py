@@ -70,7 +70,7 @@ def _standardize_null(weight):
     return weight
 
 
-class LossOrchestrator:
+class LossConfigurator:
     """
     Groups together procedures for initializing losses
     """
@@ -82,7 +82,7 @@ class LossOrchestrator:
         img: PixelImage,
         embedder,
         prompts,
-        params,
+        # params,
         ########
         direct_image_prompts,
         semantic_stabilization_weight,
@@ -109,7 +109,7 @@ class LossOrchestrator:
         self.last_frame_semantic = None
         self.semantic_init_prompt = None
 
-        self.params = params
+        # self.params = params
         self.restore = restore
 
         ### params
