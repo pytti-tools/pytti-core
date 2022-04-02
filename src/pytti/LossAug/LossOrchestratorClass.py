@@ -223,6 +223,7 @@ class LossOrchestrator:
         self.loss_augs.extend(stabilization_augs)
 
     def configure_optical_flows(self):
+        optical_flows = None
 
         if self.animation_mode == "Video Source":
             if self.flow_stabilization_weight == "":
@@ -234,9 +235,6 @@ class LossOrchestrator:
                 )
                 for i in range(self.flow_long_term_samples + 1)
             ]
-            for optical_flow in optical_flows:
-                optical_flow.set_enabled(False)
-            self.loss_augs.extend(optical_flows)
 
         elif self.animation_mode == "3D" and self.flow_stabilization_weight:
             optical_flows = [
@@ -245,6 +243,8 @@ class LossOrchestrator:
                     self.img.image_shape,
                 )
             ]
+
+        if optical_flows is not None:
             for optical_flow in optical_flows:
                 optical_flow.set_enabled(False)
             self.loss_augs.extend(optical_flows)
