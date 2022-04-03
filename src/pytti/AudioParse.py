@@ -8,16 +8,19 @@ SAMPLERATE=44100
 
 class SpectralAudioParser:
     """
-    Audio Parser reads a given input file, scans along it and parses its spectrum using FFT.
-    The FFT output is split into three bands (low,mid,high), the (average) amplitude of which is then returned for use in animation functions.
+    reads a given input file, scans along it and parses the amplitude in selected bands using butterworth bandpass filters.
+    the amplitude is normalized into the 0..1 range for easier use in transformation functions.
     """
     def __init__(
         self,
         input_audio,
         offset,
-        window_size,
+        frames_per_second,
         filters
         ):
+        if len(filters) < 1:
+            raise RuntimeError("When using input_audio, at least 1 filter must be specified")
+
         pipe = subprocess.Popen(['ffmpeg', '-i', input_audio,
             '-f', 's16le',
             '-acodec', 'pcm_s16le',
@@ -35,17 +38,34 @@ class SpectralAudioParser:
                 break
         if len(self.audio_samples) < 0:
             raise RuntimeError("Audio samples are empty, assuming load failed")
-        logger.debug(f"initialized audio file {input_audio}, samples read: {len(self.audio_samples)}")
+        self.duration = len(self.audio_samples) / SAMPLERATE
+        logger.debug(f"initialized audio file {input_audio}, samples read: {len(self.audio_samples)}, total duration: {self.duration}s")
         self.offset = offset
-        self.window_size = window_size
+        if offset > self.duration:
+            raise RuntimeError(f"Audio offset set at {offset}s but input audio is only {duration}s long")
+        # analyze all samples for the current frame
+        self.window_size = int(1/frames_per_second * SAMPLERATE)
         self.filters = filters
-        # pink noise normalization blatantly stolen from https://github.com/aiXander/Realtime_PyAudio_FFT/blob/275c8b1fc268ac946470b0d7a80de56eb2212b58/src/stream_analyzer.py#L107
-        self.fftx = np.arange(int(self.window_size/2), dtype=float) * SAMPLERATE / self.window_size
-        self.power_normalization_coefficients = np.logspace(np.log2(1), np.log2(np.log2(SAMPLERATE/2)), len(self.fftx), endpoint=True, base=2, dtype=None)
 
+        # parse band maxima first for normalizing the filtered signal to 0..1 at arbitrary points in the file later
+        # this initialization is a bit compute intensive, especially for higher fps numbers, but i couldn't find a cleaner way
+        # (band-passing the entire track instead of windows creates maxima that are way off, some filtering anomaly i don't understand...)
+        steps = int((self.duration - self.offset) * frames_per_second)
+        interval = 1/frames_per_second
+        maxima = {}
+        time_steps = np.linspace(0, steps, num=steps) * interval
+        for t in time_steps:
+            sample_offset = int(t * SAMPLERATE)
+            cur_maxima = bp_filtered(self.audio_samples[sample_offset:sample_offset+self.window_size], filters)
+            for key in cur_maxima:
+                if key in maxima:
+                    maxima[key] = max(maxima[key], cur_maxima[key])
+                else:
+                    maxima[key] = cur_maxima[key]
+        self.band_maxima = maxima
+        logger.debug(f"initialized band maxima for {len(filters)} filters: {self.band_maxima}")
 
-
-    def get_params(self, t) -> typing.Tuple[float, float, float]:
+    def get_params(self, t) -> typing.Dict[str, float]:
         """
         Return the amplitude parameters at the given point in time t within the audio track, or 0 if the track has ended.
         Amplitude/energy parameters are normalized into the [0,1] range.
@@ -58,22 +78,23 @@ class SpectralAudioParser:
             if len(window_samples) < self.window_size:
                 # audio input file has likely ended
                 # TODO could round down to the next lower pow2 then do it anyway. not a critical case though IMO.
-                logger.debug(f"Warning: sample offset is out of range at time offset {t+self.offset}s. Returning 0 vector")
-                return (0, 0, 0)
-                    
+                logger.debug(f"Warning: sample offset is out of range at time offset {t+self.offset}s. Returning null result")
+                return {}
             # fade-in / fade-out window to taper off the signal
-            window_samples = window_samples * np.hamming(len(window_samples))
-            return bp_tuple(t, window_samples, self.filters)
-            #return fft_tuple(t)
+            #window_samples = window_samples * np.hamming(len(window_samples))
+            return bp_filtered_norm(window_samples, self.filters, self.band_maxima)
         else:
-            logger.debug(f"Warning: Audio input has ended. Returning 0 vector")
-            return (0, 0, 0)
+            logger.debug(f"Warning: Audio input has ended. Returning null result")
+            return {}
+
+    def get_duration(self):
+        return self.duration
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
         nyq = 0.5 * fs
         low = lowcut / nyq
         high = highcut / nyq
-        sos = butter(order, [low, high], analog=False, btype='band', output='sos')
+        sos = butter(order, [low, high], analog=False, btype='bandpass', output='sos')
         return sos
 
 def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
@@ -81,60 +102,20 @@ def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
         y = sosfilt(sos, data)
         return y
 
-def bp_tuple(t, window_samples, filters) -> typing.Dict[str, float]:
+
+def bp_filtered(window_samples, filters) -> typing.Dict[str, float]:
+    results = {}
     for filter in filters:
         offset = filter.f_width/2
         lower = filter.f_center - offset
         upper = filter.f_center + offset
         filtered = butter_bandpass_filter(window_samples, lower, upper, SAMPLERATE, order=filter.order)
-        # Normalize from signed 16-bit max value to 0..1 range
-        val = np.max(np.abs(filtered)) / 32768
-        return (val, 0, 0)
+        results[filter.variable_name] = np.max(np.abs(filtered))
+    return results
 
-def fft_tuple(t, window_samples) -> typing.Tuple[float, float, float]:
-    fft = np.fft.fft(window_samples)
-    # summing together the real and imaginary components, i think(??)
-    left, right = np.split(np.abs(fft), 2)
-    fft = np.add(left, right[::-1])
-
-    # pink noise adjust
-    fft = fft * self.power_normalization_coefficients
-
-    freq_buckets = np.fft.fftfreq(self.window_size, 1 / SAMPLERATE)
-    # collect energy for each frequency band
-    # TODO: this could probably be done in a much nicer way with bandpass filters somehow... not sure on the correct arithmetic though
-    low_bucket = 0
-    low_count = 0
-    mid_bucket = 0
-    mid_count = 0
-    high_bucket = 0
-    high_count = 0
-    for i in range(len(fft)):
-        freq = self.fftx[i]
-        if freq < self.low_cutoff:
-            low_bucket += fft[i]
-            low_count += 1
-        elif freq < self.mid_cutoff:
-            mid_bucket += fft[i]
-            mid_count += 1
-        else:
-            high_bucket += fft[i]
-            high_count += 1
-    # mean energy per bucket
-    if low_count > 0 and mid_count > 0 and high_count > 0:    
-        low_bucket = low_bucket / low_count
-        mid_bucket = mid_bucket / mid_count
-        high_bucket = high_bucket / high_count
-    else:
-        logger.debug(f"Warning: There were empty buckets in the audio frequency analysis. Returning 0 vector")
-        return (0,0,0)
-    # normalize to [0,1] range
-    max_val = np.max(fft)
-    if max_val > 0:
-        low_bucket = low_bucket / max_val
-        mid_bucket = mid_bucket / max_val
-        high_bucket = high_bucket / max_val
-    else:
-        logger.debug(f"Warning: Max val was 0 in the audio frequency analysis. Returning 0 vector")
-        return (0,0,0)
-    return (float(low_bucket), float(mid_bucket), float(high_bucket))
+def bp_filtered_norm(window_samples, filters, norm_factors) -> typing.Dict[str, float]:
+    results = bp_filtered(window_samples, filters)
+    for key in results:
+        # normalize
+        results[key] = results[key] / norm_factors[key]
+    return results
