@@ -1,12 +1,16 @@
-# from infer import InferenceHelper
+import gc
+import math
+
 from adabins.infer import InferenceHelper
-from pytti.LossAug.MSELossClass import MSELoss
-import gc, torch, os, math
-from pytti import DEVICE, vram_usage_mode
-from torchvision.transforms import functional as TF
-from torch.nn import functional as F
-from PIL import Image, ImageOps
 from loguru import logger
+from PIL import Image
+import torch
+from torch.nn import functional as F
+from torchvision.transforms import functional as TF
+
+from pytti import DEVICE, vram_usage_mode
+from pytti.LossAug.MSELossClass import MSELoss
+
 
 infer_helper = None
 
@@ -16,11 +20,6 @@ def init_AdaBins():
     if infer_helper is None:
         with vram_usage_mode("AdaBins"):
             logger.debug("Loading AdaBins...")
-            # os.chdir('AdaBins')
-            # try:
-            #  infer_helper = InferenceHelper(dataset='nyu')
-            # finally:
-            #  os.chdir('..')
             infer_helper = InferenceHelper(dataset="nyu")
             logger.debug("AdaBins loaded.")
 
@@ -45,16 +44,13 @@ class DepthLoss(MSELoss):
             depth_input = TF.resize(
                 input, (height, width), interpolation=TF.InterpolationMode.BILINEAR
             )
-            depth_resized = True
         else:
             depth_input = input
-            depth_resized = False
 
         _, depth_map = infer_helper.model(depth_input)
         depth_map = F.interpolate(
             depth_map, self.comp.shape[-2:], mode="bilinear", align_corners=True
         )
-        # depth_map = F.interpolate(depth_map, (height, width), mode='bilinear', align_corners=True)
         return super().get_loss(depth_map, img)
 
     @classmethod
@@ -81,14 +77,9 @@ class DepthLoss(MSELoss):
         else:
             depth_input = pil_image
             depth_resized = False
-        # run the depth model (whatever that means)
+
         gc.collect()
         torch.cuda.empty_cache()
-        # os.chdir('AdaBins')
-        # try:
-        #  _, depth_map = infer_helper.predict_pil(depth_input)
-        # finally:
-        #  os.chdir('..')
         _, depth_map = infer_helper.predict_pil(depth_input)
         gc.collect()
         torch.cuda.empty_cache()
