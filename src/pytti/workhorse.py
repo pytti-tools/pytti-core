@@ -34,8 +34,9 @@ from pytti.Notebook import (
     load_settings,  # hydra should handle this stuff
     save_settings,
     save_batch,
-    load_clip,
+    # load_clip,
 )
+from pytti.Perceptor.loaders.openai_clip import load_clip
 
 from pytti.rotoscoper import ROTOSCOPERS, get_frames
 from pytti.Image import PixelImage, RGBImage, VQGANImage
