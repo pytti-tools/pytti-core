@@ -84,7 +84,8 @@ class DirectImageGuide:
         base_name=None,
         fig=None,
         axs=None,
-        video_frames=None,
+        #####################
+        video_frames=None,  # # only need this to pass to animate_video_source
         optical_flows=None,
         stabilization_augs=None,
         last_frame_semantic=None,
