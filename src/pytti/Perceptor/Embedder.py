@@ -3,6 +3,8 @@ from typing import Tuple
 import pytti
 from pytti import DEVICE, format_input, cat_with_pad, format_module, normalize
 
+# from pytti.Perceptor import PERCEPTORS
+
 # from pytti.ImageGuide import DirectImageGuide
 from pytti.Image import DifferentiableImage
 
@@ -38,8 +40,13 @@ class HDMultiClipEmbedder(nn.Module):
         noise_fac=0.1,
     ):
         super().__init__()
+        logger.debug("building multiclip embedder")
         if perceptors is None:
             perceptors = pytti.Perceptor.CLIP_PERCEPTORS
+            logger.debug("perceptors accessed")
+            logger.debug(perceptors)
+            # global PERCEPTORS
+            # perceptors = PERCEPTORS
         self.cut_sizes = [p.visual.input_resolution for p in perceptors]
         self.cutn = cutn
         self.noise_fac = noise_fac

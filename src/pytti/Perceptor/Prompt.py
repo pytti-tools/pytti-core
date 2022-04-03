@@ -14,8 +14,10 @@ from torch import nn
 from torch.nn import functional as F
 from torchvision.transforms import functional as TF
 
+# need to refactor this to attach the tokenizer to the perceptor that needs it
 from clip import clip
-import pytti
+
+# import pytti
 from pytti import (
     DEVICE,
     format_input,
@@ -27,6 +29,8 @@ from pytti import (
     vram_usage_mode,
 )
 from pytti.Image import RGBImage
+
+# from pytti.Perceptor import PERCEPTORS
 
 # from pytti.Notebook import Rotoscoper
 from pytti.rotoscoper import Rotoscoper
@@ -156,6 +160,8 @@ def mask_image(path, inverted=False, device=DEVICE):
 @torch.no_grad()
 def mask_semantic(text, device=DEVICE):
     perceptors = pytti.Perceptor.CLIP_PERCEPTORS
+    # global PERCEPTORS
+    # perceptors = PERCEPTORS
     embeds = cat_with_pad(
         [p.encode_text(clip.tokenize(text).to(device)).float() for p in perceptors]
     )
@@ -216,6 +222,8 @@ def parse_prompt(embedder, prompt_string="", pil_image=None, device=DEVICE):
         )
     else:
         perceptors = pytti.Perceptor.CLIP_PERCEPTORS
+        # global PERCEPTORS
+        # perceptors = PERCEPTORS
         embeds = cat_with_pad(
             [p.encode_text(clip.tokenize(text).to(device)).float() for p in perceptors]
         )
