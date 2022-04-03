@@ -83,7 +83,6 @@ far_plane: 10000
 ######################
 input_audio: ""
 input_audio_offset: 0
-input_audio_window_size: 8192
 input_audio_filters: []
 # - variable_name: fLo
 #   f_center: 60
