@@ -5,9 +5,7 @@ import io
 
 math_env = None
 global_t = 0
-global_fLo = 0
-global_fMid = 0
-global_fHi = 0
+global_bands = {}
 eval_memo = {}
 
 
@@ -30,9 +28,9 @@ def parametric_eval(string, **vals):
             )
         math_env.update(vals)
         math_env["t"] = global_t
-        math_env["fLo"] = global_fLo
-        math_env["fMid"] = global_fMid
-        math_env["fHi"] = global_fHi
+        # TODO set envs from global bandpass dict values 
+        for band in global_bands:
+            math_env[band] = global_bands[band]
         try:
             output = eval(string, math_env)
         except SyntaxError as e:
@@ -43,12 +41,10 @@ def parametric_eval(string, **vals):
         return string
 
 
-def set_t(t, fLo, fMid, fHi):
-    global global_t, global_fLo, global_fMid, global_fHi, eval_memo
+def set_t(t, band_dict):
+    global global_t, global_bands, eval_memo
     global_t = t
-    global_fLo = fLo
-    global_fMid = fMid
-    global_fHi = fHi
+    global_bands = band_dict
     eval_memo = {}
 
 
