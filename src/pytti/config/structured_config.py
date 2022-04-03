@@ -109,7 +109,6 @@ class ConfigSchema:
 
     input_audio: str = ""
     input_audio_offset: float = 0
-    input_audio_window_size: int = 1024
     input_audio_filters: AudioFilterConfig = None
 
     #  _2d and _3d only apply to those animation modes
