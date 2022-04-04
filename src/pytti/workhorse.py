@@ -196,7 +196,7 @@ def _main(cfg: DictConfig):
 
     ### Move these into default.yaml
     # @markdown check `restore` to restore from a previous run
-    restore = params.get('restore') or False # @param{type:"boolean"}
+    restore = params.get("restore", False)  # @param{type:"boolean"}
     # @markdown check `reencode` if you are restoring with a modified image or modified image settings
     reencode = False  # @param{type:"boolean"}
     # @markdown which run to restore
