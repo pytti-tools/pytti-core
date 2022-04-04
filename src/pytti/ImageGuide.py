@@ -22,7 +22,9 @@ from pytti import (
 from pytti.Image.differentiable_image import DifferentiableImage
 from pytti.Image.PixelImage import PixelImage
 from pytti.Notebook import tqdm, make_hbox
-from pytti.rotoscoper import update_rotoscopers
+
+# from pytti.rotoscoper import update_rotoscopers
+from pytti.rotoscoper import ROTOSCOPERS
 from pytti.Transforms import (
     animate_2d,
     zoom_3d,
@@ -82,7 +84,8 @@ class DirectImageGuide:
         base_name=None,
         fig=None,
         axs=None,
-        video_frames=None,
+        #####################
+        video_frames=None,  # # only need this to pass to animate_video_source
         optical_flows=None,
         stabilization_augs=None,
         last_frame_semantic=None,
@@ -517,7 +520,8 @@ class DirectImageGuide:
             # next_step_pil = None
             if (i - params.pre_animation_steps) % params.steps_per_frame == 0:
                 logger.debug(f"Time: {t:.4f} seconds")
-                update_rotoscopers(
+                # update_rotoscopers(
+                ROTOSCOPERS.update_rotoscopers(
                     ((i - params.pre_animation_steps) // params.steps_per_frame + 1)
                     * params.frame_stride
                 )

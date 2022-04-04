@@ -10,12 +10,14 @@
 # elsewhere (TBD)
 
 from loguru import logger
-from omegaconf import OmegaConf
+from omegaconf import OmegaConf, DictConfig
 import json, random
 import os, re
 from PIL import Image
+import clip
 
-# from pytti.LossAug.BaseLossClass import Loss as LossType
+from pytti import Perceptor
+
 
 # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
 def is_notebook():
@@ -32,6 +34,13 @@ def is_notebook():
             return False
     except NameError:
         return False  # Probably standard Python interpreter
+
+
+# what is this doing in here? This should be in the notebook...
+if is_notebook():
+    from tqdm.notebook import tqdm
+else:
+    from tqdm import tqdm
 
 
 def change_tqdm_color():
@@ -54,13 +63,6 @@ def change_tqdm_color():
         )
 
     get_ipython().events.register("pre_run_cell", set_css_in_cell_output)
-
-
-# what is this doing in here? This should be in the notebook
-if is_notebook():
-    from tqdm.notebook import tqdm
-else:
-    from tqdm import tqdm
 
 
 # this doesn't belong in here
@@ -189,8 +191,6 @@ def write_settings(settings_dict, f):
         f.write("\n")
 
 
-from omegaconf import OmegaConf, DictConfig
-
 # deprecate this (hydra)
 def save_settings(settings_dict, path):
     if isinstance(settings_dict, DictConfig):
@@ -212,18 +212,6 @@ def save_batch(settings_list, path):
             f.write("\n\n")
 
 
-# ugh... just for now.
-# k:v :: configName:clipName
-# SUPPORTED_CLIP_MODELS = {
-#    'RN50x4':'RN50x4',
-#    'RN50':'RN50',
-#    'ViTB32':'ViT-B/32',
-#    'ViTB16':'ViT-B/16',
-# }
-
-import clip
-
-
 def _sanitize_for_config(in_str):
     for char in ("/", "-"):
         in_str = in_str.replace(char, "")
@@ -242,7 +230,6 @@ CLIP_MODEL_NAMES = None
 
 
 def load_clip(params):
-    from pytti import Perceptor
 
     # refactor to specify this stuff in a config file
     global CLIP_MODEL_NAMES
@@ -267,16 +254,3 @@ def load_clip(params):
         logger.debug("Loading CLIP...")
         Perceptor.init_clip(CLIP_MODEL_NAMES)
         logger.debug("CLIP loaded.")
-
-
-# what is this even doing?
-# should probably deprecate in favor of hydra-idiomatic object intantiation
-def format_params(params, *args):
-    """
-    Given a dictionary of parameters and a list of keys, return a list of values in the same order as
-    the keys
-
-    :param params: a dictionary of parameters that we're going to pass into our function
-    :return: A list of the values of the parameters in the same order as the args.
-    """
-    return [params[x] for x in args]

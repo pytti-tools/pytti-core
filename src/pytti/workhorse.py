@@ -25,7 +25,6 @@ from torch.utils.tensorboard import SummaryWriter
 # Deprecate or move functionality somewhere less general
 import matplotlib.pyplot as plt
 import seaborn as sns
-from IPython import display
 
 logger.info("Loading pytti...")
 from pytti.Notebook import (
@@ -35,24 +34,14 @@ from pytti.Notebook import (
     load_settings,  # hydra should handle this stuff
     save_settings,
     save_batch,
-    CLIP_MODEL_NAMES,
     load_clip,
-    # get_frames,
-    # build_loss,
-    format_params,
-    # clear_rotoscopers,
 )
-from pytti.rotoscoper import clear_rotoscopers, get_frames
-from pytti.LossAug import build_loss
 
+from pytti.rotoscoper import ROTOSCOPERS, get_frames
 from pytti.Image import PixelImage, RGBImage, VQGANImage
 from pytti.ImageGuide import DirectImageGuide
 from pytti.Perceptor.Embedder import HDMultiClipEmbedder
 from pytti.Perceptor.Prompt import parse_prompt
-
-# HSVLoss no longer available to users?
-# ... nm, gets used in PixelImage
-from pytti.LossAug import TVLoss, HSVLoss, OpticalFlowLoss, TargetFlowLoss
 
 from pytti import (
     fetch,
@@ -62,6 +51,7 @@ from pytti import (
     vram_profiling,
 )
 from pytti.LossAug.DepthLossClass import init_AdaBins
+from pytti.LossAug.LossOrchestratorClass import LossConfigurator
 
 logger.info("pytti loaded.")
 
@@ -94,6 +84,8 @@ OUTPATH = f"{os.getcwd()}/images_out/"
 # combine load_scenes, parse_prompt, and parse into a unified, generic parser.
 # generic here means the output of the parsing process shouldn't be bound to
 # modules yet, just a collection of settings.
+#
+# ...actually, parse_prompt is invoked in loss orchestration
 def parse_scenes(
     embedder,
     scenes,
@@ -214,10 +206,11 @@ def _main(cfg: DictConfig):
 
         # Phase 1 - reset state
         ########################
-        clear_rotoscopers()  # what a silly name
+        # clear_rotoscopers()  # what a silly name
+        ROTOSCOPERS.clear_rotoscopers()
         vram_profiling(params.approximate_vram_usage)
         reset_vram_usage()
-        global CLIP_MODEL_NAMES  # We're gonna do something about these globals
+        # global CLIP_MODEL_NAMES  # we don't do anything with this...
         # @markdown which frame to restore from
         restore_frame = latest  # @param{type:"raw"}
 
@@ -298,17 +291,14 @@ def _main(cfg: DictConfig):
         # set up image
         if params.image_model == "Limited Palette":
             img = PixelImage(
-                *format_params(
-                    params,
-                    "width",
-                    "height",
-                    "pixel_size",
-                    "palette_size",
-                    "palettes",
-                    "gamma",
-                    "hdr_weight",
-                    "palette_normalization_weight",
-                )
+                width=params.width,
+                height=params.height,
+                scale=params.pixel_size,  # NB: inconsistent naming
+                pallet_size=params.palette_size,  # NB: inconsistent naming
+                n_pallets=params.palettes,  # NB: inconsistent naming
+                gamma=params.gamma,
+                hdr_weight=params.hdr_weight,
+                norm_weight=params.palette_normalization_weight,
             )
             img.encode_random(random_pallet=params.random_initial_palette)
             if params.target_palette.strip() != "":
@@ -336,112 +326,38 @@ def _main(cfg: DictConfig):
         #######################################
 
         # set up losses
-
-        loss_augs = []
-
-        if init_image_pil is not None:
-            if not restore:
-                logger.info("Encoding image...")
-                # logger.debug(type(img)) # pytti.Image.PixelImage.PixelImage
-                # logger.debug(type(init_image_pil)) # PIL.Image.Image
-                img.encode_image(init_image_pil)
-                logger.info("Encoded Image:")
-                # pretty sure this assumes we're in a notebook
-                display.display(img.decode_image())
-            # set up init image prompt
-            init_augs = ["direct_init_weight"]
-            init_augs = [
-                build_loss(
-                    x,
-                    params[x],
-                    f"init image ({params.init_image})",
-                    img,
-                    init_image_pil,
-                )
-                for x in init_augs
-                if params[x] not in ["", "0"]
-            ]
-            loss_augs.extend(init_augs)
-            if params.semantic_init_weight not in ["", "0"]:
-                semantic_init_prompt = parse_prompt(
-                    embedder,
-                    f"init image [{params.init_image}]:{params.semantic_init_weight}",
-                    init_image_pil,
-                )
-                prompts[0].append(semantic_init_prompt)
-            else:
-                semantic_init_prompt = None
-        else:
-            init_augs, semantic_init_prompt = [], None
-
-        # other image prompts
-
-        loss_augs.extend(
-            type(img)
-            .get_preferred_loss()
-            .TargetImage(p.strip(), img.image_shape, is_path=True)
-            for p in params.direct_image_prompts.split("|")
-            if p.strip()
+        loss_orch = LossConfigurator(
+            init_image_pil=init_image_pil,
+            restore=restore,
+            img=img,
+            embedder=embedder,
+            prompts=prompts,
+            # params=params,
+            ########
+            # To do: group arguments into param groups
+            animation_mode=params.animation_mode,
+            init_image=params.init_image,
+            direct_image_prompts=params.direct_image_prompts,
+            semantic_init_weight=params.semantic_init_weight,
+            semantic_stabilization_weight=params.semantic_stabilization_weight,
+            flow_stabilization_weight=params.flow_stabilization_weight,
+            flow_long_term_samples=params.flow_long_term_samples,
+            smoothing_weight=params.smoothing_weight,
+            ###########
+            direct_init_weight=params.direct_init_weight,
+            direct_stabilization_weight=params.direct_stabilization_weight,
+            depth_stabilization_weight=params.depth_stabilization_weight,
+            edge_stabilization_weight=params.edge_stabilization_weight,
         )
 
-        # stabilization
-
-        stabilization_augs = [
-            "direct_stabilization_weight",
-            "depth_stabilization_weight",
-            "edge_stabilization_weight",
-        ]
-        stabilization_augs = [
-            build_loss(x, params[x], "stabilization", img, init_image_pil)
-            for x in stabilization_augs
-            if params[x] not in ["", "0"]
-        ]
-        loss_augs.extend(stabilization_augs)
-
-        if params.semantic_stabilization_weight not in ["0", ""]:
-            last_frame_semantic = parse_prompt(
-                embedder,
-                f"stabilization:{params.semantic_stabilization_weight}",
-                init_image_pil if init_image_pil else img.decode_image(),
-            )
-            last_frame_semantic.set_enabled(init_image_pil is not None)
-            for scene in prompts:
-                scene.append(last_frame_semantic)
-        else:
-            last_frame_semantic = None
-
-        # optical flow
-        if params.animation_mode == "Video Source":
-            if params.flow_stabilization_weight == "":
-                params.flow_stabilization_weight = "0"
-            optical_flows = [
-                OpticalFlowLoss.TargetImage(
-                    f"optical flow stabilization (frame {-2**i}):{params.flow_stabilization_weight}",
-                    img.image_shape,
-                )
-                for i in range(params.flow_long_term_samples + 1)
-            ]
-            for optical_flow in optical_flows:
-                optical_flow.set_enabled(False)
-            loss_augs.extend(optical_flows)
-        elif params.animation_mode == "3D" and params.flow_stabilization_weight not in [
-            "0",
-            "",
-        ]:
-            optical_flows = [
-                TargetFlowLoss.TargetImage(
-                    f"optical flow stabilization:{params.flow_stabilization_weight}",
-                    img.image_shape,
-                )
-            ]
-            for optical_flow in optical_flows:
-                optical_flow.set_enabled(False)
-            loss_augs.extend(optical_flows)
-        else:
-            optical_flows = []
-        # other loss augs
-        if params.smoothing_weight != 0:
-            loss_augs.append(TVLoss(weight=params.smoothing_weight))
+        (
+            loss_augs,
+            init_augs,
+            optical_flows,
+            semantic_init_prompt,
+            last_frame_semantic,
+            img,
+        ) = loss_orch.configure_losses()
 
         # Phase 4 - setup outputs
         ##########################
@@ -525,6 +441,7 @@ def _main(cfg: DictConfig):
             fig=fig,
             axs=axs,
             video_frames=video_frames,
+            # these can be passed in together as the loss orchestrator
             optical_flows=optical_flows,
             last_frame_semantic=last_frame_semantic,  # fml...
             semantic_init_prompt=semantic_init_prompt,

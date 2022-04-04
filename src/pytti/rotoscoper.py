@@ -1,41 +1,43 @@
-# from pytti.Notebook import get_frames
+import imageio, subprocess
+from os.path import exists as path_exists
+
 from loguru import logger
-
-rotoscopers = []
-
-
-def clear_rotoscopers():
-    global rotoscopers
-    rotoscopers = []
+from PIL import Image
 
 
-# this is... weird. also why the globals?
-def update_rotoscopers(frame_n: int):
-    """
-    For each rotoscope in the global list of rotoscopes, call the update function
+class RotoscopingOrchestrator:
+    def __init__(self):
+        self.rotoscopers = []
 
-    :param frame_n: The current frame number
-    """
-    global rotoscopers
-    for r in rotoscopers:
-        r.update(frame_n)
+    def add(self, other):
+        self.rotoscopers.append(other)
+
+    def clear_rotoscopers(self):
+        self.rotoscopers = []
+
+    def update_rotoscopers(self, frame_n: int):
+        for r in self.rotoscopers:
+            r.update(frame_n)
+
+
+ROTOSCOPERS = RotoscopingOrchestrator()  # fml...
 
 
 # surprised we're not using opencv here.
 # let's call this another unnecessary subprocess call to deprecate.
 def get_frames(path):
     """reads the frames of the mp4 file `path` and returns them as a list of PIL images"""
-    import imageio, subprocess
-    from PIL import Image
-    from os.path import exists as path_exists
 
     if not path_exists(path + "_converted.mp4"):
         logger.debug(f"Converting {path}...")
         subprocess.run(["ffmpeg", "-i", path, path + "_converted.mp4"])
         logger.debug(f"Converted {path} to {path}_converted.mp4.")
+
+        # yeah I don't think this is actually true, but it probably should be.
         logger.warning(
             f"WARNING: future runs will automatically use {path}_converted.mp4, unless you delete it."
         )
+
     vid = imageio.get_reader(path + "_converted.mp4", "ffmpeg")
     n_frames = vid._meta["nframes"]
     logger.info(f"loaded {n_frames} frames. for {path}")
@@ -44,7 +46,7 @@ def get_frames(path):
 
 class Rotoscoper:
     def __init__(self, video_path, target=None, thresh=None):
-        global rotoscopers
+        global ROTOSCOPERS  # redundant, but leaving it here to document the globals
         if video_path[0] == "-":
             video_path = video_path[1:]
             inverted = True
@@ -54,7 +56,7 @@ class Rotoscoper:
         self.frames = get_frames(video_path)
         self.target = target
         self.inverted = inverted
-        rotoscopers.append(self)
+        ROTOSCOPERS.add(self)  # uh.... why. why does it work this way. weird af.
 
     def update(self, frame_n):
         """
