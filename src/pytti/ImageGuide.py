@@ -109,8 +109,9 @@ class DirectImageGuide:
             self.optimizer = optimizer
         self.dataframe = []
 
-        if params.input_audio:
-            self.audio_parser = SpectralAudioParser(params.input_audio, params.offset, params.frames_per_second, params.filters)
+        if params.input_audio and params.input_audio_filters:
+            self.audio_parser = SpectralAudioParser(params.input_audio, params.input_audio_offset,
+                                                    params.frames_per_second, params.input_audio_filters)
         else:
             self.audio_parser = None
 
@@ -434,7 +435,7 @@ class DirectImageGuide:
             if (i - params.pre_animation_steps) % params.steps_per_frame == 0:
                 if self.audio_parser is not None:
                     band_dict = self.audio_parser.get_params(t)
-                    logger.debug(f"Time: {t:.4f} seconds, audio params: lo: {lo:.4f}, mid: {mid:.4f}, hi: {hi:.4f}")
+                    logger.debug(f"Time: {t:.4f} seconds, audio params: {band_dict}")
                     set_t(t, band_dict)
                 else:
                     logger.debug(f"Time: {t:.4f} seconds")
