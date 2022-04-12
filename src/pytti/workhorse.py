@@ -721,7 +721,7 @@ def _main(cfg: DictConfig):
         # I bet all of this can go in the DirectImageGuide class and then
         # we can just instantiate that class with the config object.
 
-        model.update = update
+        # model.update = update
 
         ##################################################################
 

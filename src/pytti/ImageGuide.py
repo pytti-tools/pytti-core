@@ -617,3 +617,40 @@ class DirectImageGuide:
                             "-----< PYTTI-TOOLS > ------\n\n"
                         )
                         raise
+
+        # wouldn't that just be magical if this fixed everything...
+        self.params = params
+        self.writer = writer
+        self.OUTPATH = OUTPATH
+        self.base_name = base_name
+        self.fig = fig
+        self.axs = axs
+        self.video_frames = video_frames
+        self.optical_flows = optical_flows
+        self.stabilization_augs = stabilization_augs
+        self.last_frame_semantic = last_frame_semantic
+        self.semantic_init_prompt = semantic_init_prompt
+        self.init_augs = init_augs
+
+        # model = self
+        # img = self.image_rep
+        self.image_rep = img
+        self.embedder = embedder
+
+        # # ... I have regrets.
+        # params = self.params
+        # writer = self.writer
+        # OUTPATH = self.OUTPATH
+        # base_name = self.base_name
+        # fig = self.fig
+        # axs = self.axs
+        # video_frames = self.video_frames
+        # optical_flows = self.optical_flows
+        # stabilization_augs = self.stabilization_augs
+        # last_frame_semantic = self.last_frame_semantic
+        # semantic_init_prompt = self.semantic_init_prompt
+        # init_augs = self.init_augs
+
+        # model = self
+        # img = self.image_rep
+        # embedder = self.embedder
