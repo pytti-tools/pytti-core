@@ -188,7 +188,7 @@ def _main(cfg: DictConfig):
 
     ### Move these into default.yaml
     # @markdown check `restore` to restore from a previous run
-    restore = params.get('restore') or False # @param{type:"boolean"}
+    restore = params.get("restore") or False  # @param{type:"boolean"}
     # @markdown check `reencode` if you are restoring with a modified image or modified image settings
     reencode = False  # @param{type:"boolean"}
     # @markdown which run to restore
@@ -434,20 +434,264 @@ def _main(cfg: DictConfig):
             img,
             embedder,
             lr=params.learning_rate,
-            params=params,
-            writer=writer,
-            OUTPATH=OUTPATH,
-            base_name=base_name,
-            fig=fig,
-            axs=axs,
-            video_frames=video_frames,
-            # these can be passed in together as the loss orchestrator
-            optical_flows=optical_flows,
-            last_frame_semantic=last_frame_semantic,  # fml...
-            semantic_init_prompt=semantic_init_prompt,
-            init_augs=init_augs,
-            null_update=False,  # uh... we can do better.
+            # params=params,
+            # writer=writer,
+            # OUTPATH=OUTPATH,
+            # base_name=base_name,
+            # fig=fig,
+            # axs=axs,
+            # video_frames=video_frames,
+            # # these can be passed in together as the loss orchestrator
+            # optical_flows=optical_flows,
+            # last_frame_semantic=last_frame_semantic,  # fml...
+            # semantic_init_prompt=semantic_init_prompt,
+            # init_augs=init_augs,
+            # null_update=False,  # uh... we can do better.
         )
+
+        ##################################################################
+
+        # Update is called each step.
+        def update(i, stage_i):
+            # display
+
+            #
+            #
+            #
+            #
+
+            # DM: I bet this could be abstracted out into a report_out() function or whatever
+            if params.clear_every > 0 and i > 0 and i % params.clear_every == 0:
+                display.clear_output()
+            if params.display_every > 0 and i % params.display_every == 0:
+                logger.debug(f"Step {i} losses:")
+                if model.dataframe:
+                    rec = model.dataframe[0].iloc[-1]
+                    logger.debug(rec)
+                    for k, v in rec.iteritems():
+                        writer.add_scalar(
+                            tag=f"losses/{k}", scalar_value=v, global_step=i
+                        )
+                # does this VRAM stuff even do anything?
+                if params.approximate_vram_usage:
+                    logger.debug("VRAM Usage:")
+                    print_vram_usage()  # update this function to use logger
+                display_width = int(img.image_shape[0] * params.display_scale)
+                display_height = int(img.image_shape[1] * params.display_scale)
+                if stage_i > 0 and params.show_graphs:
+                    model.plot_losses(axs)
+                    im = img.decode_image()
+                    sidebyside = make_hbox(
+                        im.resize((display_width, display_height), Image.LANCZOS), fig
+                    )
+                    display.display(sidebyside)
+                else:
+                    im = img.decode_image()
+                    display.display(
+                        im.resize((display_width, display_height), Image.LANCZOS)
+                    )
+                if params.show_palette and isinstance(img, PixelImage):
+                    logger.debug("Palette:")
+                    display.display(img.render_pallet())
+            # save
+            if i > 0 and params.save_every > 0 and i % params.save_every == 0:
+                try:
+                    im
+                except NameError:
+                    im = img.decode_image()
+                n = i // params.save_every
+                filename = f"{OUTPATH}/{params.file_namespace}/{base_name}_{n}.png"
+                im.save(filename)
+
+                im_np = np.array(im)
+                writer.add_image(
+                    tag="pytti output",
+                    # img_tensor=filename, # thought this would work?
+                    img_tensor=im_np,
+                    global_step=i,
+                    dataformats="HWC",  # this was the key
+                )
+
+                if params.backups > 0:
+                    filename = f"backup/{params.file_namespace}/{base_name}_{n}.bak"
+                    torch.save(img.state_dict(), filename)
+                    if n > params.backups:
+
+                        # YOOOOOOO let's not start shell processes unnecessarily
+                        # and then execute commands using string interpolation.
+                        # Replace this with a pythonic folder removal, then see
+                        # if we can't deprecate the folder removal entirely. What
+                        # is the purpose of "backups" here? Just use the frames that
+                        # are being written to disk.
+                        subprocess.run(
+                            [
+                                "rm",
+                                f"backup/{params.file_namespace}/{base_name}_{n-params.backups}.bak",
+                            ]
+                        )
+
+            ### DM: report_out() would probably end down here
+
+            #
+            #
+            #
+            #
+
+            # animate
+            ################
+            t = (i - params.pre_animation_steps) / (
+                params.steps_per_frame * params.frames_per_second
+            )
+            set_t(t)
+            if i >= params.pre_animation_steps:
+                if (i - params.pre_animation_steps) % params.steps_per_frame == 0:
+                    logger.debug(f"Time: {t:.4f} seconds")
+                    update_rotoscopers(
+                        ((i - params.pre_animation_steps) // params.steps_per_frame + 1)
+                        * params.frame_stride
+                    )
+                    if params.reset_lr_each_frame:
+                        model.set_optim(None)
+                    if params.animation_mode == "2D":
+                        tx, ty = parametric_eval(params.translate_x), parametric_eval(
+                            params.translate_y
+                        )
+                        theta = parametric_eval(params.rotate_2d)
+                        zx, zy = parametric_eval(params.zoom_x_2d), parametric_eval(
+                            params.zoom_y_2d
+                        )
+                        next_step_pil = zoom_2d(
+                            img,
+                            (tx, ty),
+                            (zx, zy),
+                            theta,
+                            border_mode=params.infill_mode,
+                            sampling_mode=params.sampling_mode,
+                        )
+                        ################
+                        for k, v in {
+                            "tx": tx,
+                            "ty": ty,
+                            "theta": theta,
+                            "zx": zx,
+                            "zy": zy,
+                            "t": t,
+                        }.items():
+
+                            writer.add_scalar(
+                                tag=f"translation_2d/{k}", scalar_value=v, global_step=i
+                            )
+
+                        ###########################
+                    elif params.animation_mode == "3D":
+                        try:
+                            im
+                        except NameError:
+                            im = img.decode_image()
+                        with vram_usage_mode("Optical Flow Loss"):
+                            flow, next_step_pil = zoom_3d(
+                                img,
+                                (
+                                    params.translate_x,
+                                    params.translate_y,
+                                    params.translate_z_3d,
+                                ),
+                                params.rotate_3d,
+                                params.field_of_view,
+                                params.near_plane,
+                                params.far_plane,
+                                border_mode=params.infill_mode,
+                                sampling_mode=params.sampling_mode,
+                                stabilize=params.lock_camera,
+                            )
+                            freeze_vram_usage()
+
+                        for optical_flow in optical_flows:
+                            optical_flow.set_last_step(im)
+                            optical_flow.set_target_flow(flow)
+                            optical_flow.set_enabled(True)
+                    elif params.animation_mode == "Video Source":
+                        frame_n = min(
+                            (i - params.pre_animation_steps)
+                            * params.frame_stride
+                            // params.steps_per_frame,
+                            len(video_frames) - 1,
+                        )
+                        next_frame_n = min(
+                            frame_n + params.frame_stride, len(video_frames) - 1
+                        )
+                        next_step_pil = (
+                            Image.fromarray(video_frames.get_data(next_frame_n))
+                            .convert("RGB")
+                            .resize(img.image_shape, Image.LANCZOS)
+                        )
+                        for j, optical_flow in enumerate(optical_flows):
+                            old_frame_n = frame_n - (2 ** j - 1) * params.frame_stride
+                            save_n = i // params.save_every - (2 ** j - 1)
+                            if old_frame_n < 0 or save_n < 1:
+                                break
+                            current_step_pil = (
+                                Image.fromarray(video_frames.get_data(old_frame_n))
+                                .convert("RGB")
+                                .resize(img.image_shape, Image.LANCZOS)
+                            )
+                            filename = f"backup/{params.file_namespace}/{base_name}_{save_n}.bak"
+                            filename = None if j == 0 else filename
+                            flow_im, mask_tensor = optical_flow.set_flow(
+                                current_step_pil,
+                                next_step_pil,
+                                img,
+                                filename,
+                                params.infill_mode,
+                                params.sampling_mode,
+                            )
+                            optical_flow.set_enabled(True)
+                            # first flow is previous frame
+                            if j == 0:
+                                mask_accum = mask_tensor.detach()
+                                valid = mask_tensor.mean()
+                                logger.debug("valid pixels:", valid)
+                                if params.reencode_each_frame or valid < 0.03:
+                                    if isinstance(img, PixelImage) and valid >= 0.03:
+                                        img.lock_pallet()
+                                        img.encode_image(
+                                            next_step_pil, smart_encode=False
+                                        )
+                                        img.lock_pallet(params.lock_palette)
+                                    else:
+                                        img.encode_image(next_step_pil)
+                                    reencoded = True
+                                else:
+                                    reencoded = False
+                            else:
+                                with torch.no_grad():
+                                    optical_flow.set_mask(
+                                        (mask_tensor - mask_accum).clamp(0, 1)
+                                    )
+                                    mask_accum.add_(mask_tensor)
+                    if params.animation_mode != "off":
+                        for aug in stabilization_augs:
+                            aug.set_comp(next_step_pil)
+                            aug.set_enabled(True)
+                        if last_frame_semantic is not None:
+                            last_frame_semantic.set_image(embedder, next_step_pil)
+                            last_frame_semantic.set_enabled(True)
+                        for aug in init_augs:
+                            aug.set_enabled(False)
+                        if semantic_init_prompt is not None:
+                            semantic_init_prompt.set_enabled(False)
+
+        ###############################################################
+        ###
+
+        # Wait.... we literally instantiated the model just before
+        # defining update here.
+        # I bet all of this can go in the DirectImageGuide class and then
+        # we can just instantiate that class with the config object.
+
+        model.update = update
+
+        ##################################################################
 
         # Pretty sure this isn't necessary, Hydra should take care of saving
         # the run settings now
