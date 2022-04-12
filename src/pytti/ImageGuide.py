@@ -617,3 +617,12 @@ class DirectImageGuide:
                             "-----< PYTTI-TOOLS > ------\n\n"
                         )
                         raise
+                if writer is not None:
+                    nsp_np = np.array(next_step_pil)
+                    writer.add_image(
+                        tag="next_step_pil",
+                        # img_tensor=filename, # thought this would work?
+                        img_tensor=nsp_np,
+                        global_step=i,
+                        dataformats="HWC",  # this was the key
+                    )
