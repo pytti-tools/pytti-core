@@ -53,6 +53,29 @@ from pytti import (
 from pytti.LossAug.DepthLossClass import init_AdaBins
 from pytti.LossAug.LossOrchestratorClass import LossConfigurator
 
+from IPython import display
+
+from collections import Counter
+
+from pytti import (
+    # format_input,
+    set_t,
+    print_vram_usage,
+    freeze_vram_usage,
+    vram_usage_mode,
+)
+from pytti.Image.differentiable_image import DifferentiableImage
+from pytti.Image.PixelImage import PixelImage
+from pytti.Notebook import tqdm, make_hbox
+
+# from pytti.rotoscoper import update_rotoscopers
+from pytti.rotoscoper import ROTOSCOPERS
+from pytti.Transforms import (
+    animate_2d,
+    zoom_3d,
+    animate_video_source,
+)
+
 logger.info("pytti loaded.")
 
 change_tqdm_color()
@@ -446,10 +469,12 @@ def _main(cfg: DictConfig):
             # last_frame_semantic=last_frame_semantic,  # fml...
             # semantic_init_prompt=semantic_init_prompt,
             # init_augs=init_augs,
-            # null_update=False,  # uh... we can do better.
+            null_update=False,  # uh... we can do better.
         )
 
         ##################################################################
+
+        update_rotoscopers = ROTOSCOPERS.update_rotoscopers
 
         # Update is called each step.
         def update(i, stage_i):
