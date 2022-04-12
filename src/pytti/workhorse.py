@@ -199,6 +199,11 @@ def load_video_source(
 def _main(cfg: DictConfig):
     # params = OmegaConf.to_container(cfg, resolve=True)
     params = cfg
+
+    # literal "off" in yaml interpreted as False
+    if params.animation_mode == False:
+        params.animation_mode = "off"
+
     logger.debug(params)
     logger.debug(OmegaConf.to_container(cfg, resolve=True))
     latest = -1
@@ -376,6 +381,7 @@ def _main(cfg: DictConfig):
         (
             loss_augs,
             init_augs,
+            stabilization_augs,
             optical_flows,
             semantic_init_prompt,
             last_frame_semantic,
@@ -466,6 +472,7 @@ def _main(cfg: DictConfig):
             # video_frames=video_frames,
             # # these can be passed in together as the loss orchestrator
             # optical_flows=optical_flows,
+            # stabilization_augs=stabilization_augs,
             # last_frame_semantic=last_frame_semantic,  # fml...
             # semantic_init_prompt=semantic_init_prompt,
             # init_augs=init_augs,

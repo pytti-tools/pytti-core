@@ -168,6 +168,7 @@ class LossConfigurator:
         return (
             self.loss_augs,
             self.init_augs,
+            self.stabilization_augs,
             self.optical_flows,
             self.semantic_init_prompt,
             self.last_frame_semantic,
@@ -220,6 +221,7 @@ class LossConfigurator:
             for k, v in d_augs.items()
             if v
         ]
+        self.stabilization_augs = stabilization_augs
         self.loss_augs.extend(stabilization_augs)
 
     def configure_optical_flows(self):
