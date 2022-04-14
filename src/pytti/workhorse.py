@@ -437,24 +437,26 @@ def _main(cfg: DictConfig):
 
         # make the main model object
         model = DirectImageGuide(
-            img,
-            embedder,
+            image_rep=img,
+            embedder=embedder,
             lr=params.learning_rate,
             params=params,
             writer=writer,
-            OUTPATH=OUTPATH,
-            base_name=base_name,
             fig=fig,
             axs=axs,
-            video_frames=video_frames,
-            # these can be passed in together as the loss orchestrator
+            base_name=base_name,
             optical_flows=optical_flows,
+            video_frames=video_frames,
             stabilization_augs=stabilization_augs,
-            last_frame_semantic=last_frame_semantic,  # fml...
-            semantic_init_prompt=semantic_init_prompt,
+            last_frame_semantic=last_frame_semantic,
+            # embedder=embedder,
             init_augs=init_augs,
-            null_update=False,  # uh... we can do better.
+            semantic_init_prompt=semantic_init_prompt,
         )
+
+        from pytti.update_func import update
+
+        model.update = update
 
         # Pretty sure this isn't necessary, Hydra should take care of saving
         # the run settings now
