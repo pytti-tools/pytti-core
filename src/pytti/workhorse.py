@@ -106,6 +106,51 @@ OUTPATH = f"{os.getcwd()}/images_out/"
 #######################################################
 
 
+def configure_init_image(
+    init_image_pil: Image.Image,
+    restore: bool,
+    img: PixelImage,
+    params,
+    loss_augs,
+):
+
+    if init_image_pil is not None:
+        if not restore:
+            # move these logging statements into .encode_image()
+            logger.info("Encoding image...")
+            img.encode_image(init_image_pil)
+            logger.info("Encoded Image:")
+            # pretty sure this assumes we're in a notebook
+            display.display(img.decode_image())
+        # set up init image prompt
+        init_augs = ["direct_init_weight"]
+        init_augs = [
+            build_loss(
+                x,
+                params[x],
+                f"init image ({params.init_image})",
+                img,
+                init_image_pil,
+            )
+            for x in init_augs
+            if params[x] not in ["", "0"]
+        ]
+        loss_augs.extend(init_augs)
+        if params.semantic_init_weight not in ["", "0"]:
+            semantic_init_prompt = parse_prompt(
+                embedder,
+                f"init image [{params.init_image}]:{params.semantic_init_weight}",
+                init_image_pil,
+            )
+            prompts[0].append(semantic_init_prompt)
+        else:
+            semantic_init_prompt = None
+    else:
+        init_augs, semantic_init_prompt = [], None
+
+    return init_augs, semantic_init_prompt, loss_augs, img
+
+
 def parse_scenes(
     embedder,
     scenes,
@@ -325,38 +370,17 @@ def _main(cfg: DictConfig):
 
         loss_augs = []
 
-        if init_image_pil is not None:
-            if not restore:
-                logger.info("Encoding image...")
-                img.encode_image(init_image_pil)
-                logger.info("Encoded Image:")
-                # pretty sure this assumes we're in a notebook
-                display.display(img.decode_image())
-            # set up init image prompt
-            init_augs = ["direct_init_weight"]
-            init_augs = [
-                build_loss(
-                    x,
-                    params[x],
-                    f"init image ({params.init_image})",
-                    img,
-                    init_image_pil,
-                )
-                for x in init_augs
-                if params[x] not in ["", "0"]
-            ]
-            loss_augs.extend(init_augs)
-            if params.semantic_init_weight not in ["", "0"]:
-                semantic_init_prompt = parse_prompt(
-                    embedder,
-                    f"init image [{params.init_image}]:{params.semantic_init_weight}",
-                    init_image_pil,
-                )
-                prompts[0].append(semantic_init_prompt)
-            else:
-                semantic_init_prompt = None
-        else:
-            init_augs, semantic_init_prompt = [], None
+        #####################
+        # set up init image #
+        #####################
+
+        (init_augs, semantic_init_prompt, loss_augs, img) = configure_init_image(
+            init_image_pil,
+            restore,
+            img,
+            params,
+            loss_augs,
+        )
 
         # other image prompts
 
