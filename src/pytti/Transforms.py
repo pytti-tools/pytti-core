@@ -326,3 +326,141 @@ def zoom_3d(
 
     flow_out = flow.div(2).mul(torch.tensor([[[[width, height]]]], device=device))
     return flow_out, img.decode_image()
+
+
+def animate_2d(
+    translate_y,
+    translate_x,
+    rotate_2d,
+    zoom_x_2d,
+    zoom_y_2d,
+    infill_mode,
+    sampling_mode,
+    img,
+    writer=None,
+    i=0,
+    t=-1,
+):
+    tx, ty = parametric_eval(translate_x), parametric_eval(translate_y)
+    theta = parametric_eval(rotate_2d)
+    zx, zy = parametric_eval(zoom_x_2d), parametric_eval(zoom_y_2d)
+    next_step_pil = zoom_2d(
+        img,
+        (tx, ty),
+        (zx, zy),
+        theta,
+        border_mode=infill_mode,
+        sampling_mode=sampling_mode,
+    )
+    ################
+    if writer is not None:
+        for k, v in {
+            "tx": tx,
+            "ty": ty,
+            "theta": theta,
+            "zx": zx,
+            "zy": zy,
+            "t": t,
+        }.items():
+            writer.add_scalar(tag=f"translation_2d/{k}", scalar_value=v, global_step=i)
+
+    return next_step_pil
+
+
+def animate_video_source(
+    i,
+    img,
+    video_frames,
+    optical_flows,
+    base_name,
+    pre_animation_steps,
+    frame_stride,
+    steps_per_frame,
+    file_namespace,
+    reencode_each_frame,
+    lock_palette,
+    save_every,
+    ##
+    infill_mode,
+    sampling_mode,
+):
+    # ugh this is GROSSSSS....
+    from pytti.Image.PixelImage import PixelImage
+
+    # current frame index
+    frame_n = min(
+        (i - pre_animation_steps) * frame_stride // steps_per_frame,
+        len(video_frames) - 1,
+    )
+
+    # Next frame index (for forrward flow)
+    next_frame_n = min(frame_n + frame_stride, len(video_frames) - 1)
+
+    # get next frame of video
+    # * will be used as init_image
+    # * will be used to estimate forward flow
+    # Q: what is type of video_frames[i]? np.array? list?
+    #    ... probably some imageio class
+    next_step_pil = (
+        Image.fromarray(video_frames.get_data(next_frame_n))
+        .convert("RGB")
+        .resize(img.image_shape, Image.LANCZOS)
+    )
+
+    # Apply flows
+    flow_im = None
+    for j, optical_flow in enumerate(optical_flows):
+        # This looks like something that we shouldn't have to recompute
+        # but rather could be attached to the flow object as an attribute
+        old_frame_n = frame_n - (2 ** j - 1) * frame_stride
+        save_n = i // save_every - (2 ** j - 1)
+        if old_frame_n < 0 or save_n < 1:
+            break
+
+        current_step_pil = (
+            Image.fromarray(video_frames.get_data(old_frame_n))
+            .convert("RGB")
+            .resize(img.image_shape, Image.LANCZOS)
+        )
+
+        filename = f"backup/{file_namespace}/{base_name}_{save_n}.bak"
+        filename = None if j == 0 else filename
+        # `flow_im` isn't being used for anything.
+        # Might be interesting to log it for monitoring
+        # Q: why does this function take `_step_pil` objects
+        #    as well as a filename? `set_flow` automatically writes a
+        #    backup file? That seems like something that should be
+        #    configurable.
+        flow_im, mask_tensor = optical_flow.set_flow(
+            current_step_pil,
+            next_step_pil,
+            img,
+            filename,
+            infill_mode,
+            sampling_mode,
+        )
+
+        optical_flow.set_enabled(True)
+        # first flow is previous frame
+        if j == 0:
+            mask_accum = mask_tensor.detach()
+            valid = mask_tensor.mean()
+            logger.debug("valid pixels:", valid)
+            # what is this magic number here?
+            if reencode_each_frame or valid < 0.03:
+                if isinstance(img, PixelImage) and valid >= 0.03:
+                    img.lock_pallet()
+                    img.encode_image(next_step_pil, smart_encode=False)
+                    img.lock_pallet(lock_palette)
+                else:
+                    img.encode_image(next_step_pil)
+                # this variable is unused...
+                reencoded = True
+            else:
+                reencoded = False
+        else:
+            with torch.no_grad():
+                optical_flow.set_mask((mask_tensor - mask_accum).clamp(0, 1))
+                mask_accum.add_(mask_tensor)
+
+    return flow_im, next_step_pil
