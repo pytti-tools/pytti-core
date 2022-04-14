@@ -151,6 +151,23 @@ def configure_init_image(
     return init_augs, semantic_init_prompt, loss_augs, img
 
 
+def configure_stabilization_augs(img, init_image_pil, params, loss_augs):
+
+    stabilization_augs = [
+        "direct_stabilization_weight",
+        "depth_stabilization_weight",
+        "edge_stabilization_weight",
+    ]
+    stabilization_augs = [
+        build_loss(x, params[x], "stabilization", img, init_image_pil)
+        for x in stabilization_augs
+        if params[x] not in ["", "0"]
+    ]
+    loss_augs.extend(stabilization_augs)
+
+    return loss_augs, img, init_image_pil, stabilization_augs
+
+
 def parse_scenes(
     embedder,
     scenes,
@@ -393,18 +410,15 @@ def _main(cfg: DictConfig):
         )
 
         # stabilization
+        (
+            loss_augs,
+            img,
+            init_image_pil,
+            stabilization_augs,
+        ) = configure_stabilization_augs(img, init_image_pil, params, loss_augs)
 
-        stabilization_augs = [
-            "direct_stabilization_weight",
-            "depth_stabilization_weight",
-            "edge_stabilization_weight",
-        ]
-        stabilization_augs = [
-            build_loss(x, params[x], "stabilization", img, init_image_pil)
-            for x in stabilization_augs
-            if params[x] not in ["", "0"]
-        ]
-        loss_augs.extend(stabilization_augs)
+        ############################
+        ### I think this bit might've been lost in the shuffle?
 
         if params.semantic_stabilization_weight not in ["0", ""]:
             last_frame_semantic = parse_prompt(
@@ -417,6 +431,9 @@ def _main(cfg: DictConfig):
                 scene.append(last_frame_semantic)
         else:
             last_frame_semantic = None
+
+        ###
+        ############################
 
         # optical flow
         if params.animation_mode == "Video Source":
