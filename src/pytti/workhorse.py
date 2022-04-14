@@ -121,6 +121,31 @@ def parse_scenes(
     return embedder, prompts
 
 
+def load_init_image(
+    init_image_path=None,
+    height: int = -1,  # why '-1'? should be None. Or btter yet, assert that it's greater than zero
+    width: int = -1,
+):
+    """
+    If the user has specified an image to use as the initial image, load it. Otherwise, if the
+    user has specified a width or height, create a blank image of the specified size
+    :param init_image_path: A local path or URL describing where to load the image from
+    :param height: height of the image to be generated.
+    :return: the initial image and the size of the initial image.
+    """
+    if init_image_path:
+        init_image_pil = Image.open(fetch(init_image_path)).convert("RGB")
+        init_size = init_image_pil.size
+        # automatic aspect ratio matching
+        if width == -1:
+            width = int(height * init_size[0] / init_size[1])
+        if height == -1:
+            height = int(width * init_size[1] / init_size[0])
+    else:
+        init_image_pil = None
+    return init_image_pil, height, width
+
+
 #######################################################
 
 
@@ -204,16 +229,11 @@ def _main(cfg: DictConfig):
             )
 
         # load init image
-        if params.init_image != "":
-            init_image_pil = Image.open(fetch(params.init_image)).convert("RGB")
-            init_size = init_image_pil.size
-            # automatic aspect ratio matching
-            if params.width == -1:
-                params.width = int(params.height * init_size[0] / init_size[1])
-            if params.height == -1:
-                params.height = int(params.width * init_size[1] / init_size[0])
-        else:
-            init_image_pil = None
+        init_image_pil, height, width = load_init_image(
+            init_image_path=params.init_image,
+            height=params.height,
+            width=params.width,
+        )
 
         # video source
         if params.animation_mode == "Video Source":
