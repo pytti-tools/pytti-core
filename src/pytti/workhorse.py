@@ -70,6 +70,16 @@ TB_LOGDIR = "logs"  # to do: make this more easily configurable
 # writer = SummaryWriter(TB_LOGDIR)
 OUTPATH = f"{os.getcwd()}/images_out/"
 
+#######################################################
+
+from pytti.LossAug.LossOrchestratorClass import (
+    configure_init_image,
+    configure_stabilization_augs,
+    configure_optical_flows,
+)
+
+#######################################################
+
 # To do: ove remaining gunk into this...
 # class Renderer:
 #    """
@@ -330,40 +340,93 @@ def _main(cfg: DictConfig):
 
         #######################################
 
-        # set up losses
-        loss_orch = LossConfigurator(
-            init_image_pil=init_image_pil,
-            restore=restore,
-            img=img,
-            embedder=embedder,
-            prompts=prompts,
-            # params=params,
-            ########
-            # To do: group arguments into param groups
-            animation_mode=params.animation_mode,
-            init_image=params.init_image,
-            direct_image_prompts=params.direct_image_prompts,
-            semantic_init_weight=params.semantic_init_weight,
-            semantic_stabilization_weight=params.semantic_stabilization_weight,
-            flow_stabilization_weight=params.flow_stabilization_weight,
-            flow_long_term_samples=params.flow_long_term_samples,
-            smoothing_weight=params.smoothing_weight,
-            ###########
-            direct_init_weight=params.direct_init_weight,
-            direct_stabilization_weight=params.direct_stabilization_weight,
-            depth_stabilization_weight=params.depth_stabilization_weight,
-            edge_stabilization_weight=params.edge_stabilization_weight,
+        loss_augs = []
+
+        #####################
+        # set up init image #
+        #####################
+
+        (init_augs, semantic_init_prompt, loss_augs, img) = configure_init_image(
+            init_image_pil,
+            restore,
+            img,
+            params,
+            loss_augs,
         )
 
+        # other image prompts
+
+        loss_augs.extend(
+            type(img)
+            .get_preferred_loss()
+            .TargetImage(p.strip(), img.image_shape, is_path=True)
+            for p in params.direct_image_prompts.split("|")
+            if p.strip()
+        )
+
+        # stabilization
         (
             loss_augs,
-            init_augs,
-            stabilization_augs,
-            optical_flows,
-            semantic_init_prompt,
-            last_frame_semantic,
             img,
-        ) = loss_orch.configure_losses()
+            init_image_pil,
+            stabilization_augs,
+        ) = configure_stabilization_augs(img, init_image_pil, params, loss_augs)
+
+        ############################
+        ### I think this bit might've been lost in the shuffle?
+
+        if params.semantic_stabilization_weight not in ["0", ""]:
+            last_frame_semantic = parse_prompt(
+                embedder,
+                f"stabilization:{params.semantic_stabilization_weight}",
+                init_image_pil if init_image_pil else img.decode_image(),
+            )
+            last_frame_semantic.set_enabled(init_image_pil is not None)
+            for scene in prompts:
+                scene.append(last_frame_semantic)
+        else:
+            last_frame_semantic = None
+
+        ###
+        ############################
+
+        # optical flow
+        img, loss_augs, optical_flows = configure_optical_flows(img, params, loss_augs)
+
+        # # set up losses
+        # loss_orch = LossConfigurator(
+        #     init_image_pil=init_image_pil,
+        #     restore=restore,
+        #     img=img,
+        #     embedder=embedder,
+        #     prompts=prompts,
+        #     # params=params,
+        #     ########
+        #     # To do: group arguments into param groups
+        #     animation_mode=params.animation_mode,
+        #     init_image=params.init_image,
+        #     direct_image_prompts=params.direct_image_prompts,
+        #     semantic_init_weight=params.semantic_init_weight,
+        #     semantic_stabilization_weight=params.semantic_stabilization_weight,
+        #     flow_stabilization_weight=params.flow_stabilization_weight,
+        #     flow_long_term_samples=params.flow_long_term_samples,
+        #     smoothing_weight=params.smoothing_weight,
+        #     ###########
+        #     direct_init_weight=params.direct_init_weight,
+        #     direct_stabilization_weight=params.direct_stabilization_weight,
+        #     depth_stabilization_weight=params.depth_stabilization_weight,
+        #     edge_stabilization_weight=params.edge_stabilization_weight,
+        # )
+
+        # (
+        #     loss_augs,
+        #     init_augs,
+        #     stabilization_augs,
+        #     optical_flows,
+        #     semantic_init_prompt,
+        #     last_frame_semantic,
+        #     img,
+        # ) = loss_orch.configure_losses()
 
         # Phase 4 - setup outputs
         ##########################
