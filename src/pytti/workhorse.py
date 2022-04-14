@@ -74,6 +74,17 @@ from pytti import (
 )
 from pytti.LossAug.DepthLoss import init_AdaBins
 
+# from pytti.rotoscoper import ROTOSCOPERS
+from pytti.rotoscoper import (
+    clear_rotoscopers,
+    update_rotoscopers,
+)
+from pytti.Transforms import (
+    animate_2d,
+    zoom_3d,
+    animate_video_source,
+)
+
 logger.info("pytti loaded.")
 
 change_tqdm_color()
