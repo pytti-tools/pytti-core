@@ -124,7 +124,8 @@ class TargetFlowLoss(MSELoss):
         :return: The loss function.
         """
         init_GMA(
-            "GMA/checkpoints/gma-sintel.pth"
+            # "GMA/checkpoints/gma-sintel.pth"
+            "/home/dmarx/proj/pytti-core/GMA/checkpoints/gma-sintel.pth"
         )  # update this to use model dir from config
         image1 = self.last_step
         image2 = input
@@ -230,7 +231,10 @@ class OpticalFlowLoss(MSELoss):
         :param device: The device to run the model on
         :return: the flow field.
         """
-        init_GMA("GMA/checkpoints/gma-sintel.pth")
+        init_GMA(
+            # "GMA/checkpoints/gma-sintel.pth"
+            "/home/dmarx/proj/pytti-core/GMA/checkpoints/gma-sintel.pth"
+        )
         if isinstance(image1, Image.Image):
             image1 = TF.to_tensor(image1).unsqueeze(0).to(device)
         if isinstance(image2, Image.Image):
