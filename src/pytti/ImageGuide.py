@@ -55,9 +55,32 @@ class DirectImageGuide:
         optimizer: optim.Optimizer = None,
         lr: float = None,
         params=None,
+        writer=None,
+        fig=None,
+        axs=None,
+        base_name=None,
+        optical_flows=None,
+        video_frames=None,
+        stabilization_augs=None,
+        last_frame_semantic=None,
+        # embedder=None,
+        init_augs=None,
+        semantic_init_prompt=None,
         **optimizer_params,
     ):
         self.params = params
+        self.writer = writer
+        self.fig = fig
+        self.axs = axs
+        self.base_name = base_name
+        self.optical_flows = optical_flows
+        self.video_frames = video_frames
+        self.stabilization_augs = stabilization_augs
+        self.last_frame_semantic = last_frame_semantic
+        # self.embedder=embedder
+        self.init_augs = init_augs
+        self.semantic_init_prompt = semantic_init_prompt
+
         self.image_rep = image_rep
         self.embedder = embedder
         if lr is None:
@@ -89,7 +112,24 @@ class DirectImageGuide:
         returns: the number of steps run
         """
         for i in tqdm(range(n_steps)):
-            self.update(i + i_offset, i + skipped_steps)
+            self.update(
+                model=self,
+                img=self.image_rep,
+                i=i + i_offset,
+                stage_i=i + skipped_steps,
+                params=self.params,
+                writer=self.writer,
+                fig=self.fig,
+                axs=self.axs,
+                base_name=self.base_name,
+                optical_flows=self.optical_flows,
+                video_frames=self.video_frames,
+                stabilization_augs=self.stabilization_augs,
+                last_frame_semantic=self.last_frame_semantic,
+                embedder=self.embedder,
+                init_augs=self.init_augs,
+                semantic_init_prompt=self.semantic_init_prompt,
+            )
             losses = self.train(
                 i + skipped_steps,
                 prompts,
@@ -159,7 +199,7 @@ class DirectImageGuide:
             ax.set_xlabel("Step")
         return True
 
-    def update(self, i, stage_i):
+    def update(self, model, img, i, stage_i, *args, **kwargs):
         """
         update hook called ever step
         """

@@ -279,6 +279,7 @@ def _main(cfg: DictConfig):
         )
 
         # video source
+        video_frames = None
         if params.animation_mode == "Video Source":
             video_frames, init_image_pil, height, width = load_video_source(
                 video_path=params.video_path,
@@ -504,251 +505,20 @@ def _main(cfg: DictConfig):
             embedder,
             lr=params.learning_rate,
             params=params,
+            writer=writer,
+            fig=fig,
+            axs=axs,
+            base_name=base_name,
+            optical_flows=optical_flows,
+            video_frames=video_frames,
+            stabilization_augs=stabilization_augs,
+            last_frame_semantic=last_frame_semantic,
+            # embedder=embedder,
+            init_augs=init_augs,
+            semantic_init_prompt=semantic_init_prompt,
         )
 
-        # Update is called each step.
-        def update(
-            i,
-            stage_i,
-            params=params,
-            writer=writer,
-        ):
-            def report_out(
-                i,
-                stage_i,
-                model,
-                writer,
-                fig,  # default to None...
-                axs,  # default to None...
-                clear_every,
-                display_every,
-                approximate_vram_usage,
-                display_scale,
-                show_graphs,
-                show_palette,
-            ):
-
-                # DM: I bet this could be abstracted out into a report_out() function or whatever
-                if clear_every > 0 and i > 0 and i % clear_every == 0:
-                    display.clear_output()
-
-                if display_every > 0 and i % display_every == 0:
-                    logger.debug(f"Step {i} losses:")
-                    if model.dataframe:
-                        rec = model.dataframe[0].iloc[-1]
-                        logger.debug(rec)
-                        for k, v in rec.iteritems():
-                            writer.add_scalar(
-                                tag=f"losses/{k}", scalar_value=v, global_step=i
-                            )
-
-                    # does this VRAM stuff even do anything?
-                    if approximate_vram_usage:
-                        logger.debug("VRAM Usage:")
-                        print_vram_usage()  # update this function to use logger
-                    # update this stuff to use/rely on tensorboard
-                    display_width = int(img.image_shape[0] * display_scale)
-                    display_height = int(img.image_shape[1] * display_scale)
-                    if stage_i > 0 and show_graphs:
-                        model.plot_losses(axs)
-                        im = img.decode_image()
-                        sidebyside = make_hbox(
-                            im.resize((display_width, display_height), Image.LANCZOS),
-                            fig,
-                        )
-                        display.display(sidebyside)
-                    else:
-                        im = img.decode_image()
-                        display.display(
-                            im.resize((display_width, display_height), Image.LANCZOS)
-                        )
-                    if show_palette and isinstance(img, PixelImage):
-                        logger.debug("Palette:")
-                        display.display(img.render_pallet())
-
-            def save_out(
-                i,
-                img,
-                writer,
-                OUTPATH,
-                base_name,
-                save_every,
-                file_namespace,
-                backups,
-            ):
-                # save
-                if i > 0 and save_every > 0 and i % save_every == 0:
-                    try:
-                        im
-                    except NameError:
-                        im = img.decode_image()
-                    n = i // save_every
-                    filename = f"{OUTPATH}/{file_namespace}/{base_name}_{n}.png"
-                    im.save(filename)
-
-                    im_np = np.array(im)
-                    writer.add_image(
-                        tag="pytti output",
-                        # img_tensor=filename, # thought this would work?
-                        img_tensor=im_np,
-                        global_step=i,
-                        dataformats="HWC",  # this was the key
-                    )
-
-                    if backups > 0:
-                        filename = f"backup/{file_namespace}/{base_name}_{n}.bak"
-                        torch.save(img.state_dict(), filename)
-                        if n > backups:
-
-                            # YOOOOOOO let's not start shell processes unnecessarily
-                            # and then execute commands using string interpolation.
-                            # Replace this with a pythonic folder removal, then see
-                            # if we can't deprecate the folder removal entirely. What
-                            # is the purpose of "backups" here? Just use the frames that
-                            # are being written to disk.
-                            subprocess.run(
-                                [
-                                    "rm",
-                                    f"backup/{file_namespace}/{base_name}_{n-backups}.bak",
-                                ]
-                            )
-
-            report_out(
-                i=i,
-                stage_i=stage_i,
-                model=model,
-                writer=writer,
-                fig=fig,  # default to None...
-                axs=axs,  # default to None...
-                clear_every=params.clear_every,
-                display_every=params.display_every,
-                approximate_vram_usage=params.approximate_vram_usage,
-                display_scale=params.display_scale,
-                show_graphs=params.show_graphs,
-                show_palette=params.show_palette,
-            )
-
-            save_out(
-                i=i,
-                img=img,
-                writer=writer,
-                OUTPATH=OUTPATH,
-                base_name=base_name,
-                save_every=params.save_every,
-                file_namespace=params.file_namespace,
-                backups=params.backups,
-            )
-
-            # animate
-            ################
-            t = (i - params.pre_animation_steps) / (
-                params.steps_per_frame * params.frames_per_second
-            )
-            set_t(t)
-            if i >= params.pre_animation_steps:
-                if (i - params.pre_animation_steps) % params.steps_per_frame == 0:
-                    logger.debug(f"Time: {t:.4f} seconds")
-                    update_rotoscopers(
-                        ((i - params.pre_animation_steps) // params.steps_per_frame + 1)
-                        * params.frame_stride
-                    )
-                    if params.reset_lr_each_frame:
-                        model.set_optim(None)
-                    if params.animation_mode == "2D":
-                        tx, ty = parametric_eval(params.translate_x), parametric_eval(
-                            params.translate_y
-                        )
-                        theta = parametric_eval(params.rotate_2d)
-                        zx, zy = parametric_eval(params.zoom_x_2d), parametric_eval(
-                            params.zoom_y_2d
-                        )
-                        next_step_pil = zoom_2d(
-                            img,
-                            (tx, ty),
-                            (zx, zy),
-                            theta,
-                            border_mode=params.infill_mode,
-                            sampling_mode=params.sampling_mode,
-                        )
-                        ################
-                        for k, v in {
-                            "tx": tx,
-                            "ty": ty,
-                            "theta": theta,
-                            "zx": zx,
-                            "zy": zy,
-                            "t": t,
-                        }.items():
-
-                            writer.add_scalar(
-                                tag=f"translation_2d/{k}", scalar_value=v, global_step=i
-                            )
-
-                        ###########################
-                    elif params.animation_mode == "3D":
-                        try:
-                            im
-                        except NameError:
-                            im = img.decode_image()
-                        with vram_usage_mode("Optical Flow Loss"):
-                            flow, next_step_pil = zoom_3d(
-                                img,
-                                (
-                                    params.translate_x,
-                                    params.translate_y,
-                                    params.translate_z_3d,
-                                ),
-                                params.rotate_3d,
-                                params.field_of_view,
-                                params.near_plane,
-                                params.far_plane,
-                                border_mode=params.infill_mode,
-                                sampling_mode=params.sampling_mode,
-                                stabilize=params.lock_camera,
-                            )
-                            freeze_vram_usage()
-
-                        for optical_flow in optical_flows:
-                            optical_flow.set_last_step(im)
-                            optical_flow.set_target_flow(flow)
-                            optical_flow.set_enabled(True)
-                    elif params.animation_mode == "Video Source":
-                        flow_im, next_step_pil = animate_video_source(
-                            i=i,
-                            img=img,
-                            video_frames=video_frames,
-                            optical_flows=optical_flows,
-                            base_name=base_name,
-                            pre_animation_steps=params.pre_animation_steps,
-                            frame_stride=params.frame_stride,
-                            steps_per_frame=params.steps_per_frame,
-                            file_namespace=params.file_namespace,
-                            reencode_each_frame=params.reencode_each_frame,
-                            lock_palette=params.lock_palette,
-                            save_every=params.save_every,
-                            infill_mode=params.infill_mode,
-                            sampling_mode=params.sampling_mode,
-                        )
-
-                    if params.animation_mode != "off":
-                        for aug in stabilization_augs:
-                            aug.set_comp(next_step_pil)
-                            aug.set_enabled(True)
-                        if last_frame_semantic is not None:
-                            last_frame_semantic.set_image(embedder, next_step_pil)
-                            last_frame_semantic.set_enabled(True)
-                        for aug in init_augs:
-                            aug.set_enabled(False)
-                        if semantic_init_prompt is not None:
-                            semantic_init_prompt.set_enabled(False)
-
-        ###############################################################
-        ###
-
-        # Wait.... we literally instantiated the model just before
-        # defining update here.
-        # I bet all of this can go in the DirectImageGuide class and then
-        # we can just instantiate that class with the config object.
+        from pytti.update_func import update
 
         model.update = update
 
