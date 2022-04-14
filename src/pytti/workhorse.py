@@ -169,6 +169,46 @@ def configure_stabilization_augs(img, init_image_pil, params, loss_augs):
     return loss_augs, img, init_image_pil, stabilization_augs
 
 
+def configure_optical_flows(img, params, loss_augs):
+
+    if params.animation_mode == "Video Source":
+        if params.flow_stabilization_weight == "":
+            params.flow_stabilization_weight = "0"
+        optical_flows = [
+            OpticalFlowLoss.TargetImage(
+                f"optical flow stabilization (frame {-2**i}):{params.flow_stabilization_weight}",
+                img.image_shape,
+            )
+            for i in range(params.flow_long_term_samples + 1)
+        ]
+        for optical_flow in optical_flows:
+            optical_flow.set_enabled(False)
+        loss_augs.extend(optical_flows)
+    elif params.animation_mode == "3D" and params.flow_stabilization_weight not in [
+        "0",
+        "",
+    ]:
+        optical_flows = [
+            TargetFlowLoss.TargetImage(
+                f"optical flow stabilization:{params.flow_stabilization_weight}",
+                img.image_shape,
+            )
+        ]
+        for optical_flow in optical_flows:
+            optical_flow.set_enabled(False)
+        loss_augs.extend(optical_flows)
+    else:
+        optical_flows = []
+    # other loss augs
+    if params.smoothing_weight != 0:
+        loss_augs.append(TVLoss(weight=params.smoothing_weight))
+
+    return img, loss_augs, optical_flows
+
+
+#######################################################
+
+
 def parse_scenes(
     embedder,
     scenes,
@@ -437,37 +477,7 @@ def _main(cfg: DictConfig):
         ############################
 
         # optical flow
-        if params.animation_mode == "Video Source":
-            if params.flow_stabilization_weight == "":
-                params.flow_stabilization_weight = "0"
-            optical_flows = [
-                OpticalFlowLoss.TargetImage(
-                    f"optical flow stabilization (frame {-2**i}):{params.flow_stabilization_weight}",
-                    img.image_shape,
-                )
-                for i in range(params.flow_long_term_samples + 1)
-            ]
-            for optical_flow in optical_flows:
-                optical_flow.set_enabled(False)
-            loss_augs.extend(optical_flows)
-        elif params.animation_mode == "3D" and params.flow_stabilization_weight not in [
-            "0",
-            "",
-        ]:
-            optical_flows = [
-                TargetFlowLoss.TargetImage(
-                    f"optical flow stabilization:{params.flow_stabilization_weight}",
-                    img.image_shape,
-                )
-            ]
-            for optical_flow in optical_flows:
-                optical_flow.set_enabled(False)
-            loss_augs.extend(optical_flows)
-        else:
-            optical_flows = []
-        # other loss augs
-        if params.smoothing_weight != 0:
-            loss_augs.append(TVLoss(weight=params.smoothing_weight))
+        img, loss_augs, optical_flows = configure_optical_flows(img, params, loss_augs)
 
         # Phase 4 - setup outputs
         ##########################
