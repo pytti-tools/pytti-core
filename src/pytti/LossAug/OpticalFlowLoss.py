@@ -12,7 +12,9 @@ from torch.nn import functional as F
 from PIL import Image
 import imageio
 import matplotlib.pyplot as plt
-from pytti.Notebook import Rotoscoper
+
+# from pytti.Notebook import Rotoscoper
+from pytti.rotoscoper import Rotoscoper
 from torchvision.transforms import functional as TF
 
 from gma.core.network import RAFTGMA

@@ -3,7 +3,10 @@ from PIL import Image
 from torchvision.transforms import functional as TF
 from torch.nn import functional as F
 from pytti.LossAug import Loss
-from pytti.Notebook import Rotoscoper
+
+# from pytti.Notebook import Rotoscoper
+from pytti.rotoscoper import Rotoscoper
+
 from pytti import DEVICE, fetch, parse, vram_usage_mode
 import torch
 
