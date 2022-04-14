@@ -54,8 +54,10 @@ class DirectImageGuide:
         embedder: nn.Module,
         optimizer: optim.Optimizer = None,
         lr: float = None,
+        params=None,
         **optimizer_params,
     ):
+        self.params = params
         self.image_rep = image_rep
         self.embedder = embedder
         if lr is None:

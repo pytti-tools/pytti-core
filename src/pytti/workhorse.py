@@ -488,7 +488,12 @@ def _main(cfg: DictConfig):
         ############################
 
         # make the main model object
-        model = DirectImageGuide(img, embedder, lr=params.learning_rate)
+        model = DirectImageGuide(
+            img,
+            embedder,
+            lr=params.learning_rate,
+            params=params,
+        )
 
         # Update is called each step.
         def update(i, stage_i):
