@@ -152,7 +152,8 @@ def configure_init_image(
 
 
 def configure_stabilization_augs(img, init_image_pil, params, loss_augs):
-
+    ## NB: in loss orchestrator impl, this begins with an init_image override.
+    ## possibly the source of the issue?
     stabilization_augs = [
         "direct_stabilization_weight",
         "depth_stabilization_weight",
