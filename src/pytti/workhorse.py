@@ -146,6 +146,38 @@ def load_init_image(
     return init_image_pil, height, width
 
 
+def load_video_source(
+    video_path: str,
+    pre_animation_steps: int,
+    steps_per_frame: int,
+    height: int,
+    width: int,
+    init_image_pil: Image.Image,
+):
+    """
+    Loads a video file and returns a PIL image of the first frame
+    :param video_path: The path to the video file
+    :param pre_animation_steps: The number of frames to skip at the beginning of the video
+    :param steps_per_frame: How many steps to take per frame
+    :param height: the height of the output image
+    :param width: the width of the output image
+    :return: The video frames, the initial image, the height and width of the image.
+    """
+    logger.info(f"loading {video_path}...")
+    video_frames = get_frames(video_path)
+    pre_animation_steps = max(steps_per_frame, pre_animation_steps)
+    if init_image_pil is None:
+        init_image_pil = Image.fromarray(video_frames.get_data(0)).convert("RGB")
+        # enhancer = ImageEnhance.Contrast(init_image_pil)
+        # init_image_pil = enhancer.enhance(2)
+        init_size = init_image_pil.size
+        if width == -1:
+            width = int(height * init_size[0] / init_size[1])
+        if height == -1:
+            height = int(width * init_size[1] / init_size[0])
+    return video_frames, init_image_pil, height, width
+
+
 #######################################################
 
 
@@ -237,22 +269,16 @@ def _main(cfg: DictConfig):
 
         # video source
         if params.animation_mode == "Video Source":
-            logger.info(f"loading {params.video_path}...")
-            video_frames = get_frames(params.video_path)
-            params.pre_animation_steps = max(
-                params.steps_per_frame, params.pre_animation_steps
+            video_frames, init_image_pil, height, width = load_video_source(
+                video_path=params.video_path,
+                pre_animation_steps=params.pre_animation_steps,
+                steps_per_frame=params.steps_per_frame,
+                height=params.height,
+                width=params.width,
+                init_image_pil=init_image_pil,
             )
-            if init_image_pil is None:
-                init_image_pil = Image.fromarray(video_frames.get_data(0)).convert(
-                    "RGB"
-                )
-                # enhancer = ImageEnhance.Contrast(init_image_pil)
-                # init_image_pil = enhancer.enhance(2)
-                init_size = init_image_pil.size
-                if params.width == -1:
-                    params.width = int(params.height * init_size[0] / init_size[1])
-                if params.height == -1:
-                    params.height = int(params.width * init_size[1] / init_size[0])
+
+        params.height, params.width = height, width
 
         # Phase 3 - Setup Optimization
         ###############################
