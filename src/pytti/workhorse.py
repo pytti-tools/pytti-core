@@ -92,6 +92,38 @@ writer = SummaryWriter(TB_LOGDIR)
 OUTPATH = f"{os.getcwd()}/images_out/"
 
 
+#######################################################
+
+
+def parse_scenes(
+    embedder,
+    scenes,
+    scene_prefix,
+    scene_suffix,
+):
+    """
+    Parses scenes separated by || and applies provided prefixes and suffixes to each scene.
+    :param embedder: The embedder object
+    :param params: The experiment parameters
+    :return: The embedder and the prompts.
+    """
+    logger.info("Loading prompts...")
+    prompts = [
+        [
+            parse_prompt(embedder, p.strip())
+            for p in (scene_prefix + stage + scene_suffix).strip().split("|")
+            if p.strip()
+        ]
+        for stage in scenes.split("||")
+        if stage
+    ]
+    logger.info("Prompts loaded.")
+    return embedder, prompts
+
+
+#######################################################
+
+
 @hydra.main(config_path="config", config_name="default")
 def _main(cfg: DictConfig):
     # params = OmegaConf.to_container(cfg, resolve=True)
@@ -164,19 +196,12 @@ def _main(cfg: DictConfig):
 
         # load scenes
         with vram_usage_mode("Text Prompts"):
-            logger.info("Loading prompts...")
-            prompts = [
-                [
-                    parse_prompt(embedder, p.strip())
-                    for p in (params.scene_prefix + stage + params.scene_suffix)
-                    .strip()
-                    .split("|")
-                    if p.strip()
-                ]
-                for stage in params.scenes.split("||")
-                if stage
-            ]
-            logger.info("Prompts loaded.")
+            embedder, prompts = parse_scenes(
+                embedder,
+                scenes=params.scenes,
+                scene_prefix=params.scene_prefix,
+                scene_suffix=params.scene_suffix,
+            )
 
         # load init image
         if params.init_image != "":
