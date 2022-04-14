@@ -47,11 +47,11 @@ from pytti.Notebook import (
     load_clip,
     get_frames,
     build_loss,
-    format_params,
-    rotoscopers,
-    clear_rotoscopers,
-    update_rotoscopers,
-    Rotoscoper,
+    #    format_params,
+    #    rotoscopers,
+    #    clear_rotoscopers,
+    #    update_rotoscopers,
+    #    Rotoscoper,
 )
 
 from pytti import Perceptor
