@@ -21,7 +21,9 @@ class RotoscopingOrchestrator:
 
 
 ROTOSCOPERS = RotoscopingOrchestrator()  # fml...
-
+rotoscopers = ROTOSCOPERS.rotoscopers
+update_rotoscopers = ROTOSCOPERS.update_rotoscopers
+clear_rotoscopers = ROTOSCOPERS.clear_rotoscopers
 
 # surprised we're not using opencv here.
 # let's call this another unnecessary subprocess call to deprecate.
