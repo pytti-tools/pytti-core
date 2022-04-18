@@ -181,6 +181,9 @@ class ConfigSchema:
     RN50x16: bool = False
     RN50x64: bool = False
 
+    # yeeaaah... this isn't how I'm adding more perceptors going forward.
+    RN50__yfcc15m: bool = False
+
     ###############
     ### Outputs ###
     ###############

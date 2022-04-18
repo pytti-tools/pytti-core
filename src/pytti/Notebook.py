@@ -222,6 +222,7 @@ SUPPORTED_CLIP_MODELS = {
     _sanitize_for_config(model_name): model_name
     for model_name in clip.available_models()
 }
+SUPPORTED_CLIP_MODELS["RN50__yfcc15m"] = "RN50--yfcc15m"
 
 logger.debug(SUPPORTED_CLIP_MODELS)
 

@@ -106,3 +106,20 @@ class TestE2e_StabilizationModes_FromYaml(_E2e_FromYaml):
     def test_vqgan(self, kwargs):
         kwargs = self._add_video_path_to_kwargs(kwargs)
         super().test_vqgan(**kwargs)
+
+
+@pytest.mark.parametrize(
+    # "animation_mode", ["off","2D","3D","Video Source",
+    # ("foobar", pytest.mark.fail), ("", pytest.mark.fail), (None, pytest.mark.fail)]
+    "kwargs",
+    [{"RN50": "true"}, {"RN50__yfcc15m": "true"}],
+)
+class TestE2e_Perceptors_FromYaml(_E2e_FromYaml):
+    def test_limited(self, kwargs):
+        super().test_limited(**kwargs)
+
+    def test_unlimited(self, kwargs):
+        super().test_unlimited(**kwargs)
+
+    def test_vqgan(self, kwargs):
+        super().test_vqgan(**kwargs)

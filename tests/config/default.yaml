@@ -154,3 +154,5 @@ models_parent_dir: ${user_cache:}
 ##########################
 
 gradient_accumulation_steps: 1
+
+RN50__yfcc15m: false

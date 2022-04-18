@@ -2,6 +2,7 @@ from pathlib import Path
 import pytest
 from loguru import logger
 
+from pytti.Perceptor import init_clip
 from pytti.Image.VQGANImage import (
     VQGANImage,
     VQGAN_MODEL_NAMES,
@@ -75,8 +76,12 @@ def test_load_clip_with_download():
     pass
 
 
-def test_load_clip_no_download():
-    pass
+def test_load_openai_clip():
+    init_clip(["RN50"])
+
+
+def test_load_mlf_clip():
+    init_clip(["RN50__yfcc15m"])
 
 
 # adabins
