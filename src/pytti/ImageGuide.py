@@ -428,7 +428,7 @@ class DirectImageGuide:
             params.steps_per_frame * params.frames_per_second
         )
         if self.audio_parser is None:
-            set_t(t, 0, 0, 0)
+            set_t(t, {})
         # set_t(t)  # this won't need to be a thing with `t`` attached to the class
         if i >= params.pre_animation_steps:
             # next_step_pil = None
