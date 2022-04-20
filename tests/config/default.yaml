@@ -154,3 +154,11 @@ models_parent_dir: ${user_cache:}
 ##########################
 
 gradient_accumulation_steps: 1
+
+##################
+
+# This shouldn't be necessary, but let's see if maybe it squashes test errors?
+
+input_audio: ""
+input_audio_offset: 0
+input_audio_filters: null
