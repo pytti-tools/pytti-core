@@ -4,6 +4,7 @@ import torch
 import mmc
 from pytti import DEVICE, vram_usage_mode
 from loguru import logger
+from collections import namedtuple
 
 CLIP_PERCEPTORS = None
 
@@ -36,6 +37,9 @@ def init_clip(clip_models):
             # logger.debug(model)
             model = model._model
             # logger.debug(model)
+            # if not hasattr(model, 'visual'):
+            #    model.visual = object()
+            #    model.visual.input_resolution = (224,224)
             CLIP_PERCEPTORS.append(model)
 
 

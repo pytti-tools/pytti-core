@@ -6,6 +6,8 @@ from pytti import DEVICE, format_input, cat_with_pad, format_module, normalize
 # from pytti.ImageGuide import DirectImageGuide
 from pytti.Image import DifferentiableImage
 
+from loguru import logger
+
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -40,7 +42,20 @@ class HDMultiClipEmbedder(nn.Module):
         super().__init__()
         if perceptors is None:
             perceptors = pytti.Perceptor.CLIP_PERCEPTORS
-        self.cut_sizes = [p.visual.input_resolution for p in perceptors]
+        # logger.debug([p.visual.input_resolution for p in perceptors])
+        # self.cut_sizes = [p.visual.input_resolution for p in perceptors]
+        self.cut_sizes = []
+        for p in perceptors:
+            try:
+                cut_size = p.visual.input_resolution
+                logger.debug(cut_size)
+                logger.debug(type(cut_size))
+            except AttributeError:
+                logger.debug(
+                    "perceptor input resolution not attached as attribute. Assuming 224 x 224"
+                )
+                cut_size = 224  # (224, 224)
+            self.cut_sizes.append(cut_size)
         self.cutn = cutn
         self.noise_fac = noise_fac
         self.augs = nn.Sequential(
