@@ -190,10 +190,28 @@ def update(
     t = (i - params.pre_animation_steps) / (
         params.steps_per_frame * params.frames_per_second
     )
-    set_t(t)
+    set_t(t, {})
     if i >= params.pre_animation_steps:
         if (i - params.pre_animation_steps) % params.steps_per_frame == 0:
             logger.debug(f"Time: {t:.4f} seconds")
+
+            # Audio Reactivity ############
+            if model.audio_parser is None:
+                set_t(t, {})
+            # set_t(t)  # this won't need to be a thing with `t`` attached to the class
+            if i >= params.pre_animation_steps:
+                # next_step_pil = None
+                if (i - params.pre_animation_steps) % params.steps_per_frame == 0:
+                    if model.audio_parser is not None:
+                        band_dict = model.audio_parser.get_params(t)
+                        logger.debug(
+                            f"Time: {t:.4f} seconds, audio params: {band_dict}"
+                        )
+                        set_t(t, band_dict)
+                    else:
+                        logger.debug(f"Time: {t:.4f} seconds")
+            ###############################
+
             update_rotoscopers(
                 ((i - params.pre_animation_steps) // params.steps_per_frame + 1)
                 * params.frame_stride
