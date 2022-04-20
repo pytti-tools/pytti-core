@@ -18,10 +18,11 @@ def check_input_against_list(attribute, value, valid_values):
 
 @define(auto_attribs=True)
 class AudioFilterConfig:
-    variable_name: str = "???"
-    f_center: int = "???"
-    f_width: int = "???"
+    variable_name: str = ""
+    f_center: int = -1
+    f_width: int = -1
     order: int = 5
+
 
 @define(auto_attribs=True)
 class ConfigSchema:
