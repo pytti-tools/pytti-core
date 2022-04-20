@@ -81,6 +81,13 @@ far_plane: 10000
 ######################
 ### Induced Motion ###
 ######################
+input_audio: ""
+input_audio_offset: 0
+input_audio_filters: []
+# - variable_name: fLo
+#   f_center: 60
+#   f_width: 30
+#   order: 5
 
 pre_animation_steps: 100
 lock_camera: true

@@ -19,6 +19,7 @@ from pytti import (
     freeze_vram_usage,
     vram_usage_mode,
 )
+from pytti.AudioParse import SpectralAudioParser
 from pytti.Image.differentiable_image import DifferentiableImage
 from pytti.Image.PixelImage import PixelImage
 from pytti.Notebook import tqdm, make_hbox
@@ -107,6 +108,18 @@ class DirectImageGuide:
         else:
             self.optimizer = optimizer
         self.dataframe = []
+
+        self.audio_parser = None
+        if params is not None:
+            if params.input_audio and params.input_audio_filters:
+                self.audio_parser = SpectralAudioParser(
+                    params.input_audio,
+                    params.input_audio_offset,
+                    params.frames_per_second,
+                    params.input_audio_filters,
+                )
+            # else:
+            #    self.audio_parser = None
 
         # self.null_update = null_update
         self.params = params

@@ -90,6 +90,10 @@ params = {
     ##########################
     # adding new config items for backwards compatibility
     "use_tensorboard": True,  # This should actually default to False. Prior to April2022, tb was non-optional
+    # Default null audio input parameters
+    "input_audio": "",
+    "input_audio_offset": 0,
+    "input_audio_filters": [],
 }
 
 

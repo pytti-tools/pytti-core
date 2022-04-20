@@ -17,6 +17,14 @@ def check_input_against_list(attribute, value, valid_values):
 
 
 @define(auto_attribs=True)
+class AudioFilterConfig:
+    variable_name: str = ""
+    f_center: int = -1
+    f_width: int = -1
+    order: int = 5
+
+
+@define(auto_attribs=True)
 class ConfigSchema:
     #############
     ## Prompts ##
@@ -99,6 +107,10 @@ class ConfigSchema:
     ######################
     ### Induced Motion ###
     ######################
+
+    input_audio: str = ""
+    input_audio_offset: float = 0
+    input_audio_filters: Optional[AudioFilterConfig] = None
 
     #  _2d and _3d only apply to those animation modes
 
@@ -195,7 +207,7 @@ class ConfigSchema:
     backups: int = 0
     show_graphs: bool = False
     approximate_vram_usage: bool = False
-    use_tensorboard: bool = False
+    use_tensorboard: Optional[bool] = False
 
     #####################################
 
