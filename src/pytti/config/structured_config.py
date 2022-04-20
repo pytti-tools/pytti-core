@@ -108,8 +108,8 @@ class ConfigSchema:
     ### Induced Motion ###
     ######################
 
-    input_audio: Optional[str] = ""
-    input_audio_offset: Optional[float] = 0
+    input_audio: str = ""
+    input_audio_offset: float = 0
     input_audio_filters: Optional[AudioFilterConfig] = None
 
     #  _2d and _3d only apply to those animation modes
