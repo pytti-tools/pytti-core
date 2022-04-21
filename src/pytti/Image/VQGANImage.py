@@ -25,10 +25,9 @@ VQGAN_IS_GUMBEL = None
 # migrate these to config files
 VQGAN_MODEL_NAMES = ["imagenet", "coco", "wikiart", "sflckr", "openimages"]
 VQGAN_CONFIG_URLS = {
-    "imagenet": [
-        "https://heibox.uni-heidelberg.de/f/274fb24ed38341bfa753/?dl=1"
-    ],
-    "coco": ["https://dl.nmkd.de/ai/clip/coco/coco.yaml"],
+    "imagenet": ["https://heibox.uni-heidelberg.de/f/274fb24ed38341bfa753/?dl=1"],
+    # "coco": ["https://dl.nmkd.de/ai/clip/coco/coco.yaml"],
+    "coco": ["http://batbot.ai/models/VQGAN/coco_first_stage.yaml"],
     "wikiart": [
         "http://eaidata.bmk.sh/data/Wikiart_16384/wikiart_f16_16384_8145600.yaml"
     ],
@@ -43,10 +42,9 @@ VQGAN_CONFIG_URLS = {
     ],
 }
 VQGAN_CHECKPOINT_URLS = {
-    "imagenet": [
-        "https://heibox.uni-heidelberg.de/f/867b05fc8c4841768640/?dl=1"
-    ],
-    "coco": ["https://dl.nmkd.de/ai/clip/coco/coco.ckpt"],
+    "imagenet": ["https://heibox.uni-heidelberg.de/f/867b05fc8c4841768640/?dl=1"],
+    # "coco": ["https://dl.nmkd.de/ai/clip/coco/coco.ckpt"],
+    "coco": ["http://batbot.ai/models/VQGAN/coco_first_stage.ckpt"],
     "wikiart": [
         "http://eaidata.bmk.sh/data/Wikiart_16384/wikiart_f16_16384_8145600.ckpt"
     ],
@@ -61,9 +59,10 @@ VQGAN_CHECKPOINT_URLS = {
     ],
 }
 
+
 def _download(url, dest):
     os.makedirs(os.path.dirname(dest), exist_ok=True)
-    
+
     with urllib.request.urlopen(url) as source:
         file_size = int(source.info().get("Content-Length"))
 
@@ -90,7 +89,6 @@ def _download(url, dest):
         return os.path.getsize(dest) == file_size
 
 
-
 def load_vqgan_model(config_path, checkpoint_path):
     config = OmegaConf.load(config_path)
     if config.model.target == "taming.models.vqgan.VQModel":
@@ -103,6 +101,7 @@ def load_vqgan_model(config_path, checkpoint_path):
         parent_model.eval().requires_grad_(False)
         parent_model.init_from_ckpt(checkpoint_path)
         model = parent_model.first_stage_model
+        del parent_model
         gumbel = False
     elif config.model.target == "taming.models.vqgan.GumbelVQ":
         model = vqgan.GumbelVQ(**config.model.params)
