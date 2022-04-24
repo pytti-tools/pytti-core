@@ -63,28 +63,32 @@ class Test_VQGANImage:
 
 ########################################
 
-
-def test_load_vqgan_with_download():
-    pass
-
-
 # clip
 
-
-def test_load_clip_with_download():
-    pass
+from pytti.Notebook import load_clip, _sanitize_for_config
 
 
-def test_load_clip_no_download():
-    pass
+def test_load_clip_w_at_symbol_in_identifier():
+    openai_model_name = "ViT-L/14@336px"
+    config_model_name = "ViTL14_336px"
+    assert _sanitize_for_config(openai_model_name) == config_model_name
+    load_clip({config_model_name: True})
+
+
+# def test_load_clip_with_download():
+#    pass
+
+
+# def test_load_clip_no_download():
+#    pass
 
 
 # adabins
 
 
-def test_load_adabins_with_download():
-    pass
+# def test_load_adabins_with_download():
+#    pass
 
 
-def test_load_adabins_no_download():
-    pass
+# def test_load_adabins_no_download():
+#    pass
