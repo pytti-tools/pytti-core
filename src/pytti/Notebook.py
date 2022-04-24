@@ -215,6 +215,8 @@ def save_batch(settings_list, path):
 def _sanitize_for_config(in_str):
     for char in ("/", "-"):
         in_str = in_str.replace(char, "")
+    for char in "@":
+        in_str = in_str.replace(char, "_")
     return in_str
 
 

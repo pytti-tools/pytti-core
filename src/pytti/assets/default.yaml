@@ -162,6 +162,7 @@ flow_long_term_samples: 1
 ViTB32: true
 ViTB16: false
 ViTL14: false
+ViTL14_336px: false
 RN50: false
 RN101: false
 RN50x4: false
