@@ -2,9 +2,12 @@ import math
 import re
 import requests
 import io
+import numpy as np
 
 math_env = None
 global_t = 0
+global_bands = {}
+global_bands_prev = {}
 eval_memo = {}
 
 
@@ -20,6 +23,7 @@ def parametric_eval(string, **vals):
                 "min": min,
                 "pow": pow,
                 "round": round,
+                "np": np,
                 "__builtins__": None,
             }
             math_env.update(
@@ -27,6 +31,11 @@ def parametric_eval(string, **vals):
             )
         math_env.update(vals)
         math_env["t"] = global_t
+        for band in global_bands:
+            math_env[band] = global_bands[band]
+        if global_bands_prev:
+            for band in global_bands_prev:
+                math_env[f"{band}_prev"] = global_bands_prev[band]
         try:
             output = eval(string, math_env)
         except SyntaxError as e:
@@ -37,9 +46,14 @@ def parametric_eval(string, **vals):
         return string
 
 
-def set_t(t):
-    global global_t, eval_memo
+def set_t(t, band_dict):
+    global global_t, global_bands, global_bands_prev, eval_memo
     global_t = t
+    if global_bands:
+        global_bands_prev = global_bands
+    else:
+        global_bands_prev = band_dict
+    global_bands = band_dict
     eval_memo = {}
 
 

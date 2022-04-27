@@ -4,8 +4,7 @@
 
 defaults:
   - _self_
-  - conf: ???
-#  - conf: demo
+  - conf: _empty
 
 #############
 ## Prompts ##
@@ -26,14 +25,13 @@ semantic_init_weight: ''
 #   - Unlimited Palette
 #   - Limimted Palette
 #   - VQGAN
-image_model: VQGAN
+image_model: Unlimited Palette
 
 # vqgan_model:
 #   - sflickr
 #   - imagenet
 #   - coco
 #   - wikiart
-#   - sflckr
 #   - openimages
 vqgan_model: sflckr
 
@@ -81,6 +79,13 @@ far_plane: 10000
 ######################
 ### Induced Motion ###
 ######################
+input_audio: ""
+input_audio_offset: 0
+input_audio_filters: []
+# - variable_name: fLo
+#   f_center: 60
+#   f_width: 30
+#   order: 5
 
 pre_animation_steps: 100
 lock_camera: true
@@ -155,6 +160,7 @@ flow_long_term_samples: 1
 ViTB32: true
 ViTB16: false
 ViTL14: false
+ViTL14_336px: false
 RN50: false
 RN101: false
 RN50x4: false
