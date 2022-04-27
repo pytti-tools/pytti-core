@@ -67,44 +67,35 @@ def update(
         show_palette,
     ):
 
-        # DM: I bet this could be abstracted out into a report_out() function or whatever
-        if clear_every > 0 and i > 0 and i % clear_every == 0:
-            display.clear_output()
+        logger.debug(f"Step {i} losses:")
+        if model.dataframe:
+            rec = model.dataframe[0].iloc[-1]
+            logger.debug(rec)
+            if writer is not None:
+                for k, v in rec.iteritems():
+                    writer.add_scalar(tag=f"losses/{k}", scalar_value=v, global_step=i)
 
-        if display_every > 0 and i % display_every == 0:
-            logger.debug(f"Step {i} losses:")
-            if model.dataframe:
-                rec = model.dataframe[0].iloc[-1]
-                logger.debug(rec)
-                if writer is not None:
-                    for k, v in rec.iteritems():
-                        writer.add_scalar(
-                            tag=f"losses/{k}", scalar_value=v, global_step=i
-                        )
-
-            # does this VRAM stuff even do anything?
-            if approximate_vram_usage:
-                logger.debug("VRAM Usage:")
-                print_vram_usage()  # update this function to use logger
-            # update this stuff to use/rely on tensorboard
-            display_width = int(img.image_shape[0] * display_scale)
-            display_height = int(img.image_shape[1] * display_scale)
-            if stage_i > 0 and show_graphs:
-                model.plot_losses(axs)
-                im = img.decode_image()
-                sidebyside = make_hbox(
-                    im.resize((display_width, display_height), Image.LANCZOS),
-                    fig,
-                )
-                display.display(sidebyside)
-            else:
-                im = img.decode_image()
-                display.display(
-                    im.resize((display_width, display_height), Image.LANCZOS)
-                )
-            if show_palette and isinstance(img, PixelImage):
-                logger.debug("Palette:")
-                display.display(img.render_pallet())
+        # does this VRAM stuff even do anything?
+        if approximate_vram_usage:
+            logger.debug("VRAM Usage:")
+            print_vram_usage()  # update this function to use logger
+        # update this stuff to use/rely on tensorboard
+        display_width = int(img.image_shape[0] * display_scale)
+        display_height = int(img.image_shape[1] * display_scale)
+        if stage_i > 0 and show_graphs:
+            model.plot_losses(axs)
+            im = img.decode_image()
+            sidebyside = make_hbox(
+                im.resize((display_width, display_height), Image.LANCZOS),
+                fig,
+            )
+            display.display(sidebyside)
+        else:
+            im = img.decode_image()
+            display.display(im.resize((display_width, display_height), Image.LANCZOS))
+        if show_palette and isinstance(img, PixelImage):
+            logger.debug("Palette:")
+            display.display(img.render_pallet())
 
     def save_out(
         i,
@@ -116,74 +107,79 @@ def update(
         file_namespace,
         backups,
     ):
-        # save
-        if i > 0 and save_every > 0 and i % save_every == 0:
-            try:
-                im
-            except NameError:
-                im = img.decode_image()
-            n = i // save_every
-            Path(f"{OUTPATH}/{file_namespace}").mkdir(
-                parents=True,
-                exist_ok=True,
-            )
-            filename = f"{OUTPATH}/{file_namespace}/{base_name}_{n}.png"
-            im.save(filename)
+        try:
+            im
+        except NameError:
+            im = img.decode_image()
+        n = j // save_every
+        Path(f"{OUTPATH}/{file_namespace}").mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+        filename = f"{OUTPATH}/{file_namespace}/{base_name}_{n}.png"
+        im.save(filename)
 
-            if writer is not None:
-                im_np = np.array(im)
-                writer.add_image(
-                    tag="pytti output",
-                    # img_tensor=filename, # thought this would work?
-                    img_tensor=im_np,
-                    global_step=i,
-                    dataformats="HWC",  # this was the key
+        if writer is not None:
+            im_np = np.array(im)
+            writer.add_image(
+                tag="pytti output",
+                # img_tensor=filename, # thought this would work?
+                img_tensor=im_np,
+                global_step=i,
+                dataformats="HWC",  # this was the key
+            )
+
+        if backups > 0:
+            filename = f"backup/{file_namespace}/{base_name}_{n}.bak"
+            torch.save(img.state_dict(), filename)
+            if n > backups:
+
+                # YOOOOOOO let's not start shell processes unnecessarily
+                # and then execute commands using string interpolation.
+                # Replace this with a pythonic folder removal, then see
+                # if we can't deprecate the folder removal entirely. What
+                # is the purpose of "backups" here? Just use the frames that
+                # are being written to disk.
+                subprocess.run(
+                    [
+                        "rm",
+                        f"backup/{file_namespace}/{base_name}_{n-backups}.bak",
+                    ]
                 )
 
-            if backups > 0:
-                filename = f"backup/{file_namespace}/{base_name}_{n}.bak"
-                torch.save(img.state_dict(), filename)
-                if n > backups:
+    j = i + 1
 
-                    # YOOOOOOO let's not start shell processes unnecessarily
-                    # and then execute commands using string interpolation.
-                    # Replace this with a pythonic folder removal, then see
-                    # if we can't deprecate the folder removal entirely. What
-                    # is the purpose of "backups" here? Just use the frames that
-                    # are being written to disk.
-                    subprocess.run(
-                        [
-                            "rm",
-                            f"backup/{file_namespace}/{base_name}_{n-backups}.bak",
-                        ]
-                    )
+    if (params.clear_every > 0) and (i > 0) and (j % params.clear_every == 0):
+        display.clear_output()
 
-    report_out(
-        img=img,
-        i=i,
-        stage_i=stage_i,
-        model=model,
-        writer=writer,
-        fig=fig,  # default to None...
-        axs=axs,  # default to None...
-        clear_every=params.clear_every,
-        display_every=params.display_every,
-        approximate_vram_usage=params.approximate_vram_usage,
-        display_scale=params.display_scale,
-        show_graphs=params.show_graphs,
-        show_palette=params.show_palette,
-    )
+    if (params.display_every > 0) and (j % params.display_every == 0):
+        report_out(
+            img=img,
+            i=i,
+            stage_i=stage_i,
+            model=model,
+            writer=writer,
+            fig=fig,  # default to None...
+            axs=axs,  # default to None...
+            clear_every=params.clear_every,
+            display_every=params.display_every,
+            approximate_vram_usage=params.approximate_vram_usage,
+            display_scale=params.display_scale,
+            show_graphs=params.show_graphs,
+            show_palette=params.show_palette,
+        )
 
-    save_out(
-        i=i,
-        img=img,
-        writer=writer,
-        OUTPATH=OUTPATH,
-        base_name=base_name,
-        save_every=params.save_every,
-        file_namespace=params.file_namespace,
-        backups=params.backups,
-    )
+    if (i > 0) and (params.save_every > 0) and (j % params.save_every == 0):
+        save_out(
+            i=i,
+            img=img,
+            writer=writer,
+            OUTPATH=OUTPATH,
+            base_name=base_name,
+            save_every=params.save_every,
+            file_namespace=params.file_namespace,
+            backups=params.backups,
+        )
 
     # animate
     ################
