@@ -156,6 +156,7 @@ def load_video_source(
     height: int,
     width: int,
     init_image_pil: Image.Image,
+    params=None,
 ):
     """
     Loads a video file and returns a PIL image of the first frame
@@ -168,7 +169,7 @@ def load_video_source(
     :return: The video frames, the initial image, the height and width of the image.
     """
     logger.info(f"loading {video_path}...")
-    video_frames = get_frames(video_path)
+    video_frames = get_frames(video_path, params)
     pre_animation_steps = max(steps_per_frame, pre_animation_steps)
     if init_image_pil is None:
         init_image_pil = Image.fromarray(video_frames.get_data(0)).convert("RGB")
@@ -290,6 +291,7 @@ def _main(cfg: DictConfig):
                 height=params.height,
                 width=params.width,
                 init_image_pil=init_image_pil,
+                params=params,
             )
 
         # not a fan of modifying the params object like this, but may as well be consistent for now...
