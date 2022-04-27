@@ -20,9 +20,11 @@ local_path = Path.cwd() / "config"
 full_local = local_path / "conf"
 default_fname = "default.yaml"
 demo_fname = "demo.yaml"
+empty_fname = "_empty.yaml"
 
 dest_fpath_default = Path(local_path) / default_fname
 dest_fpath_demo = Path(full_local) / demo_fname
+dest_fpath_empty = Path(full_local) / empty_fname
 
 logger.debug(__path__)
 install_dir = Path(__path__)
@@ -57,10 +59,13 @@ def ensure_configs_exist():
 
         write_fpath_default = str(dest_fpath_default.resolve())
         write_fpath_demo = str(dest_fpath_demo.resolve())
+        write_fpath_empty = str(dest_fpath_empty.resolve())
         with open(write_fpath_default, "w") as f:
             f.write(default_yaml)
         with open(write_fpath_demo, "w") as f:
             f.write(demo_yaml)
+        with open(write_fpath_empty, "w") as f:
+            f.write("\n")
 
 
 # Path.home() == os.path.expanduser('~')

@@ -4,8 +4,7 @@
 
 defaults:
   - _self_
-  - conf: ???
-#  - conf: demo
+  - conf: _empty
 
 #############
 ## Prompts ##
@@ -26,14 +25,13 @@ semantic_init_weight: ''
 #   - Unlimited Palette
 #   - Limimted Palette
 #   - VQGAN
-image_model: VQGAN
+image_model: Unlimited Palette
 
 # vqgan_model:
 #   - sflickr
 #   - imagenet
 #   - coco
 #   - wikiart
-#   - sflckr
 #   - openimages
 vqgan_model: sflckr
 
