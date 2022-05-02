@@ -18,6 +18,8 @@ import clip
 
 from pytti import Perceptor
 
+from pytti.Perceptor import CLIP_PERCEPTORS
+
 
 # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
 def is_notebook():
@@ -264,9 +266,9 @@ def load_clip(params):
         import mmc.loaders  # force trigger model registrations
         from mmc.mock.openai import MockOpenaiClip
 
-        # ugh....
-        global CLIP_PERCEPTORS
-        CLIP_PERCEPTORS = []
+        CLIP_PERCEPTORS = (
+            []
+        )  # this will be fine because we'll use it to overwrite the module object
         for item in params.mmc_models:
             logger.debug(item)
             model_loaders = REGISTRY.find(**item)
@@ -276,3 +278,5 @@ def load_clip(params):
                 model = model_loader.load()
                 model = MockOpenaiClip(model)
                 CLIP_PERCEPTORS.append(model)
+        logger.debug(CLIP_PERCEPTORS)
+        Perceptor.CLIP_PERCEPTORS = CLIP_PERCEPTORS  # weird that htis works, but fine.
