@@ -62,3 +62,26 @@ def test_mmc_mlf_models():
         with open_dict(cfg_base) as cfg:
             cfg = OmegaConf.merge(cfg_base, cfg_mmc)
         render_frames(cfg)
+
+
+cfg_yaml_all_cloob = """# @package _global_
+scenes: a photograph of an apple
+use_mmc: true
+mmc_models:
+- architecture: cloob
+  id: cloob_laion_400m_vit_b_16_32_epochs
+"""
+
+
+def test_mmc_all_cloob_models():
+
+    with initialize(config_path=CONFIG_BASE_PATH):
+        cfg_base = compose(
+            config_name=CONFIG_DEFAULTS,
+            overrides=[f"conf=_empty"],
+        )
+        cfg_mmc = OmegaConf.create(cfg_yaml_all_cloob)
+
+        with open_dict(cfg_base) as cfg:
+            cfg = OmegaConf.merge(cfg_base, cfg_mmc)
+        render_frames(cfg)
