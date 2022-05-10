@@ -18,6 +18,8 @@ import clip
 
 from pytti import Perceptor
 
+from pytti.Perceptor import CLIP_PERCEPTORS
+
 
 # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
 def is_notebook():
@@ -248,11 +250,33 @@ def load_clip(params):
         if params.get(config_name):
             CLIP_MODEL_NAMES.append(clip_name)
 
-    if last_names != CLIP_MODEL_NAMES or Perceptor.CLIP_PERCEPTORS is None:
-        if CLIP_MODEL_NAMES == []:
+    if not params.get("use_mmc"):
+        if last_names != CLIP_MODEL_NAMES or Perceptor.CLIP_PERCEPTORS is None:
+            if CLIP_MODEL_NAMES == []:
+                Perceptor.free_clip()
+                raise RuntimeError("Please select at least one CLIP model")
             Perceptor.free_clip()
-            raise RuntimeError("Please select at least one CLIP model")
-        Perceptor.free_clip()
-        logger.debug("Loading CLIP...")
-        Perceptor.init_clip(CLIP_MODEL_NAMES)
-        logger.debug("CLIP loaded.")
+            logger.debug("Loading CLIP...")
+            Perceptor.init_clip(CLIP_MODEL_NAMES)
+            logger.debug("CLIP loaded.")
+    else:
+        logger.debug("attempting to use mmc to load perceptors")
+        import mmc
+        from mmc.registry import REGISTRY
+        import mmc.loaders  # force trigger model registrations
+        from mmc.mock.openai import MockOpenaiClip
+
+        CLIP_PERCEPTORS = (
+            []
+        )  # this will be fine because we'll use it to overwrite the module object
+        for item in params.mmc_models:
+            logger.debug(item)
+            model_loaders = REGISTRY.find(**item)
+            logger.debug(model_loaders)
+            for model_loader in model_loaders:
+                logger.debug(model_loader)
+                model = model_loader.load()
+                model = MockOpenaiClip(model)
+                CLIP_PERCEPTORS.append(model)
+        logger.debug(CLIP_PERCEPTORS)
+        Perceptor.CLIP_PERCEPTORS = CLIP_PERCEPTORS  # weird that htis works, but fine.
