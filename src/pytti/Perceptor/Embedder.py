@@ -1,7 +1,7 @@
 from typing import Tuple
 
 import pytti
-from pytti import DEVICE, format_input, cat_with_pad, format_module, normalize
+from pytti import format_input, cat_with_pad, format_module, normalize
 
 # from pytti.ImageGuide import DirectImageGuide
 from pytti.image_models import DifferentiableImage
@@ -42,8 +42,12 @@ class HDMultiClipEmbedder(nn.Module):
         padding=0.25,
         border_mode="clamp",
         noise_fac=0.1,
+        device=None,
     ):
         super().__init__()
+        if device is None:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
         if perceptors is None:
             perceptors = pytti.Perceptor.CLIP_PERCEPTORS
         self.cut_sizes = [p.visual.input_resolution for p in perceptors]
@@ -58,6 +62,7 @@ class HDMultiClipEmbedder(nn.Module):
         self.border_mode = border_mode
 
     def make_cutouts(
+<<<<<<< HEAD
         self,
         input: torch.Tensor,
         side_x,
@@ -71,8 +76,10 @@ class HDMultiClipEmbedder(nn.Module):
         # augs,
         # noise_fac,
         ####
-        device=DEVICE,
+        device=None,
     ) -> Tuple[list, list, list]:
+        if device is None:
+            device = self.device
         cutouts, offsets, sizes = cutouts_samplers.pytti_classic(
             input=input,
             side_x=side_x,
@@ -84,7 +91,7 @@ class HDMultiClipEmbedder(nn.Module):
             border_mode=self.border_mode,
             augs=self.augs,
             noise_fac=self.noise_fac,
-            device=DEVICE,
+            device=device,
         )
         return cutouts, offsets, sizes
 
@@ -93,12 +100,14 @@ class HDMultiClipEmbedder(nn.Module):
         # diff_image: DirectImageGuide,
         diff_image: DifferentiableImage,
         input=None,
-        device=DEVICE,
+        device=None,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         diff_image: (DifferentiableImage) input image
         returns images embeds
         """
+        if device is None:
+            device = self.device
         perceptors = self.perceptors
         side_x, side_y = diff_image.image_shape
         if input is None:

@@ -242,7 +242,7 @@ def _main(cfg: DictConfig):
         ###########################
 
         # load CLIP
-        load_clip(params)
+        load_clip(params, device=_device)
 
         cutn = params.cutouts
         if params.gradient_accumulation_steps > 1:
@@ -264,6 +264,7 @@ def _main(cfg: DictConfig):
             cut_pow=params.cut_pow,
             padding=params.cutout_border,
             border_mode=params.border_mode,
+            device=_device,
         )
 
         # load scenes
