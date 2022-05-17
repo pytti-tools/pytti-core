@@ -277,6 +277,7 @@ def update(
                         border_mode=params.infill_mode,
                         sampling_mode=params.sampling_mode,
                         stabilize=params.lock_camera,
+                        device=None,
                     )
                     freeze_vram_usage()
 

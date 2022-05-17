@@ -161,7 +161,7 @@ def render_image_3d(
 
     if device is None:
         device = image.device
-
+    logger.debug(device)
     y, x = torch.meshgrid(torch.linspace(-1, 1, h), torch.linspace(-f, f, w))
     x = x.unsqueeze(0).unsqueeze(0)
     y = y.unsqueeze(0).unsqueeze(0)
@@ -283,7 +283,7 @@ def zoom_3d(
     # )
 
     ########################################
-
+    logger.debug(device)
     try:
         image_tensor = img.get_image_tensor().to(device)
         depth_tensor = (
@@ -326,7 +326,9 @@ def zoom_3d(
         border_mode=border_mode,
         sampling_mode=sampling_mode,
         stabilize=stabilize,
+        device=device,
     )
+    logger.debug(new_image.device)
     if not fallback:
         img.set_image_tensor(new_image)
     else:
