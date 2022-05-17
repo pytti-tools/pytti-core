@@ -3,7 +3,7 @@ import torchvision.transforms.functional as TF
 import torch.nn.functional as F
 from PIL import Image, ImageFilter
 import numpy as np
-from pytti import DEVICE, parametric_eval
+from pytti import parametric_eval
 from pytti.LossAug.DepthLossClass import DepthLoss
 
 # from pytti.Image.PixelImage import PixelImage
@@ -46,14 +46,14 @@ def apply_grid(tensor, grid, border_mode, sampling_mode):
 
 
 @torch.no_grad()
-def apply_flow(
-    img, flow, border_mode="mirror", sampling_mode="bilinear", device=DEVICE
-):
+def apply_flow(img, flow, border_mode="mirror", sampling_mode="bilinear", device=None):
+    if device is None:
+        device = img.device
     try:
         tensor = img.get_image_tensor().unsqueeze(0)
         fallback = False
     except NotImplementedError:
-        tensor = TF.to_tensor(img.decode_image()).unsqueeze(0).to(DEVICE)
+        tensor = TF.to_tensor(img.decode_image()).unsqueeze(0).to(device)
         fallback = True
 
     height, width = flow.shape[-2:]
@@ -94,13 +94,15 @@ def zoom_2d(
     rotate=0,
     border_mode="mirror",
     sampling_mode="bilinear",
-    device=DEVICE,
+    device=None,
 ):
+    if device is None:
+        device = img.device
     try:
         tensor = img.get_image_tensor().unsqueeze(0)
         fallback = False
     except NotImplementedError:
-        tensor = TF.to_tensor(img.decode_image()).unsqueeze(0).to(DEVICE)
+        tensor = TF.to_tensor(img.decode_image()).unsqueeze(0).to(device)
         fallback = True
     height, width = tensor.shape[-2:]
     zy, zx = ((height - zoom[1]) / height, (width - zoom[0]) / width)
@@ -137,7 +139,14 @@ def zoom_2d(
 
 @torch.no_grad()
 def render_image_3d(
-    image, depth, P, T, border_mode, sampling_mode, stabilize, device=DEVICE
+    image,
+    depth,
+    P,
+    T,
+    border_mode,
+    sampling_mode,
+    stabilize,
+    device=None,
 ):
     """
     image: n x h x w pytorch Tensor: the image tensor
@@ -149,6 +158,9 @@ def render_image_3d(
     h, w = image.shape[-2:]
     f = w / h
     image = image.unsqueeze(0)
+
+    if device is None:
+        device = image.device
 
     y, x = torch.meshgrid(torch.linspace(-1, 1, h), torch.linspace(-f, f, w))
     x = x.unsqueeze(0).unsqueeze(0)
@@ -212,8 +224,11 @@ def zoom_3d(
     border_mode="mirror",
     sampling_mode="bilinear",
     stabilize=False,
-    device=DEVICE,
+    device=None,
 ):
+
+    if device is None:
+        device = img.device
 
     width, height = img.image_shape
     px = 2 / height
@@ -270,7 +285,7 @@ def zoom_3d(
     ########################################
 
     try:
-        image_tensor = img.get_image_tensor().to(DEVICE)
+        image_tensor = img.get_image_tensor().to(device)
         depth_tensor = (
             TF.resize(
                 torch.from_numpy(depth_map),
@@ -278,12 +293,12 @@ def zoom_3d(
                 interpolation=TF.InterpolationMode.BICUBIC,
             )
             .squeeze()
-            .to(DEVICE)
+            .to(device)
         )
         fallback = False
     except NotImplementedError:
         # fallback path
-        image_tensor = TF.to_tensor(pil_image).to(DEVICE)
+        image_tensor = TF.to_tensor(pil_image).to(device)
         if depth_resized:
             depth_tensor = (
                 TF.resize(
@@ -292,17 +307,17 @@ def zoom_3d(
                     interpolation=TF.InterpolationMode.BICUBIC,
                 )
                 .squeeze()
-                .to(DEVICE)
+                .to(device)
             )
         else:
-            depth_tensor = torch.from_numpy(depth_map).squeeze().to(DEVICE)
+            depth_tensor = torch.from_numpy(depth_map).squeeze().to(device)
         fallback = True
-    p_matrix = torch.as_tensor(glm.perspective(alpha, f, 0.1, 4).to_list()).to(DEVICE)
+    p_matrix = torch.as_tensor(glm.perspective(alpha, f, 0.1, 4).to_list()).to(device)
     tx, ty, tz = translate
     r_matrix = glm.mat4_cast(glm.quat(*rotate))
     t_matrix = glm.translate(glm.mat4(1), glm.vec3(tx * px, -ty * px, tz * px))
 
-    T_matrix = torch.as_tensor((r_matrix @ t_matrix).to_list()).to(DEVICE)
+    T_matrix = torch.as_tensor((r_matrix @ t_matrix).to_list()).to(device)
     new_image, flow = render_image_3d(
         image_tensor,
         depth_tensor,
@@ -344,9 +359,14 @@ def animate_2d(
     i=0,
     t=-1,
 ):
+    for v in (translate_y, translate_x, rotate_2d, zoom_x_2d, zoom_y_2d):
+        logger.debug(v)
     tx, ty = parametric_eval(translate_x), parametric_eval(translate_y)
     theta = parametric_eval(rotate_2d)
+    logger.debug(f"translating: {tx}, {ty}")
+    logger.debug(f"rotating: {theta}")
     zx, zy = parametric_eval(zoom_x_2d), parametric_eval(zoom_y_2d)
+    logger.debug(f"zooming: {tx}, {ty}")
     next_step_pil = zoom_2d(
         img,
         (tx, ty),
