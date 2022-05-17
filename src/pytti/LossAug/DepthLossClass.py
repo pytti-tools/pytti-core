@@ -15,12 +15,14 @@ from pytti.LossAug.MSELossClass import MSELoss
 infer_helper = None
 
 
-def init_AdaBins():
+def init_AdaBins(device=None):
     global infer_helper
     if infer_helper is None:
         with vram_usage_mode("AdaBins"):
             logger.debug("Loading AdaBins...")
-            infer_helper = InferenceHelper(dataset="nyu")
+            if device is None:
+                device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            infer_helper = InferenceHelper(dataset="nyu", device=device)
             logger.debug("AdaBins loaded.")
 
 
@@ -55,13 +57,15 @@ class DepthLoss(MSELoss):
 
     @classmethod
     @vram_usage_mode("Depth Loss")
-    def make_comp(cls, pil_image, device=DEVICE):
-        depth, _ = DepthLoss.get_depth(pil_image)
+    def make_comp(cls, pil_image, device=None):
+        if device is None:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        depth, _ = DepthLoss.get_depth(pil_image, device=device)
         return torch.from_numpy(depth).to(device)
 
     @staticmethod
-    def get_depth(pil_image):
-        init_AdaBins()
+    def get_depth(pil_image, device=None):
+        init_AdaBins(device=device)
         width, height = pil_image.size
 
         # if the area of an image is above this, the depth model fails

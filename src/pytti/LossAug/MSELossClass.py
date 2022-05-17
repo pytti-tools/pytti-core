@@ -6,7 +6,7 @@ from pytti.LossAug.BaseLossClass import Loss
 
 # from pytti.Notebook import Rotoscoper
 from pytti.rotoscoper import Rotoscoper
-from pytti import DEVICE, fetch, parse, vram_usage_mode
+from pytti import fetch, parse, vram_usage_mode
 import torch
 
 
@@ -19,22 +19,22 @@ class MSELoss(Loss):
         stop=-math.inf,
         name="direct target loss",
         image_shape=None,
-        device=DEVICE,
+        device=None,
     ):
-        super().__init__(weight, stop, name)
+        super().__init__(weight, stop, name, device)
         self.register_buffer("comp", comp)
         if image_shape is None:
             height, width = comp.shape[-2:]
             image_shape = (width, height)
         self.image_shape = image_shape
-        self.register_buffer("mask", torch.ones(1, 1, 1, 1, device=device))
+        self.register_buffer("mask", torch.ones(1, 1, 1, 1, device=self.device))
         self.use_mask = False
 
     @classmethod
     @vram_usage_mode("Loss Augs")
     @torch.no_grad()
     def TargetImage(
-        cls, prompt_string, image_shape, pil_image=None, is_path=False, device=DEVICE
+        cls, prompt_string, image_shape, pil_image=None, is_path=False, device=None
     ):
         # Why is this prompt parsing stuff here? Deprecate in favor of centralized
         # parsing functions (if feasible)
@@ -44,6 +44,8 @@ class MSELoss(Loss):
         weight, mask = parse(weight, r"_", ["1", ""])
         text = text.strip()
         mask = mask.strip()
+        if device is None:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if pil_image is None and text != "" and is_path:
             pil_image = Image.open(fetch(text)).convert("RGB")
             im = pil_image.resize(image_shape, Image.LANCZOS)
@@ -55,12 +57,14 @@ class MSELoss(Loss):
             comp = cls.make_comp(im)
         if image_shape is None:
             image_shape = pil_image.size
-        out = cls(comp, weight, stop, text + " (direct)", image_shape)
+        out = cls(comp, weight, stop, text + " (direct)", image_shape, device=device)
         out.set_mask(mask)
         return out
 
     @torch.no_grad()
-    def set_mask(self, mask, inverted=False, device=DEVICE):
+    def set_mask(self, mask, inverted=False, device=None):
+        if device is None:
+            device = self.device
         if isinstance(mask, str) and mask != "":
             if mask[0] == "-":
                 mask = mask[1:]
@@ -86,7 +90,9 @@ class MSELoss(Loss):
         return input
 
     @classmethod
-    def make_comp(cls, pil_image, device=DEVICE):
+    def make_comp(cls, pil_image, device=None):
+        if device is None:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         out = (
             TF.to_tensor(pil_image)
             .unsqueeze(0)
@@ -94,8 +100,10 @@ class MSELoss(Loss):
         )
         return cls.convert_input(out, None)
 
-    def set_comp(self, pil_image, device=DEVICE):
-        self.comp.set_(type(self).make_comp(pil_image))
+    def set_comp(self, pil_image, device=None):
+        if device is None:
+            device = self.device
+        self.comp.set_(type(self).make_comp(pil_image, device=device))
 
     def get_loss(self, input, img):
         input = type(self).convert_input(input, img)
