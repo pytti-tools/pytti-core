@@ -188,6 +188,9 @@ def _main(cfg: DictConfig):
     # params = OmegaConf.to_container(cfg, resolve=True)
     params = cfg
 
+    _device = params.get("device", "cuda:0")
+    torch.cuda.set_device(_device)
+
     # literal "off" in yaml interpreted as False
     if params.animation_mode == False:
         params.animation_mode = "off"
