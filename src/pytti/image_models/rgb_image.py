@@ -45,7 +45,7 @@ class RGBImage(DifferentiableImage):
         self.tensor.set_(tensor.unsqueeze(0))
 
     @torch.no_grad()
-    def encode_image(self, pil_image, device, **kwargs):
+    def encode_image(self, pil_image, device=None, **kwargs):
         if device is None:
             device = self.device
         width, height = self.image_shape

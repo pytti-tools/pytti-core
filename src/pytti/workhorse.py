@@ -189,6 +189,7 @@ def _main(cfg: DictConfig):
     params = cfg
 
     _device = params.get("device", "cuda:0")
+    logger.debug(f"Using device {_device}")
     torch.cuda.set_device(_device)
 
     # literal "off" in yaml interpreted as False
@@ -319,6 +320,7 @@ def _main(cfg: DictConfig):
                 gamma=params.gamma,
                 hdr_weight=params.hdr_weight,
                 norm_weight=params.palette_normalization_weight,
+                device=_device,
             )
             img.encode_random(random_pallet=params.random_initial_palette)
             if params.target_palette.strip() != "":
@@ -328,12 +330,16 @@ def _main(cfg: DictConfig):
             else:
                 img.lock_pallet(params.lock_palette)
         elif params.image_model == "Unlimited Palette":
-            img = RGBImage(params.width, params.height, params.pixel_size)
+            img = RGBImage(
+                params.width, params.height, params.pixel_size, device=_device
+            )
             img.encode_random()
         elif params.image_model == "VQGAN":
             model_artifacts_path = Path(params.models_parent_dir) / "vqgan"
             VQGANImage.init_vqgan(params.vqgan_model, model_artifacts_path)
-            img = VQGANImage(params.width, params.height, params.pixel_size)
+            img = VQGANImage(
+                params.width, params.height, params.pixel_size, device=_device
+            )
             img.encode_random()
         else:
             logger.critical(
