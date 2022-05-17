@@ -1,0 +1,54 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[[source]]
+url = "https://download.pytorch.org/whl/cu113/"
+verify_ssl = false
+name = "pytorch"
+
+[packages]
+transformers = "==4.15.0"
+gdown = "===4.2.0"
+ftfy = "==6.0.3"
+regex = "*"
+tqdm = "==4.62.3"
+omegaconf = "==2.1.1"
+pytorch-lightning = "==1.5.7"
+kornia = "==0.6.2"
+einops = "==0.3.2"
+imageio-ffmpeg = "==0.4.5"
+exrex = "*"
+matplotlib-label-lines = "==0.4.3"
+pandas = "==1.3.4"
+seaborn = "==0.11.2"
+scikit-learn = "*"
+loguru = "*"
+hydra-core = "*"
+jupyter = "*"
+imageio = "==2.4.1"
+PyGLM = "==2.5.7"
+adjustText = "*"
+Pillow = "*"
+torch = "*"
+torchvision = "*"
+torchaudio = "*"
+requests = "*"
+pyttitools-adabins = {path = "./vendor/AdaBins"}
+pyttitools-gma = {path = "./vendor/GMA"}
+clip = {path = "./vendor/CLIP"}
+pyttitools-taming-transformers = {path = "./vendor/taming-transformers"}
+tensorflow = "*"
+protobuf = "==3.9.2"
+pyttitools-core = {path = "."}
+mmc = {git = "https://github.com/dmarx/Multi-Modal-Comparators"}
+
+[dev-packages]
+pytest = "*"
+pre-commit = "*"
+click = "==8.0.4"
+black = "*"
+
+[requires]
+python_version = "3.9"
