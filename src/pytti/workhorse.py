@@ -188,7 +188,11 @@ def _main(cfg: DictConfig):
     # params = OmegaConf.to_container(cfg, resolve=True)
     params = cfg
 
-    _device = params.get("device", "cuda:0")
+    if torch.cuda.is_available():
+        # _device = params.get("device", "cuda:0")
+        _device = params.get("device", 0)
+    else:
+        _device = params.get("device", "cpu")
     logger.debug(f"Using device {_device}")
     torch.cuda.set_device(_device)
 

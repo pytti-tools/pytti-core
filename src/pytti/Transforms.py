@@ -241,7 +241,7 @@ def zoom_3d(
     f = width / height
 
     # convert depth map
-    depth_map, depth_resized = DepthLoss.get_depth(pil_image)
+    depth_map, depth_resized = DepthLoss.get_depth(pil_image, device=device)
     depth_min = np.min(depth_map)
     depth_max = np.max(depth_map)
     # depth_image = Image.fromarray(np.array(np.interp(depth_map.squeeze(), (depth_min, depth_max), (0,255)), dtype=np.uint8))
