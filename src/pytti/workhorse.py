@@ -348,12 +348,21 @@ def _main(cfg: DictConfig):
         # set up init image #
         #####################
 
-        (init_augs, semantic_init_prompt, loss_augs, img) = configure_init_image(
+        (
+            init_augs,
+            semantic_init_prompt,
+            loss_augs,
+            img,
+            embedder,
+            prompts,
+        ) = configure_init_image(
             init_image_pil,
             restore,
             img,
             params,
             loss_augs,
+            embedder,
+            prompts,
         )
 
         # other image prompts

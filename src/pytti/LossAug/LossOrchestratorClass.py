@@ -43,6 +43,8 @@ def configure_init_image(
     img: PixelImage,
     params,
     loss_augs,
+    embedder,
+    prompts,
 ):
 
     if init_image_pil is not None:
@@ -79,7 +81,7 @@ def configure_init_image(
     else:
         init_augs, semantic_init_prompt = [], None
 
-    return init_augs, semantic_init_prompt, loss_augs, img
+    return init_augs, semantic_init_prompt, loss_augs, img, embedder, prompts
 
 
 def configure_stabilization_augs(img, init_image_pil, params, loss_augs):
