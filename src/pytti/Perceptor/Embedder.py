@@ -4,7 +4,7 @@ import pytti
 from pytti import DEVICE, format_input, cat_with_pad, format_module, normalize
 
 # from pytti.ImageGuide import DirectImageGuide
-from pytti.Image import DifferentiableImage
+from pytti.image_models import DifferentiableImage
 
 import torch
 from torch import nn

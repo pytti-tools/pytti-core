@@ -1,5 +1,5 @@
 from pytti import DEVICE, named_rearrange, replace_grad, vram_usage_mode
-from pytti.Image.differentiable_image import DifferentiableImage
+from pytti.image_models.differentiable_image import DifferentiableImage
 from pytti.LossAug.HSVLossClass import HSVLoss
 
 # from pytti.ImageGuide import DirectImageGuide

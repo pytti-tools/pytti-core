@@ -20,8 +20,8 @@ from pytti import (
     vram_usage_mode,
 )
 from pytti.AudioParse import SpectralAudioParser
-from pytti.Image.differentiable_image import DifferentiableImage
-from pytti.Image.PixelImage import PixelImage
+from pytti.image_models.differentiable_image import DifferentiableImage
+from pytti.image_models.pixel import PixelImage
 from pytti.Notebook import tqdm, make_hbox
 
 # from pytti.rotoscoper import update_rotoscopers
