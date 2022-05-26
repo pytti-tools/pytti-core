@@ -4,8 +4,8 @@ import numpy as np
 from PIL import Image
 from pytti.tensor_tools import named_rearrange
 
-from pytti.Image.differentiable_image import DifferentiableImage
-from pytti.Image.ema_image import EMAImage
-from pytti.Image.PixelImage import PixelImage
-from pytti.Image.RGBImage import RGBImage
-from pytti.Image.VQGANImage import VQGANImage
+from .differentiable_image import DifferentiableImage
+from .ema import EMAImage
+from .pixel import PixelImage
+from .rgb_image import RGBImage
+from .vqgan import VQGANImage
