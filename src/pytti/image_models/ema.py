@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from pytti.Image.differentiable_image import DifferentiableImage
+from pytti.image_models.differentiable_image import DifferentiableImage
 
 
 class EMAImage(DifferentiableImage):

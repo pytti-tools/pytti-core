@@ -2,7 +2,7 @@ from pytti import DEVICE, clamp_with_grad
 import torch
 from torch import nn
 from torchvision.transforms import functional as TF
-from pytti.Image import DifferentiableImage
+from pytti.image_models import DifferentiableImage
 from PIL import Image
 from torch.nn import functional as F
 
