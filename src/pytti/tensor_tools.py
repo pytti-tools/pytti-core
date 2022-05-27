@@ -46,11 +46,7 @@ def named_rearrange__OLD(tensor, axes, new_positions) -> torch.tensor:
     return tensor.permute(*permutation)
 
 
-def named_rearrange(tensor, axes, new_positions) -> torch.tensor:
-    return format_input(tensor, source, dest)
-
-
-def format_input(tensor, source, dest) -> torch.tensor:
+def named_rearrange(tensor, source, dest) -> torch.tensor:
     """
     Takes a tensor and two layers, and returns the tensor in the format that the second layer expects
 
@@ -92,7 +88,7 @@ def format_module(module, dest, *args, **kwargs) -> torch.tensor:
     output = module(*args, **kwargs)
     if isinstance(output, tuple):
         output = output[0]
-    return format_input(output, module, dest)
+    return named_rearrange(output, module, dest)
 
 
 class ReplaceGrad(torch.autograd.Function):

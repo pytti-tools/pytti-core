@@ -18,7 +18,7 @@ from clip import clip
 import pytti
 from pytti import (
     DEVICE,
-    format_input,
+    named_rearrange,
     cat_with_pad,
     replace_grad,
     fetch,
@@ -310,7 +310,7 @@ class MultiClipImagePrompt(Prompt):
     ):
         self.input_axes = ("c", "n", "i")
         super().__init__(
-            format_input(embeds, embedder, self),
+            named_rearrange(embeds, embedder, self),
             weight,
             stop,
             text + " (semantic)",
@@ -318,8 +318,8 @@ class MultiClipImagePrompt(Prompt):
             mask=mask,
         )
         self.input_axes = ("c", "n", "i")
-        self.register_buffer("positions", format_input(positions, embedder, self))
-        self.register_buffer("sizes", format_input(sizes, embedder, self))
+        self.register_buffer("positions", named_rearrange(positions, embedder, self))
+        self.register_buffer("sizes", named_rearrange(sizes, embedder, self))
 
     @torch.no_grad()
     @vram_usage_mode("Image Prompts")
@@ -335,9 +335,9 @@ class MultiClipImagePrompt(Prompt):
         img.encode_image(pil_image)
         embeds, positions, sizes = embedder(img)
         embeds = embeds.clone()
-        self.positions.set_(format_input(positions, embedder, self))
-        self.sizes.set_(format_input(sizes, embedder, self))
-        self.embeds.set_(format_input(embeds, embedder, self))
+        self.positions.set_(named_rearrange(positions, embedder, self))
+        self.sizes.set_(named_rearrange(sizes, embedder, self))
+        self.embeds.set_(named_rearrange(embeds, embedder, self))
 
 
 def minimize_average_distance(tensor_a, tensor_b, device=DEVICE):

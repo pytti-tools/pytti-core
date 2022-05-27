@@ -13,7 +13,7 @@ from torch import optim, nn
 from collections import Counter
 
 from pytti import (
-    format_input,
+    #    named_rearrange,
     set_t,
     print_vram_usage,
     freeze_vram_usage,
@@ -279,7 +279,7 @@ class DirectImageGuide:
         losses = []
 
         aug_losses = {
-            aug: aug(format_input(z, self.image_rep, aug), self.image_rep)
+            aug: aug(named_rearrange(z, self.image_rep, aug), self.image_rep)
             for aug in loss_augs
         }
 
@@ -300,9 +300,9 @@ class DirectImageGuide:
                     t = i / interp_steps
                     interp_losses = [
                         prompt(
-                            format_input(image_embeds, self.embedder, prompt),
-                            format_input(offsets, self.embedder, prompt),
-                            format_input(sizes, self.embedder, prompt),
+                            named_rearrange(image_embeds, self.embedder, prompt),
+                            named_rearrange(offsets, self.embedder, prompt),
+                            named_rearrange(sizes, self.embedder, prompt),
                         )[0]
                         * (1 - t)
                         for prompt in interp_prompts
@@ -310,9 +310,9 @@ class DirectImageGuide:
 
                 prompt_losses = {
                     prompt: prompt(
-                        format_input(image_embeds, self.embedder, prompt),
-                        format_input(offsets, self.embedder, prompt),
-                        format_input(sizes, self.embedder, prompt),
+                        named_rearrange(image_embeds, self.embedder, prompt),
+                        named_rearrange(offsets, self.embedder, prompt),
+                        named_rearrange(sizes, self.embedder, prompt),
                     )
                     for prompt in prompts
                 }

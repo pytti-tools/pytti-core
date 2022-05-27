@@ -1,7 +1,7 @@
 from typing import Tuple
 
 import pytti
-from pytti import DEVICE, format_input, cat_with_pad, format_module, normalize
+from pytti import DEVICE, named_rearrange, cat_with_pad, format_module, normalize
 
 # from pytti.ImageGuide import DirectImageGuide
 from pytti.image_models import DifferentiableImage
@@ -106,7 +106,7 @@ class HDMultiClipEmbedder(nn.Module):
                 device=device, memory_format=torch.channels_last
             )
         else:
-            input = format_input(input, diff_image, self).to(
+            input = named_rearrange(input, diff_image, self).to(
                 device=device, memory_format=torch.channels_last
             )
         max_size = min(side_x, side_y)
