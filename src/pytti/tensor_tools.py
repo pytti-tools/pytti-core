@@ -3,12 +3,16 @@ from torch.nn import functional as F
 from torchvision import transforms
 from PIL import Image as PIL_Image
 
+from loguru import logger
+from einops import rearrange
+
 normalize = transforms.Normalize(
     mean=[0.48145466, 0.4578275, 0.40821073], std=[0.26862954, 0.26130258, 0.27577711]
 )
 
 # Stuff like this could probably be replaced with einops
-def named_rearrange(tensor, axes, new_positions) -> torch.tensor:
+# ....sheeeeesh... yeah, let's squash this ugliness
+def named_rearrange__OLD(tensor, axes, new_positions) -> torch.tensor:
     """
     Permute and unsqueeze tensor to match target dimensional arrangement
     tensor:        (Tensor) input
@@ -42,8 +46,26 @@ def named_rearrange(tensor, axes, new_positions) -> torch.tensor:
     return tensor.permute(*permutation)
 
 
+def named_rearrange(tensor, axes, new_positions) -> torch.tensor:
+    return format_input(tensor, source, dest)
+
+
 def format_input(tensor, source, dest) -> torch.tensor:
-    return named_rearrange(tensor, source.output_axes, dest.input_axes)
+    """
+    Takes a tensor and two layers, and returns the tensor in the format that the second layer expects
+
+    :param tensor: the tensor to be formatted
+    :param source: the source model
+    :param dest: the destination tensor
+    :return: A tensor with the same data as the input tensor, but with the axes reordered.
+    """
+    # logger.debug(f"Formatting {tensor.shape} from {source} to {dest}")
+    # logger.debug(f"source.output_axes: {source.output_axes}")
+    # logger.debug(f"dest.input_axes: {dest.input_axes}")
+    einstein_notation = f"{' '.join(source.output_axes)} -> {' '.join(dest.input_axes)}"
+    # logger.debug(einstein_notation)
+    # return named_rearrange(tensor, source.output_axes, dest.input_axes)
+    return rearrange(tensor, einstein_notation)
 
 
 def pad_tensor(tensor, target_len) -> torch.tensor:
@@ -59,6 +81,14 @@ def cat_with_pad(tensors):
 
 
 def format_module(module, dest, *args, **kwargs) -> torch.tensor:
+    """
+    Takes a module, a destination, and any number of arguments and keyword arguments, and returns the
+    output of the module, formatted for the destination
+
+    :param module: the module to be formatted
+    :param dest: the destination of the output. This is a tuple of the form (module, index)
+    :return: The output of the module, formatted for the destination.
+    """
     output = module(*args, **kwargs)
     if isinstance(output, tuple):
         output = output[0]
