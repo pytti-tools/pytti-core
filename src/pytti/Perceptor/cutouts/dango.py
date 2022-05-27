@@ -1,5 +1,8 @@
 # via https://github.com/multimodalart/majesty-diffusion/blob/main/latent.ipynb
 
+# !pip install resize-right
+# TO DO: add resize-right to setup instructions and notebook
+from resize_right import resize
 
 import torch
 from torch import nn
@@ -24,6 +27,8 @@ class MakeCutouts(nn.Module):
         InnerCrop=0,
         IC_Size_Pow=0.5,
         IC_Grey_P=0.2,
+        aug=True,
+        cutout_debug=False,
     ):
         super().__init__()
         self.cut_size = cut_size
@@ -35,9 +40,13 @@ class MakeCutouts(nn.Module):
         self.IC_Size_Pow = IC_Size_Pow
         self.IC_Grey_P = IC_Grey_P
         self.augs = cutouts_augs.dango
+        self._aug = aug
+        self.cutout_debug = cutout_debug
 
     def forward(self, input):
-        gray = transforms.Grayscale(3)
+        gray = transforms.Grayscale(
+            3
+        )  # this is possibly a performance improvement? 1 channel instead of 3. but also means we can't use color augs...
         sideY, sideX = input.shape[2:4]
         max_size = min(sideX, sideY)
         min_size = min(sideX, sideY, self.cut_size)
@@ -63,7 +72,7 @@ class MakeCutouts(nn.Module):
             output_shape_all[0] = self.Overview * input.shape[0]
             pad_input = pad_input.repeat(input.shape[0], 1, 1, 1)
             cutout = resize(pad_input, out_shape=output_shape_all)
-            if aug:
+            if self._aug:
                 cutout = self.augs(cutout)
             cutouts_list.append(cutout)
 
