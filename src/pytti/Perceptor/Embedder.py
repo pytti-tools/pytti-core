@@ -10,9 +10,13 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-import kornia.augmentation as K
 
-from .cutouts.samplers import pytti_classic
+# import .cutouts
+# import .cutouts as cutouts
+# import cutouts
+
+from .cutouts import augs as cutouts_augs
+from .cutouts import samplers as cutouts_samplers
 
 PADDING_MODES = {
     "mirror": "reflect",
@@ -45,19 +49,7 @@ class HDMultiClipEmbedder(nn.Module):
         self.cut_sizes = [p.visual.input_resolution for p in perceptors]
         self.cutn = cutn
         self.noise_fac = noise_fac
-        self.augs = nn.Sequential(
-            K.RandomHorizontalFlip(p=0.3),
-            K.RandomAffine(degrees=30, translate=0.1, p=0.8, padding_mode="border"),
-            K.RandomPerspective(
-                0.2,
-                p=0.4,
-            ),
-            K.ColorJitter(hue=0.01, saturation=0.01, p=0.7),
-            K.RandomErasing(
-                scale=(0.1, 0.4), ratio=(0.3, 1 / 0.3), same_on_batch=False, p=0.7
-            ),
-            nn.Identity(),
-        )
+        self.augs = cutouts_augs.pytti_classic()
         self.input_axes = ("n", "s", "y", "x")
         self.output_axes = ("c", "n", "i")
         self.perceptors = perceptors
@@ -81,7 +73,7 @@ class HDMultiClipEmbedder(nn.Module):
         ####
         device=DEVICE,
     ) -> Tuple[list, list, list]:
-        cutouts, offsets, sizes = pytti_classic(
+        cutouts, offsets, sizes = cutouts_samplers.pytti_classic(
             input=input,
             side_x=side_x,
             side_y=side_y,
