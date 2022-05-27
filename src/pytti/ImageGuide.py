@@ -13,7 +13,7 @@ from torch import optim, nn
 from collections import Counter
 
 from pytti import (
-    #    named_rearrange,
+    named_rearrange,
     set_t,
     print_vram_usage,
     freeze_vram_usage,
