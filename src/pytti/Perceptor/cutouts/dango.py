@@ -8,6 +8,10 @@ from torchvision import transforms
 from torchvision import transforms as T
 from torchvision.transforms import functional as TF
 
+from . import augs as cutouts_augs
+
+padargs = {"mode": "constant", "value": -1}
+
 
 class MakeCutouts(nn.Module):
     def __init__(
@@ -30,25 +34,7 @@ class MakeCutouts(nn.Module):
         self.InnerCrop = InnerCrop
         self.IC_Size_Pow = IC_Size_Pow
         self.IC_Grey_P = IC_Grey_P
-        self.augs = T.Compose(
-            [
-                # T.RandomHorizontalFlip(p=0.5),
-                T.Lambda(lambda x: x + torch.randn_like(x) * 0.01),
-                T.RandomAffine(
-                    degrees=0,
-                    translate=(0.05, 0.05),
-                    # scale=(0.9,0.95),
-                    fill=-1,
-                    interpolation=T.InterpolationMode.BILINEAR,
-                ),
-                T.Lambda(lambda x: x + torch.randn_like(x) * 0.01),
-                # T.RandomPerspective(p=1, interpolation = T.InterpolationMode.BILINEAR, fill=-1,distortion_scale=0.2),
-                T.Lambda(lambda x: x + torch.randn_like(x) * 0.01),
-                T.RandomGrayscale(p=0.1),
-                T.Lambda(lambda x: x + torch.randn_like(x) * 0.01),
-                T.ColorJitter(brightness=0.05, contrast=0.05, saturation=0.05),
-            ]
-        )
+        self.augs = cutouts_augs.dango
 
     def forward(self, input):
         gray = transforms.Grayscale(3)
