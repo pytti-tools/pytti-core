@@ -26,7 +26,7 @@ from pytti import (
     parametric_eval,
     vram_usage_mode,
 )
-from pytti.Image import RGBImage
+from pytti.image_models import RGBImage
 
 # from pytti.Notebook import Rotoscoper
 from pytti.rotoscoper import Rotoscoper

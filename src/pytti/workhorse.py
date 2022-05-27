@@ -38,7 +38,7 @@ from pytti.Notebook import (
 )
 
 from pytti.rotoscoper import ROTOSCOPERS, get_frames
-from pytti.Image import PixelImage, RGBImage, VQGANImage
+from pytti.image_models import PixelImage, RGBImage, VQGANImage
 from pytti.ImageGuide import DirectImageGuide
 from pytti.Perceptor.Embedder import HDMultiClipEmbedder
 from pytti.Perceptor.Prompt import parse_prompt

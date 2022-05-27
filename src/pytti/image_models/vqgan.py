@@ -11,7 +11,7 @@ from taming.models import cond_transformer, vqgan
 from pytti import DEVICE, replace_grad, clamp_with_grad, vram_usage_mode
 import torch
 from torch.nn import functional as F
-from pytti.Image import EMAImage
+from pytti.image_models import EMAImage
 from torchvision.transforms import functional as TF
 from PIL import Image
 from omegaconf import OmegaConf

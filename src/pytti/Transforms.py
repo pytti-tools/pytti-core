@@ -388,7 +388,7 @@ def animate_video_source(
     sampling_mode,
 ):
     # ugh this is GROSSSSS....
-    from pytti.Image.PixelImage import PixelImage
+    from pytti.image_models.pixel import PixelImage
 
     # current frame index
     frame_n = min(
@@ -415,8 +415,8 @@ def animate_video_source(
     for j, optical_flow in enumerate(optical_flows):
         # This looks like something that we shouldn't have to recompute
         # but rather could be attached to the flow object as an attribute
-        old_frame_n = frame_n - (2 ** j - 1) * frame_stride
-        save_n = i // save_every - (2 ** j - 1)
+        old_frame_n = frame_n - (2**j - 1) * frame_stride
+        save_n = i // save_every - (2**j - 1)
         if old_frame_n < 0 or save_n < 1:
             break
 

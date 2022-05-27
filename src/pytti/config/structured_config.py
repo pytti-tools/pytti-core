@@ -6,7 +6,7 @@ import hydra
 from attrs import define, field
 from hydra.core.config_store import ConfigStore
 
-from pytti.Image.VQGANImage import VQGAN_MODEL_NAMES
+from pytti.image_models.vqgan import VQGAN_MODEL_NAMES
 
 
 def check_input_against_list(attribute, value, valid_values):

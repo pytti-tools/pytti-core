@@ -2,7 +2,7 @@ from IPython import display
 from loguru import logger
 from PIL import Image
 
-from pytti.Image import PixelImage
+from pytti.image_models import PixelImage
 
 # from pytti.LossAug import build_loss
 from pytti.LossAug import TVLoss, HSVLoss, OpticalFlowLoss, TargetFlowLoss

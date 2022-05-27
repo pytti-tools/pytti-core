@@ -108,7 +108,7 @@ class TestE2e_StabilizationModes_FromYaml(_E2e_FromYaml):
         super().test_vqgan(**kwargs)
 
 
-from pytti.Image.VQGANImage import VQGAN_MODEL_NAMES
+from pytti.image_models.vqgan import VQGAN_MODEL_NAMES
 
 
 @pytest.mark.parametrize(
