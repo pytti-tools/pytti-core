@@ -25,6 +25,7 @@ def test_differentiabble_image_model():
         height=10,
     )
     logger.debug(image.output_axes)  # x y s
+    logger.debug(image.lr)  # 0.02
     # logger.debug(image.get_preferred_loss()) # pytti.LossAug.HSVLossClass.HSVLoss
     assert image
 
@@ -39,6 +40,7 @@ def test_rgb_image_model():
         height=10,
     )
     logger.debug(image.output_axes)  # n x y s ... when does n != 1?
+    logger.debug(image.lr)  # 0.02
     # logger.debug(image.get_preferred_loss()) # pytti.LossAug.HSVLossClass.HSVLoss
     assert image
 
@@ -58,6 +60,7 @@ def test_ema_image():
         decay=0.5,
     )
     logger.debug(image.output_axes)  # x y s
+    logger.debug(image.lr)  # 0.02
     # logger.debug(image.get_preferred_loss()) # pytti.LossAug.HSVLossClass.HSVLoss
     assert image
 
@@ -75,6 +78,7 @@ def test_pixel_image():
         n_pallets=1,
     )
     logger.debug(image.output_axes)  # n s y x ... uh ok, sure.
+    logger.debug(image.lr)  # 0.02
     # logger.debug(image.get_preferred_loss()) # pytti.LossAug.HSVLossClass.HSVLoss
     assert image
 
@@ -89,6 +93,7 @@ def test_pixel_image():
 #         model=SOME_VQGAN_MODEL,
 #     )
 #     logger.debug(image.output_axes)
+#    logger.debug(image.lr) ### self.lr = 0.15 if VQGAN_IS_GUMBEL else 0.1
 #     assert image
 
 
