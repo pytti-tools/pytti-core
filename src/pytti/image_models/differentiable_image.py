@@ -4,6 +4,10 @@ import numpy as np
 from PIL import Image
 from pytti.tensor_tools import named_rearrange
 
+# for typing
+import torch
+from pytti.LossAug.BaseLossClass import Loss
+
 SUPPORTED_MODES = ["L", "RGB", "I", "F"]
 
 
@@ -25,13 +29,13 @@ class DifferentiableImage(nn.Module):
         self.lr = 0.02
         self.latent_strength = 0
 
-    def decode_training_tensor(self):
+    def decode_training_tensor(self) -> torch.Tensor:
         """
         returns a decoded tensor of this image for training
         """
         return self.decode_tensor()
 
-    def get_image_tensor(self):
+    def get_image_tensor(self) -> torch.Tensor:
         """
         optional method: returns an [n x w_i x h_i] tensor representing the local image data
         those data will be used for animation if afforded
@@ -41,26 +45,26 @@ class DifferentiableImage(nn.Module):
     def clone(self):
         raise NotImplementedError
 
-    def get_latent_tensor(self, detach=False):
+    def get_latent_tensor(self, detach=False) -> torch.Tensor:
         if detach:
             return self.get_image_tensor().detach()
         else:
             return self.get_image_tensor()
 
-    def set_image_tensor(self, tensor):
+    def set_image_tensor(self, tensor: torch.Tensor):
         """
         optional method: accepts an [n x w_i x h_i] tensor representing the local image data
         those data will be by the animation system
         """
         raise NotImplementedError
 
-    def decode_tensor(self):
+    def decode_tensor(self) -> torch.Tensor:
         """
         returns a decoded tensor of this image
         """
         raise NotImplementedError
 
-    def encode_image(self, pil_image):
+    def encode_image(self, pil_image: Image):
         """
         overwrites this image with the input image
         pil_image: (Image) input image
@@ -79,7 +83,7 @@ class DifferentiableImage(nn.Module):
         """
         pass
 
-    def make_latent(self, pil_image):
+    def make_latent(self, pil_image: Image) -> torch.Tensor:
         try:
             dummy = self.clone()
         except NotImplementedError:
@@ -88,7 +92,7 @@ class DifferentiableImage(nn.Module):
         return dummy.get_latent_tensor(detach=True)
 
     @classmethod
-    def get_preferred_loss(cls):
+    def get_preferred_loss(cls) -> Loss:
         from pytti.LossAug.HSVLossClass import HSVLoss
 
         return HSVLoss
@@ -96,7 +100,7 @@ class DifferentiableImage(nn.Module):
     def image_loss(self):
         return []
 
-    def decode_image(self):
+    def decode_image(self) -> Image:
         """
         render a PIL Image version of this image
         """
@@ -112,7 +116,7 @@ class DifferentiableImage(nn.Module):
         )
         return Image.fromarray(array)
 
-    def forward(self):
+    def forward(self) -> torch.Tensor:
         """
         returns a decoded tensor of this image
         """
