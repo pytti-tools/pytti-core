@@ -13,7 +13,6 @@ from pytti.vram_tools import (
 
 from pytti.tensor_tools import (
     named_rearrange,
-    format_input,
     pad_tensor,
     cat_with_pad,
     format_module,
@@ -29,7 +28,6 @@ from pytti.eval_tools import fetch, parametric_eval, parse, set_t
 __all__ = [
     "DEVICE",
     "named_rearrange",
-    "format_input",
     "pad_tensor",
     "cat_with_pad",
     "format_module",
