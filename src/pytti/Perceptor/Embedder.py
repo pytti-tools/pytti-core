@@ -12,7 +12,7 @@ from torch.nn import functional as F
 
 import kornia.augmentation as K
 
-from .samplers import pytti_classic
+from .cutouts.samplers import pytti_classic
 
 PADDING_MODES = {
     "mirror": "reflect",
