@@ -90,7 +90,7 @@ class MakeCutouts(nn.Module):
                     cutout = gray(cutout)
                 cutout = resize(cutout, out_shape=output_shape)
                 cutouts.append(cutout)
-            if cutout_debug:
+            if self.cutout_debug:
                 TF.to_pil_image(cutouts[-1].add(1).div(2).clamp(0, 1).squeeze(0)).save(
                     "content/diff/cutouts/cutout_InnerCrop.jpg", quality=99
                 )
