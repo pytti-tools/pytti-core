@@ -1,6 +1,14 @@
 # via https://github.com/multimodalart/majesty-diffusion/blob/main/latent.ipynb
 
 
+import torch
+from torch import nn
+from torch.nn import functional as F
+from torchvision import transforms
+from torchvision import transforms as T
+from torchvision.transforms import functional as TF
+
+
 class MakeCutouts(nn.Module):
     def __init__(
         self,
