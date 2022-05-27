@@ -122,12 +122,15 @@ class HDMultiClipEmbedder(nn.Module):
                 (paddingx, paddingx, paddingy, paddingy),
                 mode=PADDING_MODES[self.border_mode],
             )
+
+        # to do: add option to use a single perceptor per step and pick this perceptor randomly or in sequence
         for cut_size, perceptor in zip(self.cut_sizes, perceptors):
             cutouts, offsets, sizes = self.make_cutouts(input, side_x, side_y, cut_size)
             clip_in = normalize(cutouts)
             image_embeds.append(perceptor.encode_image(clip_in).float().unsqueeze(0))
             all_offsets.append(offsets)
             all_sizes.append(sizes)
+        # What does pytti do with offsets and sizes? and why doesn't dango need to return them?
         return (
             cat_with_pad(image_embeds),
             torch.stack(all_offsets),
