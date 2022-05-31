@@ -56,7 +56,7 @@ class DeepImagePrior(DifferentiableImage):
         height,
         scale=1,
         ###########
-        input_depth=3,
+        input_depth=32,
         num_scales=7,
         offset_type="none",
         # offset_groups=1,
