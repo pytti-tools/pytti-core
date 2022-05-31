@@ -60,17 +60,28 @@ class DeepImagePrior(DifferentiableImage):
         lr=1e-3,
         offset_lr_fac=1.0,
         ###########
+        ema_val=0.99,
+        ###########
         device="cuda",
         **kwargs,
     ):
         super().__init__(width * scale, height * scale)
-        self.net = load_dip(
+        net = load_dip(
             input_depth=input_depth,
             num_scales=num_scales,
             offset_type=offset_type,
             offset_groups=0 if disable_deformable_convolutions else 4,
             device=device,
         )
+        # z = self.get_latent_tensor()
+        # params = [
+        #    {'params': get_non_offset_params(net), 'lr': lr},
+        #    {'params': get_offset_params(net), 'lr': lr * offset_lr_fac}
+        # ]
+        # z = torch.cat(get_non_offset_params(net), get_offset_params(net))
+        # logger.debug(z.shape)
+        # super().__init__(width * scale, height * scale, z, ema_val)
+        self.net = net
         # self.tensor = self.net.params()
         self.output_axes = ("n", "s", "y", "x")
         self.scale = scale
@@ -85,7 +96,8 @@ class DeepImagePrior(DifferentiableImage):
         #    {'params': get_offset_params(net), 'lr': lr * offset_lr_fac}
         # ]
 
-    def get_image_tensor(self):
+    # def get_image_tensor(self):
+    def decode_tensor(self):
         with torch.cuda.amp.autocast():
             # out = net(net_input_noised * input_scale).float()
             logger.debug(self.net)
