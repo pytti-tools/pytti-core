@@ -108,7 +108,10 @@ class DeepImagePrior(DifferentiableImage):
             logger.debug(self._net_input.shape)
             out = self.net(self._net_input).float()
             logger.debug(out.shape)
-        return out
+        width, height = self.image_shape
+        out = F.interpolate(out, (height, width), mode="nearest")
+        return clamp_with_grad(out, 0, 1)
+        # return out
 
     def get_latent_tensor(self, detach=False):
         # pass
