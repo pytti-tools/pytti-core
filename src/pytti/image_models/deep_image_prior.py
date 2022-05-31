@@ -62,7 +62,7 @@ class DeepImagePrior(DifferentiableImage):
         # offset_groups=1,
         disable_deformable_convolutions=False,
         lr=1e-3,
-        offset_lr_fac=1.0,
+        offset_lr_fac=0.1,  # 1.0,
         ###########
         ema_val=0.99,
         ###########
