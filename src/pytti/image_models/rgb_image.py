@@ -6,7 +6,7 @@ from pytti.image_models import DifferentiableImage
 from PIL import Image
 from torch.nn import functional as F
 
-
+# why doesn't this inherit from EMA?
 class RGBImage(DifferentiableImage):
     """
     Naive RGB image representation
