@@ -2,6 +2,8 @@ from copy import deepcopy
 
 from loguru import logger
 
+from torch import optim
+
 from pytti import clamp_with_grad
 import torch
 from torch import nn
@@ -9,6 +11,8 @@ from torchvision.transforms import functional as TF
 from pytti.image_models import DifferentiableImage, EMAImage
 from PIL import Image
 from torch.nn import functional as F
+
+from pytti.LossAug.MSELossClass import MSELoss
 
 # scavenging code snippets from:
 # - https://github.com/LAION-AI/notebooks/blob/main/DALLE2-Prior%2BDeep-Image-Prior.ipynb
@@ -141,3 +145,25 @@ class DeepImagePrior(DifferentiableImage):
         from pytti.LossAug.LatentLossClass import LatentLoss
 
         return LatentLoss
+
+    def encode_image(self, pil_image, device="cuda"):
+        """
+        Encodes the image into a tensor.
+
+        :param pil_image: The image to encode
+        :param smart_encode: If True, the pallet will be optimized to match the image, defaults to True
+        (optional)
+        :param device: The device to run the model on
+        """
+        width, height = self.image_shape
+        scale = self.scale
+
+        mse = MSELoss.TargetImage("HSV loss", self.image_shape, pil_image)
+
+        from pytti.ImageGuide import DirectImageGuide
+
+        guide = DirectImageGuide(
+            self, None, optimizer=optim.Adam(self.get_latent_tensor())
+        )
+        # why is there a magic number here?
+        guide.run_steps(201, [], [], [mse])
