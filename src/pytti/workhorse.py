@@ -38,7 +38,7 @@ from pytti.Notebook import (
 )
 
 from pytti.rotoscoper import ROTOSCOPERS, get_frames
-from pytti.image_models import PixelImage, RGBImage, VQGANImage
+from pytti.image_models import PixelImage, RGBImage, VQGANImage, DeepImagePrior
 from pytti.ImageGuide import DirectImageGuide
 from pytti.Perceptor.Embedder import HDMultiClipEmbedder
 from pytti.Perceptor.Prompt import parse_prompt
@@ -316,6 +316,7 @@ def _main(cfg: DictConfig):
             "Limited Palette",
             "Unlimited Palette",
             "VQGAN",
+            "Deep Image Prior",
         )
         # set up image
         if params.image_model == "Limited Palette":
@@ -348,6 +349,9 @@ def _main(cfg: DictConfig):
             img = VQGANImage(
                 params.width, params.height, params.pixel_size, device=_device
             )
+            img.encode_random()
+        elif params.image_model == "Deep Image Prior":
+            img = DeepImagePrior(params.width, params.height, params.pixel_size)
             img.encode_random()
         else:
             logger.critical(

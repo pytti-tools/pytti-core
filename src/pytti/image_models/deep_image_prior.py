@@ -100,7 +100,7 @@ class DeepImagePrior(DifferentiableImage):
     def decode_tensor(self):
         with torch.cuda.amp.autocast():
             # out = net(net_input_noised * input_scale).float()
-            logger.debug(self.net)
+            # logger.debug(self.net)
             logger.debug(self._net_input.shape)
             out = self.net(self._net_input).float()
             logger.debug(out.shape)
@@ -132,3 +132,12 @@ class DeepImagePrior(DifferentiableImage):
         #    dummy.decay = self.decay
         dummy = deepcopy(self)
         return dummy
+
+    def encode_random(self):
+        pass
+
+    @classmethod
+    def get_preferred_loss(cls):
+        from pytti.LossAug.LatentLossClass import LatentLoss
+
+        return LatentLoss

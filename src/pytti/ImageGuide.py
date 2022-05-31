@@ -292,6 +292,9 @@ class DirectImageGuide:
         if self.embedder is not None:
             for mb_i in range(gradient_accumulation_steps):
                 # logger.debug(mb_i)
+                # logger.debug(self.image_rep.shape)
+                logger.debug(type(self.image_rep))
+                logger.debug(z.shape)
                 image_embeds, offsets, sizes = self.embedder(self.image_rep, input=z)
 
                 t = 1
