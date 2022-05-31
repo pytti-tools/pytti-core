@@ -9,40 +9,35 @@ from pytti.image_models.deep_image_prior import DeepImagePrior
 
 
 def test_dip_init():
-    obj = DeepImagePrior(10, 10)
+    obj = DeepImagePrior(512, 512)
     assert obj
 
 
 def test_dip_update():
-    obj = DeepImagePrior(10, 10)
+    obj = DeepImagePrior(512, 512)
     obj.update()
 
 
 def test_dip_forward():
-    obj = DeepImagePrior(10, 10)
+    obj = DeepImagePrior(512, 512)
     obj.forward()
 
 
 def test_dip_decode_training_tensor():
-    obj = DeepImagePrior(10, 10)
+    obj = DeepImagePrior(512, 512)
     obj.decode_training_tensor()
 
 
 def test_dip_decode_tensor():
-    obj = DeepImagePrior(10, 10)
+    obj = DeepImagePrior(512, 512)
     obj.decode_tensor()
 
 
 def test_dip_clone():
-    obj = DeepImagePrior(10, 10)
+    obj = DeepImagePrior(512, 512)
     obj.clone()
 
 
 def test_dip_get_latent_tensor():
     obj = DeepImagePrior(10, 10)
     obj.get_latent_tensor()
-
-
-def test_dip_get_image_tensor():
-    obj = DeepImagePrior(512, 512)
-    obj.get_image_tensor()
