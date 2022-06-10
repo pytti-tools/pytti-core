@@ -19,7 +19,7 @@ import clip
 from pytti import Perceptor
 
 from pytti.Perceptor import CLIP_PERCEPTORS
-
+import torch
 
 # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
 def is_notebook():
