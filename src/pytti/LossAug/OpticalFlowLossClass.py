@@ -19,7 +19,8 @@ from gma.core.network import RAFTGMA
 # from gma.core.utils import flow_viz
 from gma.core.utils.utils import InputPadder
 
-from pytti import fetch, to_pil, DEVICE, vram_usage_mode
+# from pytti import fetch, to_pil, DEVICE, vram_usage_mode
+from pytti import fetch, vram_usage_mode
 from pytti.LossAug.MSELossClass import MSELoss
 from pytti.rotoscoper import Rotoscoper
 from pytti.Transforms import apply_flow
@@ -58,11 +59,13 @@ except:
         return ir_files1(gma)
 
 
-def init_GMA(checkpoint_path=None):
+def init_GMA(checkpoint_path=None, device=None):
     if checkpoint_path is None:
         checkpoint_path = get_gma_checkpoint_path()
         logger.debug(checkpoint_path)
     global GMA
+    if device is None:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if GMA is None:
         with vram_usage_mode("GMA"):
             # migrate this to a hydra initialize/compose operation
@@ -96,11 +99,24 @@ def init_GMA(checkpoint_path=None):
             args = parser.parse_args([])
             GMA = torch.nn.DataParallel(RAFTGMA(args))
             GMA.load_state_dict(torch.load(checkpoint_path))
-            GMA.to(DEVICE)
+            GMA.to(device)
             GMA.eval()
 
 
-def sample(tensor, uv, device=DEVICE):
+def sample(
+    tensor: torch.Tensor,
+    uv: torch.Tensor,
+    device: torch.device = None,
+) -> torch.Tensor:
+    """
+    :param tensor: the tensor to be sampled from
+    :type tensor: torch.Tensor
+    :param uv: (N, 2) tensor of normalized coordinates in the range [-1, 1]
+    :type uv: torch.Tensor
+    :param device: The device to use for the sampling
+    """
+    if device is None:
+        device = tensor.device
     height, width = tensor.shape[-2:]
     max_pos = torch.tensor([width - 1, height - 1], device=device).view(2, 1, 1)
     grid = uv.div(max_pos / 2).sub(1).movedim(0, -1).unsqueeze(0)
@@ -123,26 +139,34 @@ class TargetFlowLoss(MSELoss):
             self.mag = 1
 
     @torch.no_grad()
-    def set_target_flow(self, flow, device=DEVICE):
+    def set_target_flow(
+        self,
+        flow: torch.Tensor,
+        device: torch.device = None,
+    ):
         """
         Set the target flow to the given flow field
 
         :param flow: the flow to be set as the target flow
         :param device: the device to run the training on
         """
+        if device is None:
+            device = getattr(self, "device", flow.device)
         self.comp.set_(
             flow.movedim(-1, 1).to(device, memory_format=torch.channels_last)
         )
         self.mag = float(torch.linalg.norm(self.comp, dim=1).square().mean())
 
     @torch.no_grad()
-    def set_last_step(self, last_step_pil, device=DEVICE):
+    def set_last_step(self, last_step_pil, device=None):
         """
         It sets the last_step class attribute to the provided last_step_pil image.
 
         :param last_step_pil: The last step of the sequence
         :param device: The device to use for training
         """
+        if device is None:
+            device = getattr(self, "device", last_step_pil.device)
         last_step = (
             TF.to_tensor(last_step_pil)
             .unsqueeze(0)
@@ -150,7 +174,7 @@ class TargetFlowLoss(MSELoss):
         )
         self.last_step.set_(last_step)
 
-    def get_loss(self, input, img, device=DEVICE):
+    def get_loss(self, input, img, device=None):
         """
         Uses the pretrained flow model (GMA) to compute the loss.
 
@@ -159,8 +183,11 @@ class TargetFlowLoss(MSELoss):
         :param device: the device to run the model on
         :return: The loss function.
         """
+        if device is None:
+            device = getattr(self, "device", input.device)
         init_GMA(
             # "GMA/checkpoints/gma-sintel.pth"
+            device=device,
         )  # update this to use model dir from config
         image1 = self.last_step
         image2 = input
@@ -177,10 +204,10 @@ class OpticalFlowLoss(MSELoss):
     def motion_edge_map(
         flow_forward,
         flow_backward,
-        img,
+        img,  # is this even being used anywhere here?
         border_mode="smear",
         sampling_mode="bilinear",
-        device=DEVICE,
+        device=None,
     ):
         """
         Given a forward flow, a backward flow, and an image,
@@ -196,6 +223,8 @@ class OpticalFlowLoss(MSELoss):
         :param device: the device to run the algorithm on
         :return: a mask that is used to mask out the unreliable pixels.
         """
+        if device is None:
+            device = getattr(self, "device", flow_forward.device)
         # algorithm based on https://github.com/manuelruder/artistic-videos/blob/master/consistencyChecker/consistencyChecker.cpp
         # reimplemented in pytorch by Henry Rachootin
         # // consistencyChecker
@@ -257,7 +286,7 @@ class OpticalFlowLoss(MSELoss):
 
     @staticmethod
     @torch.no_grad()
-    def get_flow(image1, image2, device=DEVICE):
+    def get_flow(image1, image2, device=None):
         """
         Takes two images and returns the flow between them.
 
@@ -266,8 +295,14 @@ class OpticalFlowLoss(MSELoss):
         :param device: The device to run the model on
         :return: the flow field.
         """
+        if device is None:
+            device = getattr(
+                self, "device", "cuda" if torch.cuda.is_available() else "cpu"
+            )
         # init_GMA("GMA/checkpoints/gma-sintel.pth")
-        init_GMA()
+        init_GMA(
+            device=device,
+        )
         if isinstance(image1, Image.Image):
             image1 = TF.to_tensor(image1).unsqueeze(0).to(device)
         if isinstance(image2, Image.Image):
@@ -284,8 +319,9 @@ class OpticalFlowLoss(MSELoss):
         stop=-math.inf,
         name="direct target loss",
         image_shape=None,
+        device=None,
     ):
-        super().__init__(comp, weight, stop, name, image_shape)
+        super().__init__(comp, weight, stop, name, image_shape, device)
         with torch.no_grad():
             self.latent_loss = MSELoss(
                 comp.new_zeros((1, 1, 1, 1)), weight, stop, name, image_shape
@@ -301,7 +337,7 @@ class OpticalFlowLoss(MSELoss):
         path,
         border_mode="smear",
         sampling_mode="bilinear",
-        device=DEVICE,
+        device=None,
     ):
         """
         Given a frame, a path to a pretrained model, and a mask,
@@ -316,9 +352,13 @@ class OpticalFlowLoss(MSELoss):
         :param device: the device to run the model on
         :return: The flow image and the mask.
         """
+        if device is None:
+            device = getattr(
+                self, "device", "cuda" if torch.cuda.is_available() else "cpu"
+            )
         if path is not None:
             img = img.clone()
-            state_dict = torch.load(path)
+            state_dict = torch.load(path, map_location=device)
             img.load_state_dict(state_dict)
 
         gc.collect()
@@ -385,7 +425,7 @@ class OpticalFlowLoss(MSELoss):
             self.latent_loss.set_mask(None)
 
     @torch.no_grad()
-    def set_mask(self, mask, inverted=False, device=DEVICE):
+    def set_mask(self, mask, inverted=False, device=None):
         """
         Sets the mask for the background.
 
@@ -395,6 +435,10 @@ class OpticalFlowLoss(MSELoss):
         :param device: The device to run the mask on
         :return: Nothing.
         """
+        if device is None:
+            device = getattr(
+                self, "device", "cuda" if torch.cuda.is_available() else "cpu"
+            )
         if isinstance(mask, str) and mask != "":
             if mask[0] == "-":
                 mask = mask[1:]
