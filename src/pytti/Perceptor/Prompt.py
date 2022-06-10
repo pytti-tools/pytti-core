@@ -17,7 +17,6 @@ from torchvision.transforms import functional as TF
 from clip import clip
 import pytti
 from pytti import (
-    DEVICE,
     format_input,
     cat_with_pad,
     replace_grad,
@@ -89,7 +88,9 @@ def mask_all(pos, size, emb, thresh=0.5):
 
 
 @torch.no_grad()
-def mask_image(path, inverted=False, device=DEVICE):
+def mask_image(path, inverted=False, device=None):
+    if device is None:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if isinstance(path, Image.Image):
         mask_pil = path
     else:
@@ -154,7 +155,9 @@ def mask_image(path, inverted=False, device=DEVICE):
 
 
 @torch.no_grad()
-def mask_semantic(text, device=DEVICE):
+def mask_semantic(text, device=None):
+    if device is None:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     perceptors = pytti.Perceptor.CLIP_PERCEPTORS
     embeds = cat_with_pad(
         [p.encode_text(clip.tokenize(text).to(device)).float() for p in perceptors]
@@ -184,7 +187,7 @@ MASK_DICT = {
 
 
 @torch.no_grad()
-def parse_prompt(embedder, prompt_string="", pil_image=None, device=DEVICE):
+def parse_prompt(embedder, prompt_string="", pil_image=None, device=None):
     """
     It takes a prompt string,
     parses it, and returns a Prompt object
@@ -195,6 +198,8 @@ def parse_prompt(embedder, prompt_string="", pil_image=None, device=DEVICE):
     :param device: the device to run on
     :return: A Prompt object.
     """
+    if device is None:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     text, weight, stop = parse(prompt_string, r":(?![^\[]*\])", ["", "1", "-inf"])
     weight, mask, cutoff = parse(
         weight, r"_(?![^\[]*\])", ["1", "a", "0.5000873264"]
@@ -236,8 +241,12 @@ class Prompt(nn.Module):
         text: str,
         prompt_string: str,
         mask: Callable = mask_all,
+        device=None,
     ):
         super().__init__()
+        if device is None:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
         if embeds is not None:
             self.register_buffer("embeds", embeds)
         self.weight = weight
@@ -272,11 +281,13 @@ class Prompt(nn.Module):
     def set_enabled(self, enabled):
         self.enabled = enabled
 
-    def forward(self, embed, position, size, offset=0.0, device=DEVICE):
+    def forward(self, embed, position, size, offset=0.0, device=None):
         """
         input: (Tensor) input CLIP embedding
         returns the input's loss compared to the saved embedding
         """
+        if device is None:
+            device = self.device
         if not self.enabled or self.weight in ["0", 0]:
             return torch.as_tensor(offset, device=device), offset
         dists_raw = spherical_dist_loss(embed, self.embeds) + offset
@@ -307,6 +318,7 @@ class MultiClipImagePrompt(Prompt):
         text: str,
         prompt_string: str,
         mask: Callable = mask_all,
+        device=None,
     ):
         self.input_axes = ("c", "n", "i")
         super().__init__(
@@ -316,6 +328,7 @@ class MultiClipImagePrompt(Prompt):
             text + " (semantic)",
             prompt_string,
             mask=mask,
+            device=device,
         )
         self.input_axes = ("c", "n", "i")
         self.register_buffer("positions", format_input(positions, embedder, self))
@@ -340,12 +353,14 @@ class MultiClipImagePrompt(Prompt):
         self.embeds.set_(format_input(embeds, embedder, self))
 
 
-def minimize_average_distance(tensor_a, tensor_b, device=DEVICE):
+def minimize_average_distance(tensor_a, tensor_b):
     """
     tensor_a: pytorch tensor
     tensor_b: pytorch tensor
     returns: tensor of indicies in tensor_a which will minimize the euclidian distance between the elments of the two tensors
     """
+    # Why are we doing this on the CPU?
+    # ....and why are we looping here?
     tensor_a = tensor_a.detach().cpu().numpy()
     tensor_b = tensor_b.detach().cpu().numpy()
     out = []

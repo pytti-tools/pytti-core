@@ -1,3 +1,4 @@
+
 from pytti import DEVICE, named_rearrange, replace_grad, vram_usage_mode
 from pytti.image_models.differentiable_image import DifferentiableImage
 from pytti.LossAug.HSVLossClass import HSVLoss
@@ -35,10 +36,13 @@ def break_tensor(tensor):
 class PalletLoss(nn.Module):
     """Palette normalization"""
 
-    def __init__(self, n_pallets, weight=0.15, device=DEVICE):
+    def __init__(self, n_pallets, weight=0.15, device=None):
         super().__init__()
+        if device is None:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
         self.n_pallets = n_pallets
-        self.register_buffer("weight", torch.as_tensor(weight).to(device))
+        self.register_buffer("weight", torch.as_tensor(weight).to(self.device))
 
     def forward(self, input: DifferentiableImage):
         """
@@ -70,13 +74,15 @@ class PalletLoss(nn.Module):
             return 0, 0
 
     @torch.no_grad()
-    def set_weight(self, weight, device=DEVICE):
+    def set_weight(self, weight, device=None):
         """
         Set the weight of the layer to the given value
 
         :param weight: The weight tensor
         :param device: The device to put the weights on
         """
+        if device is None:
+            device = self.device
         self.weight.set_(torch.as_tensor(weight, device=device))
 
     def __str__(self):
@@ -90,7 +96,7 @@ class HdrLoss(nn.Module):
         n_pallets: int,
         gamma: float = 2.5,
         weight: float = 0.15,
-        device=DEVICE,
+        device=None,
     ):
         """
         Create a tensor of size (pallet_size, n_pallets) and set the first row to be the pallet_size
@@ -103,6 +109,9 @@ class HdrLoss(nn.Module):
         :param device: The device to run the model on
         """
         super().__init__()
+        if device is None:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
         self.register_buffer(
             "comp",
             torch.linspace(0, 1, pallet_size)
@@ -132,7 +141,9 @@ class HdrLoss(nn.Module):
             return 0, 0
 
     @torch.no_grad()
-    def set_weight(self, weight, device=DEVICE):
+    def set_weight(self, weight, device=None):
+        if device is None:
+            device = self.device
         self.weight.set_(torch.as_tensor(weight, device=device))
 
     def __str__(self):
@@ -168,9 +179,12 @@ class PixelImage(DifferentiableImage):
         gamma=1,
         hdr_weight=0.5,
         norm_weight=0.1,
-        device=DEVICE,
+        device=None,
     ):
         super().__init__(width * scale, height * scale)
+        if device is None:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
         self.pallet_inertia = 2
         pallet = (
             torch.linspace(0, self.pallet_inertia, pallet_size)
@@ -179,12 +193,14 @@ class PixelImage(DifferentiableImage):
             .repeat(1, n_pallets, 3)
         )
         # pallet.set_(torch.rand_like(pallet)*self.pallet_inertia)
-        self.pallet = nn.Parameter(pallet.to(device))
+        self.pallet = nn.Parameter(pallet.to(self.device))
 
         self.pallet_size = pallet_size
         self.n_pallets = n_pallets
-        self.value = nn.Parameter(torch.zeros(height, width).to(device))
-        self.tensor = nn.Parameter(torch.zeros(n_pallets, height, width).to(device))
+        self.value = nn.Parameter(torch.zeros(height, width).to(self.device))
+        self.tensor = nn.Parameter(
+            torch.zeros(n_pallets, height, width).to(self.device)
+        )
         self.output_axes = ("n", "s", "y", "x")
         self.latent_strength = 0.1
         self.scale = scale
@@ -315,7 +331,7 @@ class PixelImage(DifferentiableImage):
         colors_disc = F.interpolate(
             colors_disc.movedim(2, 0)
             .unsqueeze(0)
-            .to(DEVICE, memory_format=torch.channels_last),
+            .to(self.device, memory_format=torch.channels_last),
             (height, width),
             mode="nearest",
         )
@@ -327,7 +343,7 @@ class PixelImage(DifferentiableImage):
         colors_cont = F.interpolate(
             colors_cont.movedim(2, 0)
             .unsqueeze(0)
-            .to(DEVICE, memory_format=torch.channels_last),
+            .to(self.device, memory_format=torch.channels_last),
             (height, width),
             mode="nearest",
         )
@@ -398,7 +414,7 @@ class PixelImage(DifferentiableImage):
         self.tensor.clamp_(0, float("inf"))
         # self.tensor.set_(self.tensor.softmax(dim = 0))
 
-    def encode_image(self, pil_image, smart_encode=True, device=DEVICE):
+    def encode_image(self, pil_image, smart_encode=True, device=None):
         """
         Encodes the image into a tensor.
 
@@ -408,6 +424,8 @@ class PixelImage(DifferentiableImage):
         :param device: The device to run the model on
         """
         width, height = self.image_shape
+        if device is None:
+            device = self.device
 
         scale = self.scale
         color_ref = pil_image.resize((width // scale, height // scale), Image.LANCZOS)

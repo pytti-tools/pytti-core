@@ -125,6 +125,7 @@ def configure_optical_flows(img, params, loss_augs):
             TargetFlowLoss.TargetImage(
                 f"optical flow stabilization:{params.flow_stabilization_weight}",
                 img.image_shape,
+                device="cuda",
             )
         ]
         for optical_flow in optical_flows:

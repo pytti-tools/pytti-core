@@ -115,8 +115,9 @@ class TargetFlowLoss(MSELoss):
         stop=-math.inf,
         name="direct target loss",
         image_shape=None,
+        device=None,
     ):
-        super().__init__(comp, weight, stop, name, image_shape)
+        super().__init__(comp, weight, stop, name, image_shape, device)
         with torch.no_grad():
             self.register_buffer("last_step", comp.clone())
             self.mag = 1

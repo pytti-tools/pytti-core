@@ -1,4 +1,4 @@
-from pytti import DEVICE, clamp_with_grad
+from pytti import clamp_with_grad
 import torch
 from torch import nn
 from torchvision.transforms import functional as TF
@@ -12,11 +12,14 @@ class RGBImage(DifferentiableImage):
     Naive RGB image representation
     """
 
-    def __init__(self, width, height, scale=1, device=DEVICE):
+    def __init__(self, width, height, scale=1, device=None):
         super().__init__(width * scale, height * scale)
+        if device is None:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
         self.tensor = nn.Parameter(
             torch.zeros(1, 3, height, width).to(
-                device=device, memory_format=torch.channels_last
+                device=self.device, memory_format=torch.channels_last
             )
         )
         self.output_axes = ("n", "s", "y", "x")
@@ -42,7 +45,9 @@ class RGBImage(DifferentiableImage):
         self.tensor.set_(tensor.unsqueeze(0))
 
     @torch.no_grad()
-    def encode_image(self, pil_image, device=DEVICE, **kwargs):
+    def encode_image(self, pil_image, device=None, **kwargs):
+        if device is None:
+            device = self.device
         width, height = self.image_shape
         scale = self.scale
         pil_image = pil_image.resize((width // scale, height // scale), Image.LANCZOS)
