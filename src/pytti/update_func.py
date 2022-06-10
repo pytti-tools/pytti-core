@@ -277,7 +277,8 @@ def update(
                         border_mode=params.infill_mode,
                         sampling_mode=params.sampling_mode,
                         stabilize=params.lock_camera,
-                        device=None,
+                        # device=None,
+                        device=params.device,
                     )
                     freeze_vram_usage()
 
@@ -301,6 +302,7 @@ def update(
                     save_every=params.save_every,
                     infill_mode=params.infill_mode,
                     sampling_mode=params.sampling_mode,
+                    device=params.device,
                 )
 
             if params.animation_mode != "off":

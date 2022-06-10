@@ -14,7 +14,7 @@ import subprocess
 
 import hydra
 from loguru import logger
-from omegaconf import OmegaConf, DictConfig
+from omegaconf import OmegaConf, DictConfig, open_dict
 
 import numpy as np
 import pandas as pd
@@ -189,10 +189,13 @@ def _main(cfg: DictConfig):
     params = cfg
 
     if torch.cuda.is_available():
-        # _device = params.get("device", "cuda:0")
         _device = params.get("device", 0)
     else:
         _device = params.get("device", "cpu")
+    if params.get("device") is None:
+        # params["device"] = _device
+        with open_dict(params) as p:
+            p.device = _device
     logger.debug(f"Using device {_device}")
     torch.cuda.set_device(_device)
 

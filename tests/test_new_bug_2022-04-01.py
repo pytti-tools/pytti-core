@@ -4,6 +4,8 @@ from hydra import initialize, compose
 from loguru import logger
 from pytti.workhorse import _main as render_frames
 
+from pathlib import Path
+
 
 def test_the_thing():
     with pytest.raises(AssertionError):
@@ -25,7 +27,12 @@ def reproduce_error():
         #'init_image': f"'{url_seattle2}'", # I thought this supported URLs? Is this *another* hydra thing???
         #'init_image': f"'[{url_seattle2}]'",
         #'init_image': f'"[{url_seattle2}]"', # gdamn... let's see if it works after downloading the image...
-        "init_image": "/home/dmarx/Downloads/01-velo-header-seattle-needle.jpg",  # TO DO: download this locally
+        # "init_image": "/home/dmarx/Downloads/01-velo-header-seattle-needle.jpg",  # TO DO: download this locally
+        "init_image": str(
+            next(
+                Path(".").glob("**/src/pytti/assets/01-velo-header-seattle-needle.jpg")
+            )
+        ),
         #'direct_init_weight':10,
         #'scenes':tilt_shift_str,
         "animation_mode": "Off",

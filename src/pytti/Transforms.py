@@ -408,6 +408,7 @@ def animate_video_source(
     ##
     infill_mode,
     sampling_mode,
+    device=None,
 ):
     # ugh this is GROSSSSS....
     from pytti.image_models.pixel import PixelImage
@@ -463,6 +464,7 @@ def animate_video_source(
             filename,
             infill_mode,
             sampling_mode,
+            device=device,
         )
 
         optical_flow.set_enabled(True)
