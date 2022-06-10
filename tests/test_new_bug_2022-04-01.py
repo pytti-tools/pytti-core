@@ -4,6 +4,8 @@ from hydra import initialize, compose
 from loguru import logger
 from pytti.workhorse import _main as render_frames
 
+from pathlib import Path
+
 
 def test_the_thing():
     with pytest.raises(AssertionError):
