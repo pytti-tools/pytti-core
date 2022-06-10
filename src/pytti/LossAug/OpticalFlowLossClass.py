@@ -224,7 +224,7 @@ class OpticalFlowLoss(MSELoss):
         :return: a mask that is used to mask out the unreliable pixels.
         """
         if device is None:
-            device = getattr(self, "device", flow_forward.device)
+            device = flow_forward.device
         # algorithm based on https://github.com/manuelruder/artistic-videos/blob/master/consistencyChecker/consistencyChecker.cpp
         # reimplemented in pytorch by Henry Rachootin
         # // consistencyChecker
@@ -356,6 +356,9 @@ class OpticalFlowLoss(MSELoss):
             )
         if path is not None:
             img = img.clone()
+            if not isinstance(device, torch.device):
+                device = torch.device(device)
+            # logger.debug(device)
             state_dict = torch.load(path, map_location=device)
             img.load_state_dict(state_dict)
 

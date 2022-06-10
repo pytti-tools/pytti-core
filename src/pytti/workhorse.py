@@ -189,10 +189,11 @@ def _main(cfg: DictConfig):
     params = cfg
 
     if torch.cuda.is_available():
-        # _device = params.get("device", "cuda:0")
         _device = params.get("device", 0)
     else:
         _device = params.get("device", "cpu")
+    if params.get("device") is None:
+        params["device"] = _device
     logger.debug(f"Using device {_device}")
     torch.cuda.set_device(_device)
 
