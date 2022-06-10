@@ -284,9 +284,9 @@ class OpticalFlowLoss(MSELoss):
 
         return mask
 
-    # @staticmethod
+    @staticmethod
     @torch.no_grad()
-    def get_flow(self, image1, image2, device=None):
+    def get_flow(image1, image2, device=None):
         """
         Takes two images and returns the flow between them.
 
@@ -296,9 +296,7 @@ class OpticalFlowLoss(MSELoss):
         :return: the flow field.
         """
         if device is None:
-            device = getattr(
-                self, "device", "cuda" if torch.cuda.is_available() else "cpu"
-            )
+            device = "cuda" if torch.cuda.is_available() else "cpu"
         # init_GMA("GMA/checkpoints/gma-sintel.pth")
         init_GMA(
             device=device,
@@ -381,8 +379,8 @@ class OpticalFlowLoss(MSELoss):
 
         # flow_forward = OpticalFlowLoss.get_flow(image1, image2)
         # flow_backward = OpticalFlowLoss.get_flow(image2, image1)
-        flow_forward = self.get_flow(image1, image2)
-        flow_backward = self.get_flow(image2, image1)
+        flow_forward = self.get_flow(image1, image2, device=device)
+        flow_backward = self.get_flow(image2, image1, device=device)
         unwarped_target_direct = img.decode_tensor()
         flow_target_direct = apply_flow(
             img, -flow_backward, border_mode=border_mode, sampling_mode=sampling_mode
