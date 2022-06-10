@@ -284,9 +284,9 @@ class OpticalFlowLoss(MSELoss):
 
         return mask
 
-    @staticmethod
+    # @staticmethod
     @torch.no_grad()
-    def get_flow(image1, image2, device=None):
+    def get_flow(self, image1, image2, device=None):
         """
         Takes two images and returns the flow between them.
 
