@@ -97,7 +97,7 @@ def init_GMA(checkpoint_path=None, device=None):
                 "--mixed_precision", action="store_true", help="use mixed precision"
             )
             args = parser.parse_args([])
-            GMA = torch.nn.DataParallel(RAFTGMA(args))
+            GMA = torch.nn.DataParallel(RAFTGMA(args), device_ids=[device])
             # GMA = RAFTGMA(args)
             GMA.load_state_dict(torch.load(checkpoint_path))
             GMA.to(device)
