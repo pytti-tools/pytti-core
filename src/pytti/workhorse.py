@@ -193,7 +193,8 @@ def _main(cfg: DictConfig):
     else:
         _device = params.get("device", "cpu")
     if params.get("device") is None:
-        params["device"] = _device
+        # params["device"] = _device
+        params.device = _device
     logger.debug(f"Using device {_device}")
     torch.cuda.set_device(_device)
 
