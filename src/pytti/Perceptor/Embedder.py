@@ -62,7 +62,6 @@ class HDMultiClipEmbedder(nn.Module):
         self.border_mode = border_mode
 
     def make_cutouts(
-<<<<<<< HEAD
         self,
         input: torch.Tensor,
         side_x,
