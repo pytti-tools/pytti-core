@@ -19,7 +19,7 @@ import clip
 from pytti import Perceptor
 
 from pytti.Perceptor import CLIP_PERCEPTORS
-
+import torch
 
 # https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
 def is_notebook():
@@ -233,7 +233,10 @@ logger.debug(SUPPORTED_CLIP_MODELS)
 CLIP_MODEL_NAMES = None
 
 
-def load_clip(params):
+def load_clip(params, device=None):
+
+    if device is None:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # refactor to specify this stuff in a config file
     global CLIP_MODEL_NAMES
@@ -257,7 +260,7 @@ def load_clip(params):
                 raise RuntimeError("Please select at least one CLIP model")
             Perceptor.free_clip()
             logger.debug("Loading CLIP...")
-            Perceptor.init_clip(CLIP_MODEL_NAMES)
+            Perceptor.init_clip(CLIP_MODEL_NAMES, device=device)
             logger.debug("CLIP loaded.")
     else:
         logger.debug("attempting to use mmc to load perceptors")

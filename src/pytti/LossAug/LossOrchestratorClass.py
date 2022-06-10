@@ -2,7 +2,7 @@ from IPython import display
 from loguru import logger
 from PIL import Image
 
-from pytti.Image import PixelImage
+from pytti.image_models import PixelImage
 
 # from pytti.LossAug import build_loss
 from pytti.LossAug import TVLoss, HSVLoss, OpticalFlowLoss, TargetFlowLoss
@@ -125,6 +125,7 @@ def configure_optical_flows(img, params, loss_augs):
             TargetFlowLoss.TargetImage(
                 f"optical flow stabilization:{params.flow_stabilization_weight}",
                 img.image_shape,
+                device="cuda",
             )
         ]
         for optical_flow in optical_flows:

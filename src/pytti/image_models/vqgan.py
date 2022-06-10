@@ -8,10 +8,10 @@ from loguru import logger
 
 from taming.models import cond_transformer, vqgan
 
-from pytti import DEVICE, replace_grad, clamp_with_grad, vram_usage_mode
+from pytti import replace_grad, clamp_with_grad, vram_usage_mode
 import torch
 from torch.nn import functional as F
-from pytti.Image import EMAImage
+from pytti.image_models import EMAImage
 from torchvision.transforms import functional as TF
 from PIL import Image
 from omegaconf import OmegaConf
@@ -134,7 +134,13 @@ class VQGANImage(EMAImage):
     """
 
     @vram_usage_mode("VQGAN Image")
-    def __init__(self, width, height, scale=1, model=VQGAN_MODEL, ema_val=0.99):
+    def __init__(
+        self, width, height, scale=1, model=VQGAN_MODEL, ema_val=0.99, device=None
+    ):
+        if device is None:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
+
         if model is None:
             model = VQGAN_MODEL
             if model is None:
@@ -189,7 +195,9 @@ class VQGANImage(EMAImage):
             dummy.decay = self.decay
         return dummy
 
-    def get_latent_tensor(self, detach=False, device=DEVICE):
+    def get_latent_tensor(self, detach=False, device=None):
+        if device is None:
+            device = self.device
         z = self.tensor
         if detach:
             z = z.detach()
@@ -202,7 +210,9 @@ class VQGANImage(EMAImage):
 
         return LatentLoss
 
-    def decode(self, z, device=DEVICE):
+    def decode(self, z, device=None):
+        if device is None:
+            device = self.device
         z_q = vector_quantize(z, self.vqgan_quantize_embedding).movedim(3, 1).to(device)
         out = self.vqgan_decode(z_q).add(1).div(2)
         width, height = self.image_shape
@@ -210,7 +220,9 @@ class VQGANImage(EMAImage):
         # return F.interpolate(clamp_with_grad(out, 0, 1).to(device, memory_format = torch.channels_last), (height, width), mode='nearest')
 
     @torch.no_grad()
-    def encode_image(self, pil_image, device=DEVICE, **kwargs):
+    def encode_image(self, pil_image, device=None, **kwargs):
+        if device is None:
+            device = self.device
         pil_image = pil_image.resize(self.image_shape, Image.LANCZOS)
         pil_image = TF.to_tensor(pil_image)
         z, *_ = self.vqgan_encode(pil_image.unsqueeze(0).to(device) * 2 - 1)
@@ -218,7 +230,9 @@ class VQGANImage(EMAImage):
         self.reset()
 
     @torch.no_grad()
-    def make_latent(self, pil_image, device=DEVICE):
+    def make_latent(self, pil_image, device=None):
+        if device is None:
+            device = self.device
         pil_image = pil_image.resize(self.image_shape, Image.LANCZOS)
         pil_image = TF.to_tensor(pil_image)
         z, *_ = self.vqgan_encode(pil_image.unsqueeze(0).to(device) * 2 - 1)
@@ -234,7 +248,9 @@ class VQGANImage(EMAImage):
         self.tensor.set_(self.rand_latent())
         self.reset()
 
-    def rand_latent(self, device=DEVICE, vqgan_quantize_embedding=None):
+    def rand_latent(self, device=None, vqgan_quantize_embedding=None):
+        if device is None:
+            device = self.device
         if vqgan_quantize_embedding is None:
             vqgan_quantize_embedding = self.vqgan_quantize_embedding
         n_toks = self.n_toks
@@ -246,9 +262,13 @@ class VQGANImage(EMAImage):
         z = z.view([-1, toksY, toksX, self.e_dim])
         return z
 
+    # Why is this a static method? Make it a regular method and kill the globals.
     @staticmethod
-    def init_vqgan(model_name, model_artifacts_path, device=DEVICE):
-        global VQGAN_MODEL, VQGAN_NAME, VQGAN_IS_GUMBEL
+    def init_vqgan(model_name, model_artifacts_path, device=None):
+        if device is None:
+            # device = self.device
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        global VQGAN_MODEL, VQGAN_NAME, VQGAN_IS_GUMBEL  # uh.... fix this nonsense.
         if VQGAN_NAME == model_name:
             return
         if model_name not in VQGAN_MODEL_NAMES:

@@ -215,6 +215,14 @@ def update(
             if params.reset_lr_each_frame:
                 model.set_optim(None)
             if params.animation_mode == "2D":
+                logger.debug(params.translate_x)
+                logger.debug(params.translate_y)
+                logger.debug(params.rotate_2d)
+                logger.debug(params.zoom_x_2d)
+                logger.debug(params.zoom_y_2d)
+                from pytti.eval_tools import global_bands
+
+                logger.debug(global_bands)
                 tx, ty = parametric_eval(params.translate_x), parametric_eval(
                     params.translate_y
                 )
@@ -222,6 +230,10 @@ def update(
                 zx, zy = parametric_eval(params.zoom_x_2d), parametric_eval(
                     params.zoom_y_2d
                 )
+                logger.debug(f"Translate: {tx}, {ty}")
+                logger.debug(f"Rotate: {theta}")
+                logger.debug(f"Zoom: {zx}, {zy}")
+
                 next_step_pil = zoom_2d(
                     img,
                     (tx, ty),
@@ -265,6 +277,8 @@ def update(
                         border_mode=params.infill_mode,
                         sampling_mode=params.sampling_mode,
                         stabilize=params.lock_camera,
+                        # device=None,
+                        device=params.device,
                     )
                     freeze_vram_usage()
 
@@ -288,6 +302,7 @@ def update(
                     save_every=params.save_every,
                     infill_mode=params.infill_mode,
                     sampling_mode=params.sampling_mode,
+                    device=params.device,
                 )
 
             if params.animation_mode != "off":

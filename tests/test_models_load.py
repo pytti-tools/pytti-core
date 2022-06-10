@@ -2,7 +2,7 @@ from pathlib import Path
 import pytest
 from loguru import logger
 
-from pytti.Image.VQGANImage import (
+from pytti.image_models.vqgan import (
     VQGANImage,
     VQGAN_MODEL_NAMES,
     VQGAN_CONFIG_URLS,

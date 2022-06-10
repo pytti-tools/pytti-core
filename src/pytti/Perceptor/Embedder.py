@@ -1,16 +1,22 @@
 from typing import Tuple
 
 import pytti
-from pytti import DEVICE, format_input, cat_with_pad, format_module, normalize
+from pytti import format_input, cat_with_pad, format_module, normalize
 
 # from pytti.ImageGuide import DirectImageGuide
-from pytti.Image import DifferentiableImage
+from pytti.image_models import DifferentiableImage
 
 import torch
 from torch import nn
 from torch.nn import functional as F
 
-import kornia.augmentation as K
+
+# import .cutouts
+# import .cutouts as cutouts
+# import cutouts
+
+from .cutouts import augs as cutouts_augs
+from .cutouts import samplers as cutouts_samplers
 
 PADDING_MODES = {
     "mirror": "reflect",
@@ -36,26 +42,18 @@ class HDMultiClipEmbedder(nn.Module):
         padding=0.25,
         border_mode="clamp",
         noise_fac=0.1,
+        device=None,
     ):
         super().__init__()
+        if device is None:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
         if perceptors is None:
             perceptors = pytti.Perceptor.CLIP_PERCEPTORS
         self.cut_sizes = [p.visual.input_resolution for p in perceptors]
         self.cutn = cutn
         self.noise_fac = noise_fac
-        self.augs = nn.Sequential(
-            K.RandomHorizontalFlip(p=0.3),
-            K.RandomAffine(degrees=30, translate=0.1, p=0.8, padding_mode="border"),
-            K.RandomPerspective(
-                0.2,
-                p=0.4,
-            ),
-            K.ColorJitter(hue=0.01, saturation=0.01, p=0.7),
-            K.RandomErasing(
-                scale=(0.1, 0.4), ratio=(0.3, 1 / 0.3), same_on_batch=False, p=0.7
-            ),
-            nn.Identity(),
-        )
+        self.augs = cutouts_augs.pytti_classic()
         self.input_axes = ("n", "s", "y", "x")
         self.output_axes = ("c", "n", "i")
         self.perceptors = perceptors
@@ -64,69 +62,36 @@ class HDMultiClipEmbedder(nn.Module):
         self.border_mode = border_mode
 
     def make_cutouts(
-        self, input: torch.Tensor, side_x, side_y, cut_size, device=DEVICE
+        self,
+        input: torch.Tensor,
+        side_x,
+        side_y,
+        cut_size,
+        ####
+        # padding,
+        # cutn,
+        # cut_pow,
+        # border_mode,
+        # augs,
+        # noise_fac,
+        ####
+        device=None,
     ) -> Tuple[list, list, list]:
-        min_size = min(side_x, side_y, cut_size)
-        max_size = min(side_x, side_y)
-        paddingx = min(round(side_x * self.padding), side_x)
-        paddingy = min(round(side_y * self.padding), side_y)
-        cutouts = []
-        offsets = []
-        sizes = []
-        for _ in range(self.cutn):
-            # mean is 0.8
-            # varience is 0.3
-            size = int(
-                max_size
-                * (
-                    torch.zeros(
-                        1,
-                    )
-                    .normal_(mean=0.8, std=0.3)
-                    .clip(cut_size / max_size, 1.0)
-                    ** self.cut_pow
-                )
-            )
-            offsetx_max = side_x - size + 1
-            offsety_max = side_y - size + 1
-            if self.border_mode == "clamp":
-                offsetx = torch.clamp(
-                    (torch.rand([]) * (offsetx_max + 2 * paddingx) - paddingx)
-                    .floor()
-                    .int(),
-                    0,
-                    offsetx_max,
-                )
-                offsety = torch.clamp(
-                    (torch.rand([]) * (offsety_max + 2 * paddingy) - paddingy)
-                    .floor()
-                    .int(),
-                    0,
-                    offsety_max,
-                )
-                cutout = input[:, :, offsety : offsety + size, offsetx : offsetx + size]
-            else:
-                px = min(size, paddingx)
-                py = min(size, paddingy)
-                offsetx = (torch.rand([]) * (offsetx_max + 2 * px) - px).floor().int()
-                offsety = (torch.rand([]) * (offsety_max + 2 * py) - py).floor().int()
-                cutout = input[
-                    :,
-                    :,
-                    paddingy + offsety : paddingy + offsety + size,
-                    paddingx + offsetx : paddingx + offsetx + size,
-                ]
-            cutouts.append(F.adaptive_avg_pool2d(cutout, cut_size))
-            offsets.append(
-                torch.as_tensor([[offsetx / side_x, offsety / side_y]]).to(device)
-            )
-            sizes.append(torch.as_tensor([[size / side_x, size / side_y]]).to(device))
-        cutouts = self.augs(torch.cat(cutouts))
-        offsets = torch.cat(offsets)
-        sizes = torch.cat(sizes)
-        if self.noise_fac:
-            facs = cutouts.new_empty([self.cutn, 1, 1, 1]).uniform_(0, self.noise_fac)
-            cutouts.add_(facs * torch.randn_like(cutouts))
+        if device is None:
+            device = self.device
+        cutouts, offsets, sizes = cutouts_samplers.pytti_classic(
+            input=input,
+            side_x=side_x,
+            side_y=side_y,
+            cut_size=cut_size,
+            padding=self.padding,
+            cutn=self.cutn,
+            cut_pow=self.cut_pow,
+            border_mode=self.border_mode,
+            augs=self.augs,
+            noise_fac=self.noise_fac,
+            device=device,
+        )
         return cutouts, offsets, sizes
 
     def forward(
@@ -134,12 +99,14 @@ class HDMultiClipEmbedder(nn.Module):
         # diff_image: DirectImageGuide,
         diff_image: DifferentiableImage,
         input=None,
-        device=DEVICE,
+        device=None,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         diff_image: (DifferentiableImage) input image
         returns images embeds
         """
+        if device is None:
+            device = self.device
         perceptors = self.perceptors
         side_x, side_y = diff_image.image_shape
         if input is None:
