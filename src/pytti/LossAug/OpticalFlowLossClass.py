@@ -98,6 +98,7 @@ def init_GMA(checkpoint_path=None, device=None):
             )
             args = parser.parse_args([])
             GMA = torch.nn.DataParallel(RAFTGMA(args))
+            # GMA = RAFTGMA(args)
             GMA.load_state_dict(torch.load(checkpoint_path))
             GMA.to(device)
             GMA.eval()
@@ -302,9 +303,11 @@ class OpticalFlowLoss(MSELoss):
             device=device,
         )
         if isinstance(image1, Image.Image):
-            image1 = TF.to_tensor(image1).unsqueeze(0).to(device)
+            image1 = TF.to_tensor(image1).unsqueeze(0)  # .to(device)
         if isinstance(image2, Image.Image):
-            image2 = TF.to_tensor(image2).unsqueeze(0).to(device)
+            image2 = TF.to_tensor(image2).unsqueeze(0)  # .to(device)
+        image1 = image1.to(device)
+        image2 = image2.to(device)
         padder = InputPadder(image1.shape)
         image1, image2 = padder.pad(image1, image2)
         flow_low, flow_up = GMA(image1, image2, iters=12, test_mode=True)
@@ -354,8 +357,10 @@ class OpticalFlowLoss(MSELoss):
             device = getattr(
                 self, "device", "cuda" if torch.cuda.is_available() else "cpu"
             )
+        logger.debug(device)
         if path is not None:
-            img = img.clone()
+            # img = img.clone()
+            img = img.clone().to(device)
             if not isinstance(device, torch.device):
                 device = torch.device(device)
             # logger.debug(device)
