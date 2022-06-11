@@ -152,7 +152,7 @@ class TargetFlowLoss(MSELoss):
         :param device: the device to run the training on
         """
         if device is None:
-            device = getattr(self, "device", flow.device)
+            device = getattr(self, "device", self.device)
         self.comp.set_(
             flow.movedim(-1, 1).to(device, memory_format=torch.channels_last)
         )
@@ -167,7 +167,7 @@ class TargetFlowLoss(MSELoss):
         :param device: The device to use for training
         """
         if device is None:
-            device = getattr(self, "device", last_step_pil.device)
+            device = getattr(self, "device", self.device)
         last_step = (
             TF.to_tensor(last_step_pil)
             .unsqueeze(0)
@@ -185,7 +185,7 @@ class TargetFlowLoss(MSELoss):
         :return: The loss function.
         """
         if device is None:
-            device = getattr(self, "device", input.device)
+            device = getattr(self, "device", self.device)
         init_GMA(
             # "GMA/checkpoints/gma-sintel.pth"
             device=device,
