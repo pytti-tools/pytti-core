@@ -4,8 +4,7 @@
 
 defaults:
   - _self_
-  - conf: ???
-#  - conf: demo
+  - conf: _empty
 
 #############
 ## Prompts ##
@@ -22,9 +21,26 @@ semantic_init_weight: ''
 
 ##################################
 
-image_model: Limited Palette
+# image_model:
+#   - Unlimited Palette
+#   - Limimted Palette
+#   - VQGAN
+image_model: Unlimited Palette
+
+# vqgan_model:
+#   - sflickr
+#   - imagenet
+#   - coco
+#   - wikiart
+#   - openimages
 vqgan_model: sflckr
-animation_mode: 3D
+
+# animation_mode:
+#    - off
+#    - Video Source
+#    - 2D
+#    - 3D
+animation_mode: off
 
 ##################################
 
@@ -41,6 +57,13 @@ seed: ${now:%f} # microsecond component of timestamp. Basically random.
 cutouts: 40
 cut_pow: 2
 cutout_border: 0.25
+
+# border_mode:
+#    - clamp
+#    - mirror
+#    - wrap
+#    - black
+#    - smear
 border_mode: clamp
 
 ##################################
@@ -53,36 +76,59 @@ field_of_view: 60
 near_plane: 1
 far_plane: 10000
 
-######################
-### Induced Motion ###
-######################
+#######################
+### Audioreactivity ###
+#######################
+
+input_audio: ""
+input_audio_offset: 0
+input_audio_filters: []
+
+# input_audio_filters:
+# - variable_name: fLo # The name of the variable we will use in the animation function
+#   f_center: 80       # Central frequency the filter will respond to (80Hz)
+#   f_width: 20        # The filter will pass signals from 70Hz to 90Hz
+#   order: 6           # The filter slope will be 6*6=36dB per octave
+
+pre_animation_steps: 50
+lock_camera: true
 
 #  _2d and _3d only apply to those animation modes
 
-translate_x: '-1700*sin(radians(1.5))'
+translate_x: '0'
 translate_y: '0'
-translate_z_3d: '(50+10*t)*sin(t/10*pi)**2'
-rotate_3d: '[cos(radians(1.5)), 0, -sin(radians(1.5))/sqrt(2), sin(radians(1.5))/sqrt(2)]'
-rotate_2d: '5'
+translate_z_3d: '0'
+rotate_3d: '[1, 0, 0, 0]'
+rotate_2d: '0'
 zoom_x_2d: '0'
 zoom_y_2d: '0'
 
+
+# sampling_mode:
+#    - nearest
+#    - bilinear
+#    - bicubic
 sampling_mode: bicubic
+
+# infill_mode:
+#    - mirror
+#    - wrap
+#    - black
+#    - smear
 infill_mode: wrap
-pre_animation_steps: 100
-lock_camera: true
 
 ##################################
+
+pixel_size: 1
+smoothing_weight: 0.02
 
 #######################
 ### Limited Palette ###
 #######################
 
-pixel_size: 4
-smoothing_weight: 0.02
 random_initial_palette: false
-palette_size: 6
-palettes: 9
+palette_size: 5
+palettes: 20
 gamma: 1
 hdr_weight: 0.01
 palette_normalization_weight: 0.2
@@ -117,8 +163,26 @@ flow_long_term_samples: 1
 
 ViTB32: true
 ViTB16: false
+ViTL14: false
+ViTL14_336px: false
 RN50: false
+RN101: false
 RN50x4: false
+RN50x16: false
+RN50x64: false
+
+# if using mmc to load clip models, the CLIP settings above will be ignored
+# to see what mmc models are available: python -m mmc.loaders
+# -- https://github.com/dmarx/Multi-Modal-Comparators
+use_mmc: false
+# use_mmc: true
+# mmc_models:
+# - architecture: clip
+#   publisher: openai
+#   id: RN50
+# - architecture: clip
+#   publisher: openai
+#   id: ViT-B/32
 
 ###############
 ### Outputs ###
@@ -131,7 +195,7 @@ clear_every: 0
 display_scale: 1
 save_every: 50
 
-backups: 5
+backups: 0
 show_graphs: false
 approximate_vram_usage: false
 use_tensorboard: false
@@ -154,11 +218,4 @@ models_parent_dir: ${user_cache:}
 ##########################
 
 gradient_accumulation_steps: 1
-
-##################
-
-# This shouldn't be necessary, but let's see if maybe it squashes test errors?
-
-input_audio: ""
-input_audio_offset: 0
-input_audio_filters: null
+device: 0
