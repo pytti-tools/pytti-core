@@ -44,8 +44,8 @@ animation_mode: off
 
 ##################################
 
-width: 180
-height: 112
+width: 512
+height: 512
 
 steps_per_scene: 100
 steps_per_frame: 50
@@ -76,18 +76,21 @@ field_of_view: 60
 near_plane: 1
 far_plane: 10000
 
-######################
-### Induced Motion ###
-######################
+#######################
+### Audioreactivity ###
+#######################
+
 input_audio: ""
 input_audio_offset: 0
 input_audio_filters: []
-# - variable_name: fLo
-#   f_center: 60
-#   f_width: 30
-#   order: 5
 
-pre_animation_steps: 100
+# input_audio_filters:
+# - variable_name: fLo # The name of the variable we will use in the animation function
+#   f_center: 80       # Central frequency the filter will respond to (80Hz)
+#   f_width: 20        # The filter will pass signals from 70Hz to 90Hz
+#   order: 6           # The filter slope will be 6*6=36dB per octave
+
+pre_animation_steps: 50
 lock_camera: true
 
 #  _2d and _3d only apply to those animation modes
@@ -116,15 +119,16 @@ infill_mode: wrap
 
 ##################################
 
+pixel_size: 1
+smoothing_weight: 0.02
+
 #######################
 ### Limited Palette ###
 #######################
 
-pixel_size: 4
-smoothing_weight: 0.02
 random_initial_palette: false
-palette_size: 6
-palettes: 9
+palette_size: 5
+palettes: 20
 gamma: 1
 hdr_weight: 0.01
 palette_normalization_weight: 0.2
@@ -167,6 +171,19 @@ RN50x4: false
 RN50x16: false
 RN50x64: false
 
+# if using mmc to load clip models, the CLIP settings above will be ignored
+# to see what mmc models are available: python -m mmc.loaders
+# -- https://github.com/dmarx/Multi-Modal-Comparators
+use_mmc: false
+# use_mmc: true
+# mmc_models:
+# - architecture: clip
+#   publisher: openai
+#   id: RN50
+# - architecture: clip
+#   publisher: openai
+#   id: ViT-B/32
+
 ###############
 ### Outputs ###
 ###############
@@ -178,7 +195,7 @@ clear_every: 0
 display_scale: 1
 save_every: 50
 
-backups: 0
+backups: 3
 show_graphs: false
 approximate_vram_usage: false
 use_tensorboard: false
@@ -201,3 +218,4 @@ models_parent_dir: ${user_cache:}
 ##########################
 
 gradient_accumulation_steps: 1
+device: 0
