@@ -16,6 +16,8 @@ from pytti import (
     freeze_vram_usage,
 )
 
+from pytti.image_models.pixel import PixelImage
+
 from pytti.Transforms import (
     animate_2d,
     zoom_2d,
