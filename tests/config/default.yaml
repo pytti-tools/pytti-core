@@ -44,8 +44,8 @@ animation_mode: off
 
 ##################################
 
-width: 180
-height: 112
+width: 512 #180
+height: 512 #112
 
 steps_per_scene: 100
 steps_per_frame: 50
@@ -120,6 +120,7 @@ infill_mode: wrap
 ##################################
 
 pixel_size: 1
+#pixel_size: 4
 smoothing_weight: 0.02
 
 #######################
@@ -195,7 +196,11 @@ clear_every: 0
 display_scale: 1
 save_every: 50
 
-backups: 0
+#backups: 0
+#backups: 1
+#backups: 2 # le broken
+backups: 3 # works
+#backups: 5 # works
 show_graphs: false
 approximate_vram_usage: false
 use_tensorboard: false
