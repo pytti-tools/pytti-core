@@ -118,8 +118,9 @@ class EMAParametersDict(ImageRepresentationalParameters):
         for param in self._container.values():
             param.update()
 
+    @property
     def average(self):
-        return {k: v.average() for k, v in self._container.items()}
+        return {k: v.average for k, v in self._container.items()}
 
     def set_(self, d):
         d_ = d
