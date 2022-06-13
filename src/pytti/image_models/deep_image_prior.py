@@ -132,9 +132,9 @@ class DeepImagePrior(EMAImage):
         with torch.cuda.amp.autocast():
             # out = net(net_input_noised * input_scale).float()
             # logger.debug(self.net)
-            logger.debug(self._net_input.shape)
+            # logger.debug(self._net_input.shape)
             out = self.net(self._net_input).float()
-            logger.debug(out.shape)
+            # logger.debug(out.shape)
         width, height = self.image_shape
         out = F.interpolate(out, (height, width), mode="nearest")
         return clamp_with_grad(out, 0, 1)
