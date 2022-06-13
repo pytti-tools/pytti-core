@@ -120,3 +120,10 @@ class DifferentiableImage(nn.Module):
             return self.decode_training_tensor()
         else:
             return self.decode_tensor()
+
+    @property
+    def representation_parameters(self):
+        # yeah I should really make this class an ABC
+        if not hasattr(self, "representation_parameters"):
+            raise NotImplementedError
+        return self.tensor
