@@ -11,7 +11,7 @@ class EMAImage(DifferentiableImage):
 
     def __init__(self, width, height, tensor, decay):
         super().__init__(width, height)
-        self.tensor = nn.Parameter(tensor)
+        # self.representation_parameters = nn.Parameter(tensor)
         self.register_buffer("biased", torch.zeros_like(tensor))
         self.register_buffer("average", torch.zeros_like(tensor))
         self.decay = decay
@@ -24,7 +24,7 @@ class EMAImage(DifferentiableImage):
             raise RuntimeError("update() should only be called during training")
         self.accum.mul_(self.decay)
         self.biased.mul_(self.decay)
-        self.biased.add_((1 - self.decay) * self.tensor)
+        self.biased.add_((1 - self.decay) * self.representation_parameters)
         self.average.copy_(self.biased)
         self.average.div_(1 - self.accum)
 
@@ -38,7 +38,7 @@ class EMAImage(DifferentiableImage):
         self.update()
 
     def decode_training_tensor(self):
-        return self.decode(self.tensor)
+        return self.decode(self.representation_parameters)
 
     def decode_tensor(self):
         return self.decode(self.average)
