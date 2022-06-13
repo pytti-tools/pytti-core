@@ -188,7 +188,7 @@ class VQGANImage(EMAImage):
     def clone(self):
         dummy = VQGANImage(*self.image_shape)
         with torch.no_grad():
-            dummy.tensor.set_(self.tensor.clone())
+            dummy.representation_parameters.set_(self.representation_parameters.clone())
             dummy.accum.set_(self.accum.clone())
             dummy.biased.set_(self.biased.clone())
             dummy.average.set_(self.average.clone())
@@ -198,7 +198,7 @@ class VQGANImage(EMAImage):
     def get_latent_tensor(self, detach=False, device=None):
         if device is None:
             device = self.device
-        z = self.tensor
+        z = self.representation_parameters
         if detach:
             z = z.detach()
         z_q = vector_quantize(z, self.vqgan_quantize_embedding).movedim(3, 1).to(device)
@@ -226,7 +226,7 @@ class VQGANImage(EMAImage):
         pil_image = pil_image.resize(self.image_shape, Image.LANCZOS)
         pil_image = TF.to_tensor(pil_image)
         z, *_ = self.vqgan_encode(pil_image.unsqueeze(0).to(device) * 2 - 1)
-        self.tensor.set_(z.movedim(1, 3))
+        self.representation_parameters.set_(z.movedim(1, 3))
         self.reset()
 
     @torch.no_grad()
@@ -245,7 +245,7 @@ class VQGANImage(EMAImage):
 
     @torch.no_grad()
     def encode_random(self):
-        self.tensor.set_(self.rand_latent())
+        self.representation_parameters.set_(self.rand_latent())
         self.reset()
 
     def rand_latent(self, device=None, vqgan_quantize_embedding=None):
