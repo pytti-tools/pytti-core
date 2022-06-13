@@ -45,3 +45,7 @@ class EMAImage(DifferentiableImage):
 
     def decode(self, tensor):
         raise NotImplementedError
+
+    @property
+    def representation_parameters(self):
+        return self.tensor
