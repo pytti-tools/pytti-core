@@ -48,6 +48,15 @@ class EMATensor(nn.Module):
         self.average.set_(other.average)
         # self.update()
 
+    @torch.no_grad()
+    def reset(self):
+        if not self.training:
+            raise RuntimeError("reset() should only be called during training")
+        self.biased.set_(torch.zeros_like(self.biased))
+        self.average.set_(torch.zeros_like(self.average))
+        self.accum.set_(torch.ones_like(self.accum))
+        self.update()
+
 
 class EMAParametersDict(ImageRepresentationalParameters):
     """
@@ -131,6 +140,10 @@ class EMAParametersDict(ImageRepresentationalParameters):
             # self._container[k].tensor.set_(v)
             # self._container[k].tensor.set_(v.tensor)
             # self._container[k].tensor.set_(v.tensor)
+
+    def reset(self):
+        for param in self._container.values():
+            param.reset()
 
 
 class EMAImage(DifferentiableImage):
