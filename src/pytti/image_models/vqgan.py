@@ -12,6 +12,7 @@ from pytti import replace_grad, clamp_with_grad, vram_usage_mode
 import torch
 from torch.nn import functional as F
 from pytti.image_models import EMAImage
+from pytti.image_models.differentiable_image import LatentTensor
 from torchvision.transforms import functional as TF
 from PIL import Image
 from omegaconf import OmegaConf
@@ -184,6 +185,15 @@ class VQGANImage(EMAImage):
         # self.vqgan_quantize_embedding = torch.nn.Parameter(vqgan_quantize_embedding)
         self.vqgan_decode = model.decode
         self.vqgan_encode = model.encode
+
+        #################################
+
+        self.image_representation_parameters = LatentTensor(
+            width=width,
+            height=height,
+            z=z,
+            device=self.device,
+        )
 
     def clone(self):
         dummy = VQGANImage(*self.image_shape)

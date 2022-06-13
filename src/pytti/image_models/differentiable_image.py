@@ -6,28 +6,22 @@ import numpy as np
 from PIL import Image
 from pytti.tensor_tools import named_rearrange
 
-SUPPORTED_MODES = ["L", "RGB", "I", "F"]
-
 
 class DifferentiableImage(nn.Module):
     """
     Base class for defining differentiable images
     width:        (positive integer) image width in pixels
     height:       (positive integer) image height in pixels
-    pixel_format: (string) PIL image mode. Either 'L','RGB','I', or 'F'
     """
 
-    def __init__(self, width: int, height: int, pixel_format: str = "RGB", device=None):
+    def __init__(self, width: int, height: int, device=None):
         super().__init__()
-        if pixel_format not in SUPPORTED_MODES:
-            raise ValueError(f"Pixel format {pixel_format} is not supported.")
         self.image_shape = (width, height)
-        self.pixel_format = format
         self.output_axes = ("x", "y", "s")
         self.lr = 0.02
         self.latent_strength = 0
         self.image_representation_parameters = ImageRepresentationalParameters(
-            width, height
+            width=width, height=height
         )
         if device is None:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -144,38 +138,35 @@ class ImageRepresentationalParameters(nn.Module):
     Base class for defining parameters of differentiable images
     width:        (positive integer) image width in pixels
     height:       (positive integer) image height in pixels
-    pixel_format: (string) PIL image mode. Either 'L','RGB','I', or 'F'
     """
 
-    def __init__(self, width: int, height: int, device=None):
+    def __init__(self, width: int, height: int, z=None, device=None):
         super().__init__()
-        self.image_shape = (width, height)
+        self.width = width
+        self.height = height
         if device is None:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.device = device
-        self._container = self._new()
+        self._container = self._new(z)
 
-    def _new(self):
-        width, height = self.image_shape
-        return nn.Parameter(
-            torch.zeros(1, 3, height, width).to(
+    def _new(self, z=None):
+        if z is None:
+            # I think this can all go in the constructor and doesn't need to call .to()
+            z = torch.zeros(1, 3, self.height, self.width).to(
                 device=self.device, memory_format=torch.channels_last
             )
-        )
-        # self.tensor = ImageRepresentationalParameters(width, height, pixel_format)
+        return nn.Parameter(z)
 
-    ################
-    def mul_():
-        pass
 
-    def add_():
-        pass
-
-    def copy():
-        pass
-
-    def div_():
-        pass
-
-    def set_():
-        pass
+class LatentTensor(ImageRepresentationalParameters):
+    pass
+    # def __init__(self, z, device=None):
+    #     super().__init__(z.shape[1], z.shape[2], device=device)
+    #     #self._container = z
+    #     self._z = z
+    # def _new(self):
+    #     return nn.Parameter(
+    #         torch.zeros(1, 3, height, width).to(
+    #             device=self.device, memory_format=torch.channels_last
+    #         )
+    #     )
