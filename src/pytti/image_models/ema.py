@@ -5,6 +5,8 @@ from pytti.image_models.differentiable_image import (
     ImageRepresentationalParameters,
 )
 
+from loguru import logger
+
 
 class EMATensor(nn.Module):
     """implmeneted by Katherine Crowson"""
@@ -84,6 +86,7 @@ class EMAParametersDict(nn.Module):
         d_ = {}
         if isinstance(z, EMAParametersDict):
             for k, v in z.items():
+                logger.debug(k)
                 d_[k] = EMATensor(v.tensor, self.decay)
         elif isinstance(z, EMATensor):
             d_["z"] = z.clone()
@@ -119,6 +122,9 @@ class EMAParametersDict(nn.Module):
         #        d_ = {name: EMATensor(param.data, self.decay) for name, param in z.items()}
         #    except AttributeError:
         #        d_ = {name: EMATensor(param, self.decay) for name, param in z.items()}
+        # logger.debug(d_.keys())
+        # d_ = torch.nn.ParameterDict(d_)
+        # d_ = torch.nn.ModuleDict(d_)
         return d_
 
     def clone(self):
@@ -135,9 +141,14 @@ class EMAParametersDict(nn.Module):
         return {k: v.average for k, v in self._container.items()}
 
     def set_(self, d):
+        if isinstance(d, torch.Tensor):
+            logger.debug(self._container)
+
         d_ = d
         if isinstance(d, EMAParametersDict):
             d_ = d._container
+        logger.debug(type(d_))
+        logger.debug(d_.shape)  # fuck it
         for k, v in d_.items():
             self._container[k].set_(v)
             # self._container[k].tensor.set_(v)

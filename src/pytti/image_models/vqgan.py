@@ -198,7 +198,7 @@ class VQGANImage(EMAImage):
         #    device=self.device,
         # )
 
-    def clone(self):
+    def clone(self) -> "VQGANImage":
         # dummy = VQGANImage(*self.image_shape)
         # with torch.no_grad():
         #     dummy.representation_parameters.set_(self.representation_parameters.clone())

@@ -369,6 +369,8 @@ def _main(cfg: DictConfig):
         # set up init image #
         #####################
 
+        logger.debug("configuring init image prompts")
+
         (
             init_augs,
             semantic_init_prompt,
@@ -387,16 +389,18 @@ def _main(cfg: DictConfig):
         )
 
         # other image prompts
+        logger.debug("configuring other image prompts")
 
         loss_augs.extend(
             type(img)
             .get_preferred_loss()
-            .TargetImage(p.strip(), img.image_shape, is_path=True)
+            .TargetImage(p.strip(), img.image_shape, is_path=True, img_model=type(img))
             for p in params.direct_image_prompts.split("|")
             if p.strip()
         )
 
         # stabilization
+        logger.debug("configuring stabilization losses")
         (
             loss_augs,
             img,
@@ -459,6 +463,8 @@ def _main(cfg: DictConfig):
         #     last_frame_semantic,
         #     img,
         # ) = loss_orch.configure_losses()
+
+        logger.debug("losses configured.")
 
         # Phase 4 - setup outputs
         ##########################

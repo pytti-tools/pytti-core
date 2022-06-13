@@ -40,7 +40,7 @@ class DifferentiableImage(nn.Module):
         """
         raise NotImplementedError
 
-    def clone(self):
+    def clone(self) -> "DifferentiableImage":
         raise NotImplementedError
 
     def get_latent_tensor(self, detach=False):
@@ -82,6 +82,13 @@ class DifferentiableImage(nn.Module):
         pass
 
     def make_latent(self, pil_image):
+        """
+        Takes a PIL image as input,
+        encodes it appropriately to the image representation (via .encode_image(pil_image)),
+        and returns the output of .get_latent_tensor(detach=True).
+
+        NB: default behavior of .get_latent_tensor() is to just return the output of .get_image_tensor()
+        """
         try:
             dummy = self.clone()
         except NotImplementedError:

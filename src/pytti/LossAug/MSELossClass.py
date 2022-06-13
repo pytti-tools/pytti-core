@@ -9,6 +9,8 @@ from pytti.rotoscoper import Rotoscoper
 from pytti import fetch, parse, vram_usage_mode
 import torch
 
+from loguru import logger
+
 
 class MSELoss(Loss):
     @torch.no_grad()
@@ -22,7 +24,16 @@ class MSELoss(Loss):
         device=None,
     ):
         super().__init__(weight, stop, name, device)
-        self.register_buffer("comp", comp)
+        logger.debug(type(comp))
+        _comp = self.default_comp() if comp is None else comp
+        try:
+            self.register_buffer("comp", comp)
+        except TypeError:
+            logger.debug(type(comp))
+            # _comp = self.default_comp() if comp is None else comp #comp._container #comp.image_representational_parameters #comp.default_comp()
+            logger.debug(type(_comp))
+            self.register_module("comp", _comp)
+            # self.register_buffer("comp", _comp)
         if image_shape is None:
             height, width = comp.shape[-2:]
             image_shape = (width, height)
@@ -31,11 +42,24 @@ class MSELoss(Loss):
         self.use_mask = False
 
     @classmethod
+    def default_comp(cls, img_model=None, *args, **kargs):
+        # logger.debug("default_comp")
+        # logger.debug(type(img_model))
+        # device = kargs.get("device", "cuda") if torch.cuda.is_available() else "cpu"
+        # if img_model is None:
+        #    return torch.zeros(1, 1, 1, 1, device=device)
+        # return img_model.default_comp(*args, **kargs)
+        return torch.zeros(1, 1, 1, 1, device=device)
+
+    @classmethod
     @vram_usage_mode("Loss Augs")
     @torch.no_grad()
     def TargetImage(
         cls, prompt_string, image_shape, pil_image=None, is_path=False, device=None
     ):
+        """
+        I guess this is like an alternate constructor for the class?
+        """
         # Why is this prompt parsing stuff here? Deprecate in favor of centralized
         # parsing functions (if feasible)
         text, weight, stop = parse(
@@ -87,10 +111,16 @@ class MSELoss(Loss):
 
     @classmethod
     def convert_input(cls, input, img):
+        """
+        does nothing?
+        """
         return input
 
     @classmethod
     def make_comp(cls, pil_image, device=None):
+        """
+        looks like this just converts a PIL image to a tensor
+        """
         if device is None:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         out = (
@@ -101,6 +131,9 @@ class MSELoss(Loss):
         return cls.convert_input(out, None)
 
     def set_comp(self, pil_image, device=None):
+        """
+        uses make_comp to convert a PIL image to a tensor, then assigns it to self.comp
+        """
         if device is None:
             device = self.device
         self.comp.set_(type(self).make_comp(pil_image, device=device))

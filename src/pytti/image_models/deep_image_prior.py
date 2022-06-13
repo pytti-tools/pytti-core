@@ -69,6 +69,7 @@ class DeepImagePrior(EMAImage):
         ema_val=0.99,
         ###########
         device="cuda",
+        image_encode_steps=30,  # 500, # setting this low for prototyping.
         **kwargs,
     ):
         # super(super(EMAImage)).__init__()
@@ -99,6 +100,7 @@ class DeepImagePrior(EMAImage):
         self.output_axes = ("n", "s", "y", "x")
         self.scale = scale
         self.device = device
+        self.image_encode_steps = image_encode_steps
 
         # self._net_input = torch.randn([1, input_depth, width, height], device=device)
 
@@ -115,6 +117,7 @@ class DeepImagePrior(EMAImage):
         self.net = net
         self._net_input = torch.randn([1, input_depth, width, height], device=device)
 
+        # I think this is the attribute I want to use for "comp" in the latent loss
         self.image_representation_parameters = EMAParametersDict(
             z=self.net, decay=ema_val, device=device
         )
@@ -141,21 +144,27 @@ class DeepImagePrior(EMAImage):
         # return out
 
     def get_latent_tensor(self, detach=False):
+        # this will get used as the "comp" downstream
         # pass
         net = self.net
         lr = self.lr
         offset_lr_fac = self.offset_lr_fac
-        params = [
-            {"params": get_non_offset_params(net), "lr": lr},
-            {"params": get_offset_params(net), "lr": lr * offset_lr_fac},
-        ]
+        # params = self.image_representation_parameters._container
+        # params = [
+        #    {"params": get_non_offset_params(net), "lr": lr},
+        #    {"params": get_offset_params(net), "lr": lr * offset_lr_fac},
+        # ]
         # params = torch.cat(
         #    get_non_offset_params(net),
         #    get_offset_params(net)
         # )
-        return params
+        # return params
+        # return self.net.params()
+        # return self.net.parameters()
+        # return self.image_representation_parameters # throws error from LatentLossClass.get_loss() --> self.comp.set_(latent.clone())
+        return self.representation_parameters
 
-    def clone(self):
+    def clone(self) -> "DeepImagePrior":
         # dummy = VQGANImage(*self.image_shape)
         # with torch.no_grad():
         #     dummy.representation_parameters.set_(self.representation_parameters.clone())
@@ -170,7 +179,8 @@ class DeepImagePrior(EMAImage):
             dummy.image_representation_parameters.set_(
                 self.image_representation_parameters.clone()
             )
-        return dummy
+        return dummy  # output of this function is expected to have an encode_image() method
+        # return dummy.image_representation_parameters
 
     # def clone(self):
     #     # dummy = super().__init__(*self.image_shape)
@@ -193,6 +203,34 @@ class DeepImagePrior(EMAImage):
 
         return LatentLoss
 
+    def make_latent(self, pil_image):
+        """
+        Takes a PIL image as input,
+        encodes it appropriately to the image representation (via .encode_image(pil_image)),
+        and returns the output of .get_latent_tensor(detach=True).
+
+        NB: default behavior of .get_latent_tensor() is to just return the output of .get_image_tensor()
+        """
+        try:
+            dummy = self.clone()
+        except NotImplementedError:
+            dummy = copy.deepcopy(self)
+        dummy.encode_image(pil_image)
+        # return dummy.get_latent_tensor(detach=True)
+        return dummy.image_representation_parameters
+
+    @classmethod
+    def default_comp(*args, **kargs):
+        device = kargs.get("device", "cuda") if torch.cuda.is_available() else "cpu"
+        net = load_dip(
+            input_depth=32,
+            num_scales=7,
+            offset_type="none",
+            offset_groups=4,
+            device=device,
+        )
+        return EMAParametersDict(z=net, decay=0.99, device=device)
+
     def encode_image(self, pil_image, device="cuda"):
         """
         Encodes the image into a tensor.
@@ -205,12 +243,22 @@ class DeepImagePrior(EMAImage):
         width, height = self.image_shape
         scale = self.scale
 
-        mse = MSELoss.TargetImage("HSV loss", self.image_shape, pil_image)
+        mse = MSELoss.TargetImage("MSE loss", self.image_shape, pil_image)
 
         from pytti.ImageGuide import DirectImageGuide
 
+        params = [
+            {"params": get_non_offset_params(self.net), "lr": self.lr},
+            {"params": get_offset_params(self.net), "lr": self.lr * self.offset_lr_fac},
+        ]
+
         guide = DirectImageGuide(
-            self, None, optimizer=optim.Adam(self.get_latent_tensor())
+            self,
+            None,
+            optimizer=optim.Adam(
+                # self.get_latent_tensor()
+                params
+            ),
         )
         # why is there a magic number here?
-        guide.run_steps(201, [], [], [mse])
+        guide.run_steps(self.image_encode_steps, [], [], [mse])
