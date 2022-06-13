@@ -158,15 +158,15 @@ class ImageRepresentationalParameters(nn.Module):
         return nn.Parameter(z)
 
 
-class LatentTensor(ImageRepresentationalParameters):
-    pass
-    # def __init__(self, z, device=None):
-    #     super().__init__(z.shape[1], z.shape[2], device=device)
-    #     #self._container = z
-    #     self._z = z
-    # def _new(self):
-    #     return nn.Parameter(
-    #         torch.zeros(1, 3, height, width).to(
-    #             device=self.device, memory_format=torch.channels_last
-    #         )
-    #     )
+# class LatentTensor(ImageRepresentationalParameters):
+#    pass
+# def __init__(self, z, device=None):
+#     super().__init__(z.shape[1], z.shape[2], device=device)
+#     #self._container = z
+#     self._z = z
+# def _new(self):
+#     return nn.Parameter(
+#         torch.zeros(1, 3, height, width).to(
+#             device=self.device, memory_format=torch.channels_last
+#         )
+#     )

@@ -60,6 +60,14 @@ class EMAParametersDict(ImageRepresentationalParameters):
                 d_ = {name: EMATensor(param) for name, param in z.named_parameters()}
         return d_
 
+    def clone(self):
+        d_ = {k: v.clone() for k, v in self._container.items()}
+        return EMAParametersDict(z=d_, decay=self.decay, device=self.device)
+
+    def update(self):
+        for param in self._container.values():
+            param.update()
+
 
 class EMAImage(DifferentiableImage):
     def __init__(self, width, height, tensor, decay, device=None):
@@ -67,6 +75,10 @@ class EMAImage(DifferentiableImage):
         self.image_representation_parameters = EMAParametersDict(
             z=tensor, decay=decay, device=device
         )
+
+
+class LatentTensor(EMAImage):
+    pass
 
 
 class EMAImage_old(DifferentiableImage):

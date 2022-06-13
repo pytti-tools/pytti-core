@@ -11,8 +11,11 @@ from taming.models import cond_transformer, vqgan
 from pytti import replace_grad, clamp_with_grad, vram_usage_mode
 import torch
 from torch.nn import functional as F
-from pytti.image_models import EMAImage
-from pytti.image_models.differentiable_image import LatentTensor
+
+# from pytti.image_models import EMAImage
+# from pytti.image_models.differentiable_image import LatentTensor
+# from pytti.image_models.differentiable_image import DifferentiableImage
+from pytti.image_models.ema import EMAImage
 from torchvision.transforms import functional as TF
 from PIL import Image
 from omegaconf import OmegaConf
@@ -188,12 +191,12 @@ class VQGANImage(EMAImage):
 
         #################################
 
-        self.image_representation_parameters = LatentTensor(
-            width=width,
-            height=height,
-            z=z,
-            device=self.device,
-        )
+        # self.image_representation_parameters = LatentTensor(
+        #    width=width,
+        #    height=height,
+        #    z=z,
+        #    device=self.device,
+        # )
 
     def clone(self):
         dummy = VQGANImage(*self.image_shape)
@@ -219,6 +222,12 @@ class VQGANImage(EMAImage):
         from pytti.LossAug.LatentLossClass import LatentLoss
 
         return LatentLoss
+
+    def decode_training_tensor(self):
+        return self.decode(self.representation_parameters)
+
+    def decode_tensor(self):
+        return self.decode(self.average)
 
     def decode(self, z, device=None):
         if device is None:
