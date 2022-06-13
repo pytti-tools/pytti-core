@@ -209,12 +209,21 @@ class VQGANImage(EMAImage):
         # return dummy
         dummy = VQGANImage(*self.image_shape)
         with torch.no_grad():
-            dummy.representation_parameters.set_(self.representation_parameters.clone())
+            # dummy.representation_parameters.set_(self.representation_parameters.clone())
+            dummy.image_representation_parameters.set_(
+                self.image_representation_parameters.clone()
+            )
         return dummy
+
+    @property
+    def representation_parameters(self):
+        return self.image_representation_parameters._container.get("z").tensor
 
     def get_latent_tensor(self, detach=False, device=None):
         if device is None:
             device = self.device
+        # z = self.representation_parameters._container.get("z")
+        # z = self.image_representation_parameters._container.get("z").tensor
         z = self.representation_parameters
         if detach:
             z = z.detach()
@@ -231,7 +240,9 @@ class VQGANImage(EMAImage):
         return self.decode(self.representation_parameters)
 
     def decode_tensor(self):
-        return self.decode(self.average)
+        # return self.decode(self.average)
+        # return self.decode(self.representation_parameters.average)
+        return self.decode(self.image_representation_parameters.average)
 
     def decode(self, z, device=None):
         if device is None:

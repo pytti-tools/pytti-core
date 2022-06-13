@@ -34,6 +34,20 @@ class EMATensor(nn.Module):
             return self.tensor
         return self.average
 
+    def clone(self):
+        new = EMATensor(self.tensor.clone(), self.decay)
+        new.accum.copy_(self.accum)
+        new.biased.copy_(self.biased)
+        new.average.copy_(self.average)
+        return new
+
+    def set_(self, other):
+        self.tensor.set_(other.tensor)
+        self.accum.set_(other.accum)
+        self.biased.set_(other.biased)
+        self.average.set_(other.average)
+        # self.update()
+
 
 class EMAParametersDict(ImageRepresentationalParameters):
     """
@@ -54,19 +68,68 @@ class EMAParametersDict(ImageRepresentationalParameters):
             z = torch.zeros(1, 3, self.height, self.width).to(
                 device=self.device, memory_format=torch.channels_last
             )
-        d_ = z
-        if not isinstance(z, dict):
-            if hasattr(z, "named_parameters"):
-                d_ = {name: EMATensor(param) for name, param in z.named_parameters()}
+        # d_ = z
+        d_ = {}
+        if isinstance(z, EMAParametersDict):
+            for k, v in z.items():
+                d_[k] = EMATensor(v.tensor, self.decay)
+        elif isinstance(z, EMATensor):
+            d_["z"] = z.clone()
+        elif hasattr(z, "named_parameters"):
+            d_ = {
+                name: EMATensor(param, decay=self.decay)
+                for name, param in z.named_parameters()
+            }
+        elif isinstance(z, dict):
+            print(type(z))
+            for k, v in z.items():
+                # print(k)
+                # print(type(v))
+                # d_[k] = EMATensor(v, self.decay)
+                # d_[k] = EMATensor(v.clone(), self.decay)
+                if isinstance(v, EMATensor):
+                    d_[k] = v.clone()
+        elif isinstance(z, torch.Tensor):
+            d_["z"] = EMATensor(z, decay=self.decay)
+        else:
+            raise ValueError(
+                "z must be a dict, torch.nn.Module, EMATensor, EMAParametersDict, or torch.Tensor"
+            )
+
+        # if not isinstance(z, dict):
+        ##if hasattr(z, "named_parameters"):
+        ##    d_ = {name: EMATensor(param, decay=self.decay) for name, param in z.named_parameters()}
+        # else:
+        #    d_['z'] = EMATensor(z, decay=self.decay)
+        # else:
+        #    #d_ = {name: EMATensor(param, self.decay) for name, param in z.items()}
+        #    try:
+        #        d_ = {name: EMATensor(param.data, self.decay) for name, param in z.items()}
+        #    except AttributeError:
+        #        d_ = {name: EMATensor(param, self.decay) for name, param in z.items()}
         return d_
 
     def clone(self):
+        # d_ = {k: v.clone() for k, v in self._container.items()}
         d_ = {k: v.clone() for k, v in self._container.items()}
         return EMAParametersDict(z=d_, decay=self.decay, device=self.device)
 
     def update(self):
         for param in self._container.values():
             param.update()
+
+    def average(self):
+        return {k: v.average() for k, v in self._container.items()}
+
+    def set_(self, d):
+        d_ = d
+        if isinstance(d, EMAParametersDict):
+            d_ = d._container
+        for k, v in d_.items():
+            self._container[k].set_(v)
+            # self._container[k].tensor.set_(v)
+            # self._container[k].tensor.set_(v.tensor)
+            # self._container[k].tensor.set_(v.tensor)
 
 
 class EMAImage(DifferentiableImage):
