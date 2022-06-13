@@ -199,13 +199,17 @@ class VQGANImage(EMAImage):
         # )
 
     def clone(self):
+        # dummy = VQGANImage(*self.image_shape)
+        # with torch.no_grad():
+        #     dummy.representation_parameters.set_(self.representation_parameters.clone())
+        #     dummy.accum.set_(self.accum.clone())
+        #     dummy.biased.set_(self.biased.clone())
+        #     dummy.average.set_(self.average.clone())
+        #     dummy.decay = self.decay
+        # return dummy
         dummy = VQGANImage(*self.image_shape)
         with torch.no_grad():
             dummy.representation_parameters.set_(self.representation_parameters.clone())
-            dummy.accum.set_(self.accum.clone())
-            dummy.biased.set_(self.biased.clone())
-            dummy.average.set_(self.average.clone())
-            dummy.decay = self.decay
         return dummy
 
     def get_latent_tensor(self, detach=False, device=None):
