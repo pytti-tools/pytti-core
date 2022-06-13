@@ -17,7 +17,7 @@ class DifferentiableImage(nn.Module):
     pixel_format: (string) PIL image mode. Either 'L','RGB','I', or 'F'
     """
 
-    def __init__(self, width: int, height: int, pixel_format: str = "RGB"):
+    def __init__(self, width: int, height: int, pixel_format: str = "RGB", device=None):
         super().__init__()
         if pixel_format not in SUPPORTED_MODES:
             raise ValueError(f"Pixel format {pixel_format} is not supported.")
@@ -29,6 +29,8 @@ class DifferentiableImage(nn.Module):
         self.image_representation_parameters = ImageRepresentationalParameters(
             width, height
         )
+        if device is None:
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # self.tensor = self.image_representation_parameters._new()
 
     def decode_training_tensor(self):
@@ -145,9 +147,12 @@ class ImageRepresentationalParameters(nn.Module):
     pixel_format: (string) PIL image mode. Either 'L','RGB','I', or 'F'
     """
 
-    def __init__(self, width: int, height: int):
+    def __init__(self, width: int, height: int, device=None):
         super().__init__()
         self.image_shape = (width, height)
+        if device is None:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
         self._container = self._new()
 
     def _new(self):
