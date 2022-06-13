@@ -1,4 +1,6 @@
 import copy
+
+import torch
 from torch import nn
 import numpy as np
 from PIL import Image
@@ -24,6 +26,10 @@ class DifferentiableImage(nn.Module):
         self.output_axes = ("x", "y", "s")
         self.lr = 0.02
         self.latent_strength = 0
+        self.image_representation_parameters = ImageRepresentationalParameters(
+            width, height
+        )
+        # self.tensor = self.image_representation_parameters._new()
 
     def decode_training_tensor(self):
         """
@@ -123,7 +129,48 @@ class DifferentiableImage(nn.Module):
 
     @property
     def representation_parameters(self):
-        # yeah I should really make this class an ABC
-        if not hasattr(self, "representation_parameters"):
-            raise NotImplementedError
-        return self.tensor
+        return self.image_representation_parameters._container
+
+        ## yeah I should really make this class an ABC
+        # if not hasattr(self, "representation_parameters"):
+        #    raise NotImplementedError
+        # return self.tensor
+
+
+class ImageRepresentationalParameters(nn.Module):
+    """
+    Base class for defining parameters of differentiable images
+    width:        (positive integer) image width in pixels
+    height:       (positive integer) image height in pixels
+    pixel_format: (string) PIL image mode. Either 'L','RGB','I', or 'F'
+    """
+
+    def __init__(self, width: int, height: int):
+        super().__init__()
+        self.image_shape = (width, height)
+        self._container = self._new()
+
+    def _new(self):
+        width, height = self.image_shape
+        return nn.Parameter(
+            torch.zeros(1, 3, height, width).to(
+                device=self.device, memory_format=torch.channels_last
+            )
+        )
+        # self.tensor = ImageRepresentationalParameters(width, height, pixel_format)
+
+    ################
+    def mul_():
+        pass
+
+    def add_():
+        pass
+
+    def copy():
+        pass
+
+    def div_():
+        pass
+
+    def set_():
+        pass
