@@ -242,7 +242,8 @@ class VQGANImage(EMAImage):
     def decode_tensor(self):
         # return self.decode(self.average)
         # return self.decode(self.representation_parameters.average)
-        return self.decode(self.image_representation_parameters.average)
+        # return self.decode(self.image_representation_parameters.average)
+        return self.decode(self.image_representation_parameters.average["z"])
 
     def decode(self, z, device=None):
         if device is None:
