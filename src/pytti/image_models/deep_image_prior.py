@@ -8,7 +8,9 @@ from pytti import clamp_with_grad
 import torch
 from torch import nn
 from torchvision.transforms import functional as TF
-from pytti.image_models import DifferentiableImage, EMAImage
+
+# from pytti.image_models import DifferentiableImage
+from pytti.image_models.ema import EMAImage, EMAParametersDict
 from PIL import Image
 from torch.nn import functional as F
 
@@ -44,8 +46,8 @@ def load_dip(input_depth, num_scales, offset_type, offset_groups, device):
     return dip_net
 
 
-# class DeepImagePrior(EMAImage):
-class DeepImagePrior(DifferentiableImage):
+class DeepImagePrior(EMAImage):
+    # class DeepImagePrior(DifferentiableImage):
     """
     https://github.com/nousr/deep-image-prior/
     """
@@ -69,7 +71,14 @@ class DeepImagePrior(DifferentiableImage):
         device="cuda",
         **kwargs,
     ):
-        super().__init__(width * scale, height * scale)
+        # super(super(EMAImage)).__init__()
+        nn.Module.__init__(self)
+        super().__init__(
+            width=width * scale,
+            height=height * scale,
+            decay=ema_val,
+            device=device,
+        )
         net = load_dip(
             input_depth=input_depth,
             num_scales=num_scales,
@@ -85,13 +94,13 @@ class DeepImagePrior(DifferentiableImage):
         # z = torch.cat(get_non_offset_params(net), get_offset_params(net))
         # logger.debug(z.shape)
         # super().__init__(width * scale, height * scale, z, ema_val)
-        self.net = net
+        # self.net = net
         # self.tensor = self.net.params()
         self.output_axes = ("n", "s", "y", "x")
         self.scale = scale
         self.device = device
 
-        self._net_input = torch.randn([1, input_depth, width, height], device=device)
+        # self._net_input = torch.randn([1, input_depth, width, height], device=device)
 
         self.lr = lr
         self.offset_lr_fac = offset_lr_fac
@@ -99,6 +108,24 @@ class DeepImagePrior(DifferentiableImage):
         #    {'params': get_non_offset_params(net), 'lr': lr},
         #    {'params': get_offset_params(net), 'lr': lr * offset_lr_fac}
         # ]
+        # z = {
+        #    'non_offset':get_non_offset_params(net),
+        #    'offset':get_offset_params(net),
+        # }
+        self.net = net
+        self._net_input = torch.randn([1, input_depth, width, height], device=device)
+
+        self.image_representation_parameters = EMAParametersDict(
+            z=self.net, decay=ema_val, device=device
+        )
+
+        # super().__init__(
+        #    width = width * scale,
+        #    height = height * scale,
+        #    tensor = z,
+        #    decay = ema_val,
+        #    device=device,
+        # )
 
     # def get_image_tensor(self):
     def decode_tensor(self):
@@ -129,16 +156,33 @@ class DeepImagePrior(DifferentiableImage):
         return params
 
     def clone(self):
-        # dummy = super().__init__(*self.image_shape)
+        # dummy = VQGANImage(*self.image_shape)
         # with torch.no_grad():
-        #    #dummy.tensor.set_(self.tensor.clone())
-        #    dummy.net.copy_(self.net)
-        #    dummy.accum.set_(self.accum.clone())
-        #    dummy.biased.set_(self.biased.clone())
-        #    dummy.average.set_(self.average.clone())
-        #    dummy.decay = self.decay
-        dummy = deepcopy(self)
+        #     dummy.representation_parameters.set_(self.representation_parameters.clone())
+        #     dummy.accum.set_(self.accum.clone())
+        #     dummy.biased.set_(self.biased.clone())
+        #     dummy.average.set_(self.average.clone())
+        #     dummy.decay = self.decay
+        # return dummy
+        dummy = DeepImagePrior(*self.image_shape)
+        with torch.no_grad():
+            # dummy.representation_parameters.set_(self.representation_parameters.clone())
+            dummy.image_representation_parameters.set_(
+                self.image_representation_parameters.clone()
+            )
         return dummy
+
+    # def clone(self):
+    #     # dummy = super().__init__(*self.image_shape)
+    #     # with torch.no_grad():
+    #     #    #dummy.tensor.set_(self.tensor.clone())
+    #     #    dummy.net.copy_(self.net)
+    #     #    dummy.accum.set_(self.accum.clone())
+    #     #    dummy.biased.set_(self.biased.clone())
+    #     #    dummy.average.set_(self.average.clone())
+    #     #    dummy.decay = self.decay
+    #     dummy = deepcopy(self)
+    #     return dummy
 
     def encode_random(self):
         pass

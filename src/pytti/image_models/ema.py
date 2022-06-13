@@ -58,13 +58,15 @@ class EMATensor(nn.Module):
         self.update()
 
 
-class EMAParametersDict(ImageRepresentationalParameters):
+# class EMAParametersDict(ImageRepresentationalParameters):
+class EMAParametersDict(nn.Module):
     """
     LatentTensor with a singleton dimension for the EMAParameters
     """
 
     def __init__(self, z=None, decay=0.99, device=None):
-        super(ImageRepresentationalParameters).__init__()
+        # super(ImageRepresentationalParameters).__init__()
+        super().__init__()
         self.decay = decay
         if device is None:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -74,9 +76,10 @@ class EMAParametersDict(ImageRepresentationalParameters):
     def _new(self, z=None):
         if z is None:
             # I think this can all go in the constructor and doesn't need to call .to()
-            z = torch.zeros(1, 3, self.height, self.width).to(
-                device=self.device, memory_format=torch.channels_last
-            )
+            return nn.Parameter()
+            # z = torch.zeros(1, 3, self.height, self.width).to(
+            #    device=self.device, memory_format=torch.channels_last
+            # )
         # d_ = z
         d_ = {}
         if isinstance(z, EMAParametersDict):
@@ -147,7 +150,7 @@ class EMAParametersDict(ImageRepresentationalParameters):
 
 
 class EMAImage(DifferentiableImage):
-    def __init__(self, width, height, tensor, decay, device=None):
+    def __init__(self, width, height, tensor=None, decay=0.99, device=None):
         super().__init__(width=width, height=height, device=device)
         self.image_representation_parameters = EMAParametersDict(
             z=tensor, decay=decay, device=device
