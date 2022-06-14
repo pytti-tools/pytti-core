@@ -33,7 +33,7 @@ def build_loss(weight_name, weight, name, img, pil_target):
         f"{weight_name} {name}:{weight}",
         img.image_shape,
         pil_target,
-        img_model=img,  # type(img)
+        # img_model=img,  # type(img)
     )
     out.set_enabled(pil_target is not None)
     return out

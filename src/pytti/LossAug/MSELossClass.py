@@ -43,7 +43,7 @@ class MSELoss(Loss):
 
     @classmethod
     def default_comp(cls, img_model=None, *args, **kargs):
-        # logger.debug("default_comp")
+        logger.debug("default_comp")
         # logger.debug(type(img_model))
         # device = kargs.get("device", "cuda") if torch.cuda.is_available() else "cpu"
         # if img_model is None:

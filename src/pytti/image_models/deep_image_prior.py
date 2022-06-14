@@ -131,7 +131,10 @@ class DeepImagePrior(EMAImage):
         # )
 
     # def get_image_tensor(self):
-    def decode_tensor(self):
+    def decode_tensor(self, input_latent=None):
+        """
+        Generates the image tensor from the attached DIP representation
+        """
         with torch.cuda.amp.autocast():
             # out = net(net_input_noised * input_scale).float()
             # logger.debug(self.net)
@@ -199,9 +202,12 @@ class DeepImagePrior(EMAImage):
 
     @classmethod
     def get_preferred_loss(cls):
-        from pytti.LossAug.LatentLossClass import LatentLoss
+        from pytti.LossAug.LatentLossClass import LatentLoss, LatentLossDIP
 
-        return LatentLoss
+        return LatentLossDIP  # LatentLoss
+
+        # it'll be stupid complicated, but I could put a closure in here...
+        # yeah no fuck that. I'm not adding complexity to enable deep image. I need to simplify how loss stuff works FIRST.
 
     def make_latent(self, pil_image):
         """
@@ -233,7 +239,7 @@ class DeepImagePrior(EMAImage):
 
     def encode_image(self, pil_image, device="cuda"):
         """
-        Encodes the image into a tensor.
+        Fits the attached DIP model representation to the input pil_image.
 
         :param pil_image: The image to encode
         :param smart_encode: If True, the pallet will be optimized to match the image, defaults to True
@@ -262,3 +268,19 @@ class DeepImagePrior(EMAImage):
         )
         # why is there a magic number here?
         guide.run_steps(self.image_encode_steps, [], [], [mse])
+
+
+##############################################################################################################################
+
+# round three
+
+# gonna implement this the way that makes sense to me, and then see if I can't square-peg-round-hole it
+class DipSimpleLatentLoss(nn.Module):
+    def __init__(
+        self,
+        net,
+        image_shape,
+        pil_image=None,
+    ):
+        super().__init__()
+        self.net = net

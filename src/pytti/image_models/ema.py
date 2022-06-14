@@ -143,12 +143,14 @@ class EMAParametersDict(nn.Module):
     def set_(self, d):
         if isinstance(d, torch.Tensor):
             logger.debug(self._container)
+            logger.debug(d.shape)
 
         d_ = d
         if isinstance(d, EMAParametersDict):
             d_ = d._container
         logger.debug(type(d_))
-        logger.debug(d_.shape)  # fuck it
+        # logger.debug(d_.shape)  # fuck it
+        logger.debug(type(self._container))
         for k, v in d_.items():
             self._container[k].set_(v)
             # self._container[k].tensor.set_(v)
