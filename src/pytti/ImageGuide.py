@@ -320,6 +320,8 @@ class DirectImageGuide:
                     for prompt in prompts
                 }
 
+                # oh.. uh... image_losses and auglosses don't actually depend on an embedder being attached.
+                # Maybe this is why limited palette wasn't initializing properly?
                 losses, losses_raw = zip(
                     *map(unpack_dict, [prompt_losses, aug_losses, image_losses])
                     # *map(unpack_dict, [prompt_losses])
