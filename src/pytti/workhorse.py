@@ -42,6 +42,7 @@ from pytti.image_models import PixelImage, RGBImage, VQGANImage
 from pytti.ImageGuide import DirectImageGuide
 from pytti.Perceptor.Embedder import HDMultiClipEmbedder
 from pytti.Perceptor.Prompt import parse_prompt
+from pytti.eval_tools import parse_subprompt
 
 from pytti import (
     fetch,
@@ -384,13 +385,38 @@ def _main(cfg: DictConfig):
 
         # other image prompts
 
-        loss_augs.extend(
-            type(img)
-            .get_preferred_loss()
-            .TargetImage(p.strip(), img.image_shape, is_path=True)
-            for p in params.direct_image_prompts.split("|")
-            if p.strip()
-        )
+        # loss_augs.extend(
+        #     type(img)
+        #     .get_preferred_loss()
+        #     .TargetImage(p.strip(), img.image_shape, is_path=True)
+        #     for p in params.direct_image_prompts.split("|")
+        #     if p.strip()
+        # )
+
+        # uh... I'm not sure I actually test direct_image_prompts anywhere. ah well. fuck it.
+        for p in params.direct_image_prompts.split("|"):
+            prompt_string = p.strip()
+            if prompt_string:
+                loss_factory = type(img).get_preferred_loss()
+                text, weight, stop, mask, pil_image = parse_subprompt(
+                    prompt_string, is_path=is_path, pil_image=pil_image
+                )
+
+                if pil_image:
+                    im = pil_image.resize(image_shape, Image.LANCZOS)
+                    comp = loss_factory.make_comp(im)
+                else:
+                    comp = torch.zeros(1, 1, 1, 1, device=_device)
+
+                if image_shape is None:
+                    image_shape = pil_image.size
+                out = loss_factory(
+                    comp, weight, stop, text + " (direct)", image_shape, device=_device
+                )
+                out.set_mask(mask)
+                loss_augs.append(out)
+
+        ###############################
 
         # stabilization
         (

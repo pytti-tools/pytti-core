@@ -6,7 +6,8 @@ from pytti.LossAug.BaseLossClass import Loss
 
 # from pytti.Notebook import Rotoscoper
 from pytti.rotoscoper import Rotoscoper
-from pytti import fetch, parse, vram_usage_mode
+from pytti import fetch, vram_usage_mode
+from pytti.eval_tools import parse, parse_subprompt
 import torch
 
 
@@ -36,25 +37,18 @@ class MSELoss(Loss):
     def TargetImage(
         cls, prompt_string, image_shape, pil_image=None, is_path=False, device=None
     ):
-        # Why is this prompt parsing stuff here? Deprecate in favor of centralized
-        # parsing functions (if feasible)
-        text, weight, stop = parse(
-            prompt_string, r"(?<!^http)(?<!s):|:(?!/)", ["", "1", "-inf"]
-        )
-        weight, mask = parse(weight, r"_", ["1", ""])
-        text = text.strip()
-        mask = mask.strip()
         if device is None:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        if pil_image is None and text != "" and is_path:
-            pil_image = Image.open(fetch(text)).convert("RGB")
+        text, weight, stop, mask, pil_image = parse_subprompt(
+            prompt_string, is_path=is_path, pil_image=pil_image
+        )
+
+        if pil_image:
             im = pil_image.resize(image_shape, Image.LANCZOS)
             comp = cls.make_comp(im)
-        elif pil_image is None:
-            comp = torch.zeros(1, 1, 1, 1, device=device)
         else:
-            im = pil_image.resize(image_shape, Image.LANCZOS)
-            comp = cls.make_comp(im)
+            comp = torch.zeros(1, 1, 1, 1, device=device)
+
         if image_shape is None:
             image_shape = pil_image.size
         out = cls(comp, weight, stop, text + " (direct)", image_shape, device=device)
