@@ -36,6 +36,23 @@ def test_direct_init_weight():
 scenes: a photograph of an apple
 direct_image_prompts: '{img_fpath}:-1:-.5'
 direct_init_weight: 1
+semantic_iniit_weight: 1
+device: '{TEST_DEVICE}'
+"""
+    run_cfg(cfg_str)
+
+
+def test_stabilization_weights():
+    cfg_str = f"""# @package _global_
+scenes: a photograph of an apple
+depth_stabilization_weight: 1
+edge_stabilization_weight: 1
+direct_stabilization_weight: 1
+semantic_stabilization_weight: 1
+flow_stabilization_weight: 1
+steps_per_frame: 10
+steps_per_scene: 150
+#flow_long_term_samples: 1
 device: '{TEST_DEVICE}'
 """
     run_cfg(cfg_str)
