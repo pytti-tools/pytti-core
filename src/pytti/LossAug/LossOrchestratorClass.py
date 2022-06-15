@@ -44,7 +44,7 @@ def build_loss(
     # )
     if pil_target is not None:
         resized = pil_target.resize(img.image_shape, Image.LANCZOS)
-        comp = loss.make_comp(resized)
+        comp = loss.make_comp(resized, device=device)
     else:
         # comp = loss.get_default_comp()
         comp = torch.zeros(1, 1, 1, 1, device=device)
