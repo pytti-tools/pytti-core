@@ -7,6 +7,8 @@ from pytti.image_models import PixelImage, RGBImage
 # from pytti.LossAug import build_loss
 from pytti.LossAug import TVLoss, HSVLoss, OpticalFlowLoss, TargetFlowLoss
 from pytti.Perceptor.Prompt import parse_prompt
+from pytti.eval_tools import parse_subprompt
+
 
 from pytti.LossAug.BaseLossClass import Loss
 from pytti.LossAug.DepthLossClass import DepthLoss
@@ -125,20 +127,36 @@ def configure_stabilization_augs(img, init_image_pil, params, loss_augs):
 
 
 def configure_optical_flows(img, params, loss_augs):
-
     if params.animation_mode == "Video Source":
         if params.flow_stabilization_weight == "":
             params.flow_stabilization_weight = "0"
-        optical_flows = [
-            OpticalFlowLoss.TargetImage(
-                f"optical flow stabilization (frame {-2**i}):{params.flow_stabilization_weight}",
-                img.image_shape,
-            )
-            for i in range(params.flow_long_term_samples + 1)
-        ]
-        for optical_flow in optical_flows:
+        # optical_flows = [
+        #     OpticalFlowLoss.TargetImage(
+        #         f"optical flow stabilization (frame {-2**i}):{params.flow_stabilization_weight}",
+        #         img.image_shape,
+        #     )
+        #     for i in range(params.flow_long_term_samples + 1)
+        # ]
+        optical_flows = []
+        for i in range(params.flow_long_term_samples + 1):
+            # prompt_str = f"optical flow stabilization (frame {-2**i}):{params.flow_stabilization_weight}"
+            # text, weight, stop, mask, pil_image = parse_subprompt(prompt_str)
+            name = f"optical flow stabilization (frame {-2**i})"
+            weight = params.flow_stabilization_weight
+            comp = torch.zeros(1, 1, 1, 1)  # ,device=device)
+            optical_flow = OpticalFlowLoss(
+                comp=comp,
+                weight=weight,
+                name=f"{name} (direct)",
+                image_shape=img.image_shape,
+            )  # , device=device)
             optical_flow.set_enabled(False)
-        loss_augs.extend(optical_flows)
+            loss_augs.append(optical_flow)
+
+        ##################################
+        # for optical_flow in optical_flows:
+        #    optical_flow.set_enabled(False)
+        # loss_augs.extend(optical_flows)
     elif params.animation_mode == "3D" and params.flow_stabilization_weight not in [
         "0",
         "",
