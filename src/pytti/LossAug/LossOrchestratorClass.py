@@ -130,17 +130,9 @@ def configure_optical_flows(img, params, loss_augs):
     if params.animation_mode == "Video Source":
         if params.flow_stabilization_weight == "":
             params.flow_stabilization_weight = "0"
-        # optical_flows = [
-        #     OpticalFlowLoss.TargetImage(
-        #         f"optical flow stabilization (frame {-2**i}):{params.flow_stabilization_weight}",
-        #         img.image_shape,
-        #     )
-        #     for i in range(params.flow_long_term_samples + 1)
-        # ]
-        optical_flows = []
+        # if flow stabilization weight is 0, shouldn't this next block just get skipped?
+
         for i in range(params.flow_long_term_samples + 1):
-            # prompt_str = f"optical flow stabilization (frame {-2**i}):{params.flow_stabilization_weight}"
-            # text, weight, stop, mask, pil_image = parse_subprompt(prompt_str)
             name = f"optical flow stabilization (frame {-2**i})"
             weight = params.flow_stabilization_weight
             comp = torch.zeros(1, 1, 1, 1)  # ,device=device)
@@ -153,10 +145,6 @@ def configure_optical_flows(img, params, loss_augs):
             optical_flow.set_enabled(False)
             loss_augs.append(optical_flow)
 
-        ##################################
-        # for optical_flow in optical_flows:
-        #    optical_flow.set_enabled(False)
-        # loss_augs.extend(optical_flows)
     elif params.animation_mode == "3D" and params.flow_stabilization_weight not in [
         "0",
         "",
