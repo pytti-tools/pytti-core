@@ -399,10 +399,14 @@ def _main(cfg: DictConfig):
             if prompt_string:
                 loss_factory = type(img).get_preferred_loss()
                 text, weight, stop, mask, pil_image = parse_subprompt(
-                    prompt_string, is_path=is_path, pil_image=pil_image
+                    # prompt_string, is_path=True, pil_image=pil_image
+                    prompt_string,
+                    is_path=True,
+                    pil_image=init_image_pil,
                 )
-
+                image_shape = img.image_shape
                 if pil_image:
+                    # im = pil_image.resize(image_shape, Image.LANCZOS)
                     im = pil_image.resize(image_shape, Image.LANCZOS)
                     comp = loss_factory.make_comp(im)
                 else:
