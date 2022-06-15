@@ -2,7 +2,7 @@ from IPython import display
 from loguru import logger
 from PIL import Image
 
-from pytti.image_models import PixelImage
+from pytti.image_models import PixelImage, RGBImage
 
 # from pytti.LossAug import build_loss
 from pytti.LossAug import TVLoss, HSVLoss, OpticalFlowLoss, TargetFlowLoss
@@ -15,20 +15,42 @@ from pytti.LossAug.EdgeLossClass import EdgeLoss
 
 #################################
 
+import torch
 
 LOSS_DICT = {"edge": EdgeLoss, "depth": DepthLoss}
 
 
-def build_loss(weight_name, weight, name, img, pil_target):
+def build_loss(
+    weight_name: str,
+    weight: str,
+    name: str,
+    img: RGBImage,
+    pil_target: Image,
+    device=None,
+):
     # from pytti.LossAug import LOSS_DICT
+    if device is None:
+        device = img.device
 
     weight_name, suffix = weight_name.split("_", 1)
     if weight_name == "direct":
-        Loss = type(img).get_preferred_loss()
+        loss = type(img).get_preferred_loss()
     else:
-        Loss = LOSS_DICT[weight_name]
-    out = Loss.TargetImage(
-        f"{weight_name} {name}:{weight}", img.image_shape, pil_target
+        loss = LOSS_DICT[weight_name]
+    # out = Loss.TargetImage(
+    #    f"{weight_name} {name}:{weight}", img.image_shape, pil_target
+    # )
+    if pil_target is not None:
+        resized = pil_target.resize(img.image_shape, Image.LANCZOS)
+        comp = loss.make_comp(resized)
+    else:
+        # comp = loss.get_default_comp()
+        comp = torch.zeros(1, 1, 1, 1, device=device)
+    out = loss(
+        comp=comp,
+        weight=weight,
+        name=f"{weight_name} {name} (direct)",
+        image_shape=img.image_shape,
     )
     out.set_enabled(pil_target is not None)
     return out
