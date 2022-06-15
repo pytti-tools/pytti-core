@@ -1,4 +1,3 @@
-
 from pytti import DEVICE, named_rearrange, replace_grad, vram_usage_mode
 from pytti.image_models.differentiable_image import DifferentiableImage
 from pytti.LossAug.HSVLossClass import HSVLoss
@@ -441,7 +440,15 @@ class PixelImage(DifferentiableImage):
 
         # no embedder needed without any prompts
         if smart_encode:
-            mse = HSVLoss.TargetImage("HSV loss", self.image_shape, pil_image)
+            # mse = HSVLoss.TargetImage("HSV loss", self.image_shape, pil_image)
+            # im = pil_image.resize(image_shape, Image.LANCZOS)
+            comp = HSVLoss.make_comp(pil_image)
+            mse = HSVLoss(
+                comp=comp,
+                name=text + "HSV loss",
+                image_shape=pil_image.shape,
+                device=device,
+            )
 
             if self.hdr_loss is not None:
                 before_weight = self.hdr_loss.weight.detach()

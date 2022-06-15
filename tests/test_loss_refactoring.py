@@ -56,3 +56,15 @@ steps_per_scene: 150
 device: '{TEST_DEVICE}'
 """
     run_cfg(cfg_str)
+
+
+def test_limited_palette_image_encode():
+    cfg_str = f"""# @package _global_
+scenes: a photograph of an apple
+direct_image_prompts: '{img_fpath}:-1:-.5'
+direct_init_weight: 1
+semantic_iniit_weight: 1
+image_model: Limited Palette
+device: '{TEST_DEVICE}'
+"""
+    run_cfg(cfg_str)
