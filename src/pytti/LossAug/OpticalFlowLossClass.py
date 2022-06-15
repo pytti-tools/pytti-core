@@ -65,7 +65,8 @@ def init_GMA(checkpoint_path=None, device=None):
         logger.debug(checkpoint_path)
     global GMA
     if device is None:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = torch.device(device)
     if GMA is None:
         with vram_usage_mode("GMA"):
             # migrate this to a hydra initialize/compose operation
@@ -97,10 +98,31 @@ def init_GMA(checkpoint_path=None, device=None):
                 "--mixed_precision", action="store_true", help="use mixed precision"
             )
             args = parser.parse_args([])
-            GMA = torch.nn.DataParallel(RAFTGMA(args), device_ids=[device])
+
+            # create new OrderedDict that does not contain `module.` prefix
+            # state_dict = torch.load(checkpoint_path)
+            state_dict = torch.load(checkpoint_path, map_location=device)
+            from collections import OrderedDict
+
+            new_state_dict = OrderedDict()
+            for k, v in state_dict.items():
+                if k.startswith("module."):
+                    k = k[7:]  # remove `module.`
+                new_state_dict[k] = v
+
+            # GMA = torch.nn.DataParallel(RAFTGMA(args), device_ids=[device])
+            GMA = RAFTGMA(args)
+            # GMA = torch.nn.parallel.DistributedDataParallel(RAFTGMA(args).to(device), device_ids=[device])
             # GMA = RAFTGMA(args)
-            GMA.load_state_dict(torch.load(checkpoint_path))
-            GMA.to(device)
+            # GMA.load_state_dict(torch.load(checkpoint_path, map_location=device))
+            # GMA.load_state_dict(torch.load(checkpoint_path))
+            GMA.load_state_dict(new_state_dict)
+            logger.debug("gma state_dict loaded")
+            ###########################
+            # 1. Fix state dict (remove module prefixes)
+            # 2. load state dict into model without DataParallel
+            ###########################
+            GMA.to(device)  # redundant?
             GMA.eval()
 
 
@@ -195,6 +217,11 @@ class TargetFlowLoss(MSELoss):
         padder = InputPadder(image1.shape)
         image1, image2 = padder.pad(image1, image2)
         _, flow = GMA(image1, image2, iters=3, test_mode=True)
+        logger.debug(device)
+        logger.debug((flow.shape, flow.device))
+        logger.debug((self.comp.shape, self.comp.device))
+        # logger.debug(GMA.device) # ugh... I bet this is another dataparallel thing.
+        # logger.debug(GMA.module.device)
         flow = flow.to(device, memory_format=torch.channels_last)
         return super().get_loss(TF.resize(flow, self.comp.shape[-2:]), img) / self.mag
 
