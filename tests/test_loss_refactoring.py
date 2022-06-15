@@ -82,3 +82,16 @@ flow_long_term_samples: 3
 device: '{TEST_DEVICE}'
 """
     run_cfg(cfg_str)
+
+
+def test_3D_optical_flow():
+    cfg_str = f"""# @package _global_
+scenes: a photograph of an apple
+animation_mode: 3D
+video_path: {video_fpath}
+flow_stabilization_weight: 1
+steps_per_frame: 10
+steps_per_scene: 150
+device: '{TEST_DEVICE}'
+"""
+    run_cfg(cfg_str)
