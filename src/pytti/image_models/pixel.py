@@ -446,7 +446,8 @@ class PixelImage(DifferentiableImage):
             mse = HSVLoss(
                 comp=comp,
                 name="HSV loss",
-                image_shape=pil_image.shape,
+                #image_shape=pil_image.shape,
+                image_shape=self.image_shape,
                 device=device,
             )
 
