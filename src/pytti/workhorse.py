@@ -198,7 +198,7 @@ def _main(cfg: DictConfig):
         with open_dict(params) as p:
             p.device = _device
     logger.debug(f"Using device {_device}")
-    torch.cuda.set_device(_device)
+    # torch.cuda.set_device(_device)
 
     # literal "off" in yaml interpreted as False
     if params.animation_mode == False:
