@@ -102,3 +102,23 @@ pixel_size: 1
 translate_z_3d: 10
 """
     run_cfg(cfg_str)
+
+
+# RuntimeError: CUDA error: device-side assert triggered
+@pytest.mark.xfail
+def test_3d_null_transform_bug():
+    cfg_str = f"""# @package _global_
+scenes: a photograph of an apple
+animation_mode: 3D
+video_path: {video_fpath}
+flow_stabilization_weight: 1
+steps_per_frame: 10
+steps_per_scene: 150
+device: '{TEST_DEVICE}'
+height: 512
+width: 512
+pixel_size: 1
+translate_z_3d: 0
+rotate_3d: [1,0,0,0]
+"""
+    run_cfg(cfg_str)
