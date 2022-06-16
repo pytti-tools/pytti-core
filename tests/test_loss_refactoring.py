@@ -80,6 +80,9 @@ steps_per_frame: 10
 steps_per_scene: 150
 flow_long_term_samples: 3
 device: '{TEST_DEVICE}'
+height: 512
+width: 512
+pixel_size: 1
 """
     run_cfg(cfg_str)
 
@@ -93,5 +96,9 @@ flow_stabilization_weight: 1
 steps_per_frame: 10
 steps_per_scene: 150
 device: '{TEST_DEVICE}'
+height: 512
+width: 512
+pixel_size: 1
+translate_z_3d: 10
 """
     run_cfg(cfg_str)
