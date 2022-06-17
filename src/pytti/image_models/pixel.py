@@ -2,7 +2,6 @@ from pytti import DEVICE, named_rearrange, replace_grad, vram_usage_mode
 from pytti.image_models.differentiable_image import DifferentiableImage
 from pytti.LossAug.HSVLossClass import HSVLoss
 
-# from pytti.ImageGuide import DirectImageGuide
 import numpy as np
 import torch, math
 from torch import nn, optim
@@ -191,7 +190,6 @@ class PixelImage(DifferentiableImage):
             .view(pallet_size, 1, 1)
             .repeat(1, n_pallets, 3)
         )
-        # pallet.set_(torch.rand_like(pallet)*self.pallet_inertia)
         self.pallet = nn.Parameter(pallet.to(self.device))
 
         self.pallet_size = pallet_size
@@ -429,7 +427,6 @@ class PixelImage(DifferentiableImage):
         scale = self.scale
         color_ref = pil_image.resize((width // scale, height // scale), Image.LANCZOS)
         color_ref = TF.to_tensor(color_ref).to(device)
-        # value_ref = ImageOps.grayscale(color_ref)
         with torch.no_grad():
             # https://alienryderflex.com/hsp.html
             magic_color = self.pallet.new_tensor([[[0.299]], [[0.587]], [[0.114]]])
@@ -440,13 +437,10 @@ class PixelImage(DifferentiableImage):
 
         # no embedder needed without any prompts
         if smart_encode:
-            # mse = HSVLoss.TargetImage("HSV loss", self.image_shape, pil_image)
-            # im = pil_image.resize(image_shape, Image.LANCZOS)
             comp = HSVLoss.make_comp(pil_image)
             mse = HSVLoss(
                 comp=comp,
                 name="HSV loss",
-                #image_shape=pil_image.shape,
                 image_shape=self.image_shape,
                 device=device,
             )

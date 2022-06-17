@@ -4,10 +4,9 @@ from torchvision.transforms import functional as TF
 from torch.nn import functional as F
 from pytti.LossAug.BaseLossClass import Loss
 
-# from pytti.Notebook import Rotoscoper
 from pytti.rotoscoper import Rotoscoper
 from pytti import fetch, vram_usage_mode
-from pytti.eval_tools import parse, parse_subprompt
+from pytti.eval_tools import parse_subprompt
 import torch
 
 

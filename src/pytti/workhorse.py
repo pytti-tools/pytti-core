@@ -53,7 +53,6 @@ from pytti import (
 )
 from pytti.LossAug.DepthLossClass import init_AdaBins
 
-# from pytti.LossAug.LossOrchestratorClass import LossConfigurator
 
 logger.info("pytti loaded.")
 
@@ -69,7 +68,6 @@ pd.options.display.width = 175
 
 
 TB_LOGDIR = "logs"  # to do: make this more easily configurable
-# writer = SummaryWriter(TB_LOGDIR)
 OUTPATH = f"{os.getcwd()}/images_out/"
 
 #######################################################
@@ -80,24 +78,7 @@ from pytti.LossAug.LossOrchestratorClass import (
     configure_optical_flows,
 )
 
-#######################################################
-
-# To do: ove remaining gunk into this...
-# class Renderer:
-#    """
-#    High-level orchestrator for pytti rendering procedure.
-#    """
-#
-#    def __init__(self, params):
-#        pass
-
-
-# this is the only place `parse_prompt` is invoked.
-# combine load_scenes, parse_prompt, and parse into a unified, generic parser.
-# generic here means the output of the parsing process shouldn't be bound to
-# modules yet, just a collection of settings.
-#
-# ...actually, parse_prompt is invoked in loss orchestration
+# move this with the other "prompt" functions...
 def parse_scenes(
     embedder,
     scenes,
@@ -175,8 +156,6 @@ def load_video_source(
     pre_animation_steps = max(steps_per_frame, pre_animation_steps)
     if init_image_pil is None:
         init_image_pil = Image.fromarray(video_frames.get_data(0)).convert("RGB")
-        # enhancer = ImageEnhance.Contrast(init_image_pil)
-        # init_image_pil = enhancer.enhance(2)
         init_size = init_image_pil.size
         if width == -1:
             width = int(height * init_size[0] / init_size[1])
@@ -187,7 +166,6 @@ def load_video_source(
 
 @hydra.main(config_path="config", config_name="default")
 def _main(cfg: DictConfig):
-    # params = OmegaConf.to_container(cfg, resolve=True)
     params = cfg
 
     if torch.cuda.is_available():
@@ -213,15 +191,12 @@ def _main(cfg: DictConfig):
     if params.use_tensorboard:
         writer = SummaryWriter(TB_LOGDIR)
 
-    batch_mode = False  # @param{type:"boolean"}
+    batch_mode = False
 
     ### Move these into default.yaml
-    # @markdown check `restore` to restore from a previous run
-    restore = params.get("restore") or False  # @param{type:"boolean"}
-    # @markdown check `reencode` if you are restoring with a modified image or modified image settings
-    reencode = False  # @param{type:"boolean"}
-    # @markdown which run to restore
-    restore_run = latest  # @param{type:"raw"}
+    restore = params.get("restore") or False
+    reencode = False
+    restore_run = latest  # which run to restore
 
     # NB: `backup/` dir probably not working at present
     if restore and restore_run == latest:
@@ -235,13 +210,10 @@ def _main(cfg: DictConfig):
 
         # Phase 1 - reset state
         ########################
-        # clear_rotoscopers()  # what a silly name
         ROTOSCOPERS.clear_rotoscopers()
         vram_profiling(params.approximate_vram_usage)
         reset_vram_usage()
-        # global CLIP_MODEL_NAMES  # we don't do anything with this...
-        # @markdown which frame to restore from
-        restore_frame = latest  # @param{type:"raw"}
+        restore_frame = latest  # which frame to restore from
 
         # set up seed for deterministic RNG
         if params.seed is not None:
@@ -386,28 +358,18 @@ def _main(cfg: DictConfig):
 
         # other image prompts
 
-        # loss_augs.extend(
-        #     type(img)
-        #     .get_preferred_loss()
-        #     .TargetImage(p.strip(), img.image_shape, is_path=True)
-        #     for p in params.direct_image_prompts.split("|")
-        #     if p.strip()
-        # )
-
         # uh... I'm not sure I actually test direct_image_prompts anywhere. ah well. fuck it.
         for p in params.direct_image_prompts.split("|"):
             prompt_string = p.strip()
             if prompt_string:
                 loss_factory = type(img).get_preferred_loss()
                 text, weight, stop, mask, pil_image = parse_subprompt(
-                    # prompt_string, is_path=True, pil_image=pil_image
                     prompt_string,
                     is_path=True,
                     pil_image=init_image_pil,
                 )
                 image_shape = img.image_shape
                 if pil_image:
-                    # im = pil_image.resize(image_shape, Image.LANCZOS)
                     im = pil_image.resize(image_shape, Image.LANCZOS)
                     comp = loss_factory.make_comp(im)
                 else:
@@ -451,41 +413,6 @@ def _main(cfg: DictConfig):
 
         # optical flow
         img, loss_augs, optical_flows = configure_optical_flows(img, params, loss_augs)
-
-        # # set up losses
-        # loss_orch = LossConfigurator(
-        #     init_image_pil=init_image_pil,
-        #     restore=restore,
-        #     img=img,
-        #     embedder=embedder,
-        #     prompts=prompts,
-        #     # params=params,
-        #     ########
-        #     # To do: group arguments into param groups
-        #     animation_mode=params.animation_mode,
-        #     init_image=params.init_image,
-        #     direct_image_prompts=params.direct_image_prompts,
-        #     semantic_init_weight=params.semantic_init_weight,
-        #     semantic_stabilization_weight=params.semantic_stabilization_weight,
-        #     flow_stabilization_weight=params.flow_stabilization_weight,
-        #     flow_long_term_samples=params.flow_long_term_samples,
-        #     smoothing_weight=params.smoothing_weight,
-        #     ###########
-        #     direct_init_weight=params.direct_init_weight,
-        #     direct_stabilization_weight=params.direct_stabilization_weight,
-        #     depth_stabilization_weight=params.depth_stabilization_weight,
-        #     edge_stabilization_weight=params.edge_stabilization_weight,
-        # )
-
-        # (
-        #     loss_augs,
-        #     init_augs,
-        #     stabilization_augs,
-        #     optical_flows,
-        #     semantic_init_prompt,
-        #     last_frame_semantic,
-        #     img,
-        # ) = loss_orch.configure_losses()
 
         # Phase 4 - setup outputs
         ##########################
