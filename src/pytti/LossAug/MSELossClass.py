@@ -30,30 +30,6 @@ class MSELoss(Loss):
         self.register_buffer("mask", torch.ones(1, 1, 1, 1, device=self.device))
         self.use_mask = False
 
-    @classmethod
-    @vram_usage_mode("Loss Augs")
-    @torch.no_grad()
-    def TargetImage(
-        cls, prompt_string, image_shape, pil_image=None, is_path=False, device=None
-    ):
-        if device is None:
-            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        text, weight, stop, mask, pil_image = parse_subprompt(
-            prompt_string, is_path=is_path, pil_image=pil_image
-        )
-
-        if pil_image:
-            im = pil_image.resize(image_shape, Image.LANCZOS)
-            comp = cls.make_comp(im)
-        else:
-            comp = torch.zeros(1, 1, 1, 1, device=device)
-
-        if image_shape is None:
-            image_shape = pil_image.size
-        out = cls(comp, weight, stop, text + " (direct)", image_shape, device=device)
-        out.set_mask(mask)
-        return out
-
     @torch.no_grad()
     def set_mask(self, mask, inverted=False, device=None):
         if device is None:
