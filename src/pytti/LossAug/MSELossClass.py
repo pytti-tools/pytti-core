@@ -58,6 +58,8 @@ class MSELoss(Loss):
     def convert_input(cls, input, img):
         return input
 
+    # Comp and mask should live on the image representation, not the loss class.
+    # comp for sure
     @classmethod
     def make_comp(cls, pil_image, device=None):
         if device is None:

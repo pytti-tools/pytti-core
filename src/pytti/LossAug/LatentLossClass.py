@@ -25,6 +25,7 @@ class LatentLoss(MSELoss):
             TF.resize(comp.clone(), (h, w)), weight, stop, name, image_shape
         )
 
+    # Comp and mask should live on the image representation, not the loss class.
     @torch.no_grad()
     def set_comp(self, pil_image, device=DEVICE):
         self.pil_image = pil_image
