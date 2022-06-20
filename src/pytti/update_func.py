@@ -135,14 +135,11 @@ def update(
             filename = f"backup/{file_namespace}/{base_name}_{n}.bak"
             torch.save(img.state_dict(), filename)
             if n > backups:
-
-                # YOOOOOOO let's not start shell processes unnecessarily
-                # and then execute commands using string interpolation.
-                # Replace this with a pythonic folder removal, then see
-                # if we can't deprecate the folder removal entirely. What
-                # is the purpose of "backups" here? Just use the frames that
-                # are being written to disk.
-                os.remove(os.path.join("backup", f"{file_namespace}",f"{base_name}_{n-backups}.bak"))
+                fname = f"{base_name}_{n-backups}.bak"
+                fpath = Path("backup") / file_namespace / fname
+                fpath.unlink(
+                    missing_ok=True
+                )  # delete the file. if file not found, nothing happens.
 
     j = i + 1
 
