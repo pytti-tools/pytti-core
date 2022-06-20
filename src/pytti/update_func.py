@@ -142,7 +142,7 @@ def update(
                 # if we can't deprecate the folder removal entirely. What
                 # is the purpose of "backups" here? Just use the frames that
                 # are being written to disk.
-                os.remove(f"backup/{file_namespace}/{base_name}_{n-backups}.bak")
+                os.remove(os.path.join("backup", f"{file_namespace}",f"{base_name}_{n-backups}.bak"))
 
     j = i + 1
 
