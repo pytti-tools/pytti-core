@@ -93,9 +93,6 @@ class DifferentiableImage(nn.Module):
 
         return HSVLoss
 
-    def image_loss(self):
-        return []
-
     def decode_image(self):
         """
         render a PIL Image version of this image

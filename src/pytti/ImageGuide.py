@@ -283,8 +283,16 @@ class DirectImageGuide:
             for aug in loss_augs
         }
 
-        image_augs = self.image_rep.image_loss()
-        image_losses = {aug: aug(self.image_rep) for aug in image_augs}
+        image_augs = []
+        if isinstance(self.image_rep, PixelImage):
+            image_augs = [
+                x
+                for x in [self.image_rep.hdr_loss, self.image_rep.loss]
+                if x is not None
+            ]
+        image_losses = {
+            aug: aug(self.image_rep) for aug in image_augs
+        }  # so... this is also specific to PixelImage.
 
         # losses_accumulator, losses_raw_accumulator = Counter(), Counter()
         losses, losses_raw = [], []  # just... don't care

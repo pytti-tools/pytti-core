@@ -265,13 +265,6 @@ class PixelImage(DifferentiableImage):
             self.pallet_target.set_(self.sort_pallet().clone())
         self.use_pallet_target = lock
 
-    def image_loss(self):
-        """
-        If the loss is not None, return it
-        :return: A list of losses
-        """
-        return [x for x in [self.hdr_loss, self.loss] if x is not None]
-
     def sort_pallet(self):
         """
         Given a pallet of colors, sort the pallet such that the colors are sorted by their brightness
