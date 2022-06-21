@@ -297,6 +297,16 @@ class PixelImage(DifferentiableImage):
         self.value.set_(tensor[0])
         self.tensor.set_(tensor[1:])
 
+    def decode_image(self):
+        """
+        render a PIL Image version of this image
+        """
+        # array = (self.get_image_tensor()
+        array = (
+            super().get_image_tensor().detach().cpu().numpy().astype(np.uint8)[:, :, :]
+        )
+        return Image.fromarray(array)
+
     def decode_tensor(self):
         """
         Given a tensor of shape (batch_size, n_pallets, n_values),

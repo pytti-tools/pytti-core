@@ -53,17 +53,7 @@ def apply_flow(img, flow, border_mode="mirror", sampling_mode="bilinear", device
     if device is None:
         device = img.device
 
-    if any(isinstance(img, im_type) for im_type in (PixelImage, RGBImage)):
-
-        # try:
-        tensor = img.get_image_tensor().unsqueeze(0)
-        # fallback = False
-
-    # except NotImplementedError:
-    else:
-        # TODO: move this to VQGANImage.get_image_tensor()
-        tensor = TF.to_tensor(img.decode_image()).unsqueeze(0).to(device)
-        # fallback = True
+    tensor = img.get_image_tensor().unsqueeze(0)
 
     height, width = flow.shape[-2:]
     identity = torch.eye(3).to(device)
@@ -115,14 +105,7 @@ def zoom_2d(
     if device is None:
         device = img.device
 
-    # try:
-    if any(isinstance(img, im_type) for im_type in (PixelImage, RGBImage)):
-        tensor = img.get_image_tensor().unsqueeze(0)
-    #    fallback = False
-    # except NotImplementedError:
-    else:
-        tensor = TF.to_tensor(img.decode_image()).unsqueeze(0).to(device)
-    #    fallback = True
+    tensor = img.get_image_tensor().unsqueeze(0)
 
     height, width = tensor.shape[-2:]
     zy, zx = ((height - zoom[1]) / height, (width - zoom[0]) / width)
@@ -309,36 +292,17 @@ def zoom_3d(
 
     ########################################
     logger.debug(device)
-    # try:
-    if any(isinstance(img, im_type) for im_type in (PixelImage, RGBImage)):
-        image_tensor = img.get_image_tensor().to(device)
-        depth_tensor = (
-            TF.resize(
-                torch.from_numpy(depth_map),
-                image_tensor.shape[-2:],
-                interpolation=TF.InterpolationMode.BICUBIC,
-            )
-            .squeeze()
-            .to(device)
+
+    image_tensor = img.get_image_tensor().to(device)
+    depth_tensor = (
+        TF.resize(
+            torch.from_numpy(depth_map),
+            image_tensor.shape[-2:],
+            interpolation=TF.InterpolationMode.BICUBIC,
         )
-        # fallback = False
-    # except NotImplementedError:
-    else:
-        # fallback path
-        image_tensor = TF.to_tensor(pil_image).to(device)
-        if depth_resized:
-            depth_tensor = (
-                TF.resize(
-                    torch.from_numpy(depth_map),
-                    image_tensor.shape[-2:],
-                    interpolation=TF.InterpolationMode.BICUBIC,
-                )
-                .squeeze()
-                .to(device)
-            )
-        else:
-            depth_tensor = torch.from_numpy(depth_map).squeeze().to(device)
-        # fallback = True
+        .squeeze()
+        .to(device)
+    )
 
     p_matrix = torch.as_tensor(glm.perspective(alpha, f, 0.1, 4).to_list()).to(device)
     tx, ty, tz = translate
@@ -358,11 +322,9 @@ def zoom_3d(
     )
     logger.debug(new_image.device)
 
-    # if not fallback:
     if any(isinstance(img, im_type) for im_type in (PixelImage, RGBImage)):
         img.set_image_tensor(new_image)
     else:
-        # fallback path
         array = (
             new_image.movedim(0, -1)
             .mul(255)

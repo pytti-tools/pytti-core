@@ -79,20 +79,21 @@ class DifferentiableImage(nn.Module):
 
         return HSVLoss
 
+    # def decode_image_tensor(self):
+    def get_image_tensor(self):
+        # TF.to_tensor(img.decode_image()).unsqueeze(0).to(device)
+        tensor = self.decode_tensor()
+        tensor = named_rearrange(tensor, self.output_axes, ("y", "x", "s"))
+        return (
+            tensor.mul(255).clamp(0, 255)
+            # .detach()
+        )
+
     def decode_image(self):
         """
         render a PIL Image version of this image
         """
-        tensor = self.decode_tensor()
-        tensor = named_rearrange(tensor, self.output_axes, ("y", "x", "s"))
-        array = (
-            tensor.mul(255)
-            .clamp(0, 255)
-            .cpu()
-            .detach()
-            .numpy()
-            .astype(np.uint8)[:, :, :]
-        )
+        array = self.get_image_tensor().detach().cpu().numpy().astype(np.uint8)[:, :, :]
         return Image.fromarray(array)
 
     def forward(self):
