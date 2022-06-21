@@ -137,9 +137,12 @@ def update(
             if n > backups:
                 fname = f"{base_name}_{n-backups}.bak"
                 fpath = Path("backup") / file_namespace / fname
-                fpath.unlink(
-                    missing_ok=True
-                )  # delete the file. if file not found, nothing happens.
+                # delete the file. if file not found, nothing happens.
+                if fpath.exists():
+                    fpath.unlink()
+                #fpath.unlink(
+                #    missing_ok=True
+                #)
 
     j = i + 1
 
