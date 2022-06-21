@@ -6,7 +6,6 @@ from pytti.LossAug.BaseLossClass import Loss
 
 from pytti.rotoscoper import Rotoscoper
 from pytti import fetch, vram_usage_mode
-from pytti.eval_tools import parse_subprompt
 import torch
 
 
