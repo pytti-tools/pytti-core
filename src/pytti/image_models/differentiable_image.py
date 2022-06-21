@@ -79,14 +79,6 @@ class DifferentiableImage(nn.Module):
         """
         pass
 
-    def make_latent(self, pil_image):
-        try:
-            dummy = self.clone()
-        except NotImplementedError:
-            dummy = copy.deepcopy(self)
-        dummy.encode_image(pil_image)
-        return dummy.get_latent_tensor(detach=True)
-
     @classmethod
     def get_preferred_loss(cls):
         from pytti.LossAug.HSVLossClass import HSVLoss
