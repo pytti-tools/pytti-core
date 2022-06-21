@@ -111,12 +111,3 @@ class DifferentiableImage(nn.Module):
             .astype(np.uint8)[:, :, :]
         )
         return Image.fromarray(array)
-
-    def forward(self):
-        """
-        returns a decoded tensor of this image
-        """
-        if self.training:
-            return self.decode_training_tensor()
-        else:
-            return self.decode_tensor()
