@@ -31,22 +31,22 @@ class DifferentiableImage(nn.Module):
         """
         return self.decode_tensor()
 
-    def get_image_tensor(self):
-        """
-        optional method: returns an [n x w_i x h_i] tensor representing the local image data
-        those data will be used for animation if afforded
-        """
-        raise NotImplementedError
+    # def get_image_tensor(self):
+    #     """
+    #     optional method: returns an [n x w_i x h_i] tensor representing the local image data
+    #     those data will be used for animation if afforded
+    #     """
+    #     raise NotImplementedError
 
     def clone(self):
         raise NotImplementedError
 
-    def set_image_tensor(self, tensor):
-        """
-        optional method: accepts an [n x w_i x h_i] tensor representing the local image data
-        those data will be by the animation system
-        """
-        raise NotImplementedError
+    # def set_image_tensor(self, tensor):
+    #     """
+    #     optional method: accepts an [n x w_i x h_i] tensor representing the local image data
+    #     those data will be by the animation system
+    #     """
+    #     raise NotImplementedError
 
     def decode_tensor(self):
         """
@@ -94,3 +94,12 @@ class DifferentiableImage(nn.Module):
             .astype(np.uint8)[:, :, :]
         )
         return Image.fromarray(array)
+
+    def forward(self):
+        """
+        returns a decoded tensor of this image
+        """
+        if self.training:
+            return self.decode_training_tensor()
+        else:
+            return self.decode_tensor()

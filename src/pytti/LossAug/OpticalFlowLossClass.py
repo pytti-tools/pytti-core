@@ -406,7 +406,11 @@ class OpticalFlowLoss(MSELoss):
         )
 
         target_direct = flow_target_direct
-        target_latent = img.get_latent_tensor(detach=True)
+        # target_latent = img.get_latent_tensor(detach=True)
+        if hasattr(img, "get_latent_tensor"):
+            target_latent = img.get_latent_tensor(detach=True)
+        else:
+            target_latent = img.get_image_tensor().detach()
         mask = fancy_mask.unsqueeze(0)
 
         self.comp.set_(target_direct)
@@ -477,5 +481,12 @@ class OpticalFlowLoss(MSELoss):
 
     def get_loss(self, input, img):
         l1 = super().get_loss(input, img)
-        l2 = self.latent_loss.get_loss(img.get_latent_tensor(), img)
-        return l1 + l2 * img.latent_strength
+        # l2 = self.latent_loss.get_loss(img.get_latent_tensor(), img)
+        l2 = 0
+        if img.latent_strength > 0:
+            if hasattr(img, "get_latent_tensor"):
+                l2 = self.latent_loss.get_loss(img.get_latent_tensor(), img)
+            else:
+                l2 = self.latent_loss.get_loss(img.get_image_tensor(), img)
+            l2 *= img.latent_strength
+        return l1 + l2

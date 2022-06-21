@@ -47,14 +47,23 @@ def apply_grid(tensor, grid, border_mode, sampling_mode):
 
 @torch.no_grad()
 def apply_flow(img, flow, border_mode="mirror", sampling_mode="bilinear", device=None):
+    from pytti.image_models.pixel import PixelImage
+    from pytti.image_models.rgb_image import RGBImage
+
     if device is None:
         device = img.device
-    try:
+
+    if any(isinstance(img, im_type) for im_type in (PixelImage, RGBImage)):
+
+        # try:
         tensor = img.get_image_tensor().unsqueeze(0)
-        fallback = False
-    except NotImplementedError:
+        # fallback = False
+
+    # except NotImplementedError:
+    else:
+        # TODO: move this to VQGANImage.get_image_tensor()
         tensor = TF.to_tensor(img.decode_image()).unsqueeze(0).to(device)
-        fallback = True
+        # fallback = True
 
     height, width = flow.shape[-2:]
     identity = torch.eye(3).to(device)
@@ -67,10 +76,13 @@ def apply_flow(img, flow, border_mode="mirror", sampling_mode="bilinear", device
     )
     grid = uv - flow
     tensor = apply_grid(tensor, grid, border_mode, sampling_mode)
-    if not fallback:
+
+    # if not fallback:
+    if any(isinstance(img, im_type) for im_type in (PixelImage, RGBImage)):
         img.set_image_tensor(tensor.squeeze(0))
         tensor_out = img.decode_tensor().detach()
     else:
+        # TODO: move this to VQGANImage.set_image_tensor? .decode_tensor()?
         array = (
             tensor.squeeze()
             .movedim(0, -1)
@@ -96,14 +108,22 @@ def zoom_2d(
     sampling_mode="bilinear",
     device=None,
 ):
+
+    from pytti.image_models.pixel import PixelImage
+    from pytti.image_models.rgb_image import RGBImage
+
     if device is None:
         device = img.device
-    try:
+
+    # try:
+    if any(isinstance(img, im_type) for im_type in (PixelImage, RGBImage)):
         tensor = img.get_image_tensor().unsqueeze(0)
-        fallback = False
-    except NotImplementedError:
+    #    fallback = False
+    # except NotImplementedError:
+    else:
         tensor = TF.to_tensor(img.decode_image()).unsqueeze(0).to(device)
-        fallback = True
+    #    fallback = True
+
     height, width = tensor.shape[-2:]
     zy, zx = ((height - zoom[1]) / height, (width - zoom[0]) / width)
     ty, tx = (translate[1] * 2 / height, -translate[0] * 2 / width)
@@ -120,7 +140,9 @@ def zoom_2d(
     )
     grid = F.affine_grid(affine, tensor.shape, align_corners=True)
     tensor = apply_grid(tensor, grid, border_mode, sampling_mode)
-    if not fallback:
+
+    # if not fallback:
+    if any(isinstance(img, im_type) for im_type in (PixelImage, RGBImage)):
         img.set_image_tensor(tensor.squeeze(0))
     else:
         array = (
@@ -227,6 +249,9 @@ def zoom_3d(
     device=None,
 ):
 
+    from pytti.image_models.pixel import PixelImage
+    from pytti.image_models.rgb_image import RGBImage
+
     if device is None:
         device = img.device
 
@@ -242,8 +267,8 @@ def zoom_3d(
 
     # convert depth map
     depth_map, depth_resized = DepthLoss.get_depth(pil_image, device=device)
-    depth_min = np.min(depth_map)
-    depth_max = np.max(depth_map)
+    depth_min = np.min(depth_map)  # gets overwritten, unnecessary op
+    depth_max = np.max(depth_map)  # gets overwritten, unnecessary op
     # depth_image = Image.fromarray(np.array(np.interp(depth_map.squeeze(), (depth_min, depth_max), (0,255)), dtype=np.uint8))
     depth_map = np.interp(depth_map, (1e-3, 10), (near * px, far * px))
     depth_min = np.min(depth_map)
@@ -284,7 +309,8 @@ def zoom_3d(
 
     ########################################
     logger.debug(device)
-    try:
+    # try:
+    if any(isinstance(img, im_type) for im_type in (PixelImage, RGBImage)):
         image_tensor = img.get_image_tensor().to(device)
         depth_tensor = (
             TF.resize(
@@ -295,8 +321,9 @@ def zoom_3d(
             .squeeze()
             .to(device)
         )
-        fallback = False
-    except NotImplementedError:
+        # fallback = False
+    # except NotImplementedError:
+    else:
         # fallback path
         image_tensor = TF.to_tensor(pil_image).to(device)
         if depth_resized:
@@ -311,7 +338,8 @@ def zoom_3d(
             )
         else:
             depth_tensor = torch.from_numpy(depth_map).squeeze().to(device)
-        fallback = True
+        # fallback = True
+
     p_matrix = torch.as_tensor(glm.perspective(alpha, f, 0.1, 4).to_list()).to(device)
     tx, ty, tz = translate
     r_matrix = glm.mat4_cast(glm.quat(*rotate))
@@ -329,7 +357,9 @@ def zoom_3d(
         device=device,
     )
     logger.debug(new_image.device)
-    if not fallback:
+
+    # if not fallback:
+    if any(isinstance(img, im_type) for im_type in (PixelImage, RGBImage)):
         img.set_image_tensor(new_image)
     else:
         # fallback path
