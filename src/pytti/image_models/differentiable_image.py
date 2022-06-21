@@ -23,6 +23,7 @@ class DifferentiableImage(nn.Module):
         self.pixel_format = format
         self.output_axes = ("x", "y", "s")
         self.lr = 0.02
+        # TODO: 'latent_strength' shouldn't be a base class attribute.
         self.latent_strength = 0
 
     def decode_training_tensor(self):
