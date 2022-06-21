@@ -73,18 +73,6 @@ class PalletLoss(nn.Module):
         else:
             return 0, 0
 
-    @torch.no_grad()
-    def set_weight(self, weight, device=None):
-        """
-        Set the weight of the layer to the given value
-
-        :param weight: The weight tensor
-        :param device: The device to put the weights on
-        """
-        if device is None:
-            device = self.device
-        self.weight.set_(torch.as_tensor(weight, device=device))
-
     def __str__(self):
         return "Palette normalization"
 
