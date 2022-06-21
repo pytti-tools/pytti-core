@@ -28,7 +28,14 @@ class DifferentiableImage(nn.Module):
 
     def decode_training_tensor(self):
         """
-        returns a decoded tensor of this image for training
+        Decodes the backend image representation into a tensor of pixel values.
+        E.g. if the image is represented implicitly or as a learned latent vector,
+        this function returns a tensor of the explicit image representation.
+
+        If the backend image has an ephemeral representation for training that differs
+        from the "final" image, this function returns the training component. I.e. if
+        the backend image representation uses EMA, this function decodes the 'instantaneous'
+        tensor rather than the accumulated weighted average tensor.
         """
         return self.decode_tensor()
 
@@ -37,20 +44,31 @@ class DifferentiableImage(nn.Module):
 
     def decode_tensor(self):
         """
-        returns a decoded tensor of this image
+        Decodes the backend image representation into a tensor of pixel values in [0,1].
+        E.g. if the image is represented implicitly or as a learned latent vector,
+        this function returns a tensor of the explicit image representation.
+
+        If the backend image has an ephemeral representation for training that differs
+        from the "final" image, this function returns the "final" component. I.e. if
+        the backend image representation uses EMA, this function decodes the accumulated
+        weighted average tensor rather than the 'instantaneous' tensor.
         """
         raise NotImplementedError
 
-    def encode_image(self, pil_image):
+    def encode_image(self, pil_image: Image):
         """
-        overwrites this image with the input image
+        Given an input PIL.Image, encodes the image to the backend
+        representation and stores it on this DiffImg instance.
+
+        Invert this process via decode_image()
+
         pil_image: (Image) input image
         """
         raise NotImplementedError
 
     def encode_random(self):
         """
-        overwrites this image with random noise
+        Overwrites the backend image representation with random noise
         """
         raise NotImplementedError
 
@@ -67,20 +85,27 @@ class DifferentiableImage(nn.Module):
         return HSVLoss
 
     def get_image_tensor(self):
+        """
+        Returns a tensor of the explicit image representation in a format suitable for
+        instantiating a PIL image.
+        * dimensions are rearranged to [y x s] format
+        * tensor values are projected from learning domain [0,1] to PIL RGB domain [0,255]
+        """
         tensor = self.decode_tensor()
         tensor = named_rearrange(tensor, self.output_axes, ("y", "x", "s"))
         return tensor.mul(255).clamp(0, 255)
 
     def decode_image(self):
         """
-        render a PIL Image version of this image
+        Render a PIL Image from the backend image representation.
+        Basically a convenience wrapper for the processing step after calling get_image_tensor()
         """
         array = self.get_image_tensor().detach().cpu().numpy().astype(np.uint8)[:, :, :]
         return Image.fromarray(array)
 
     def forward(self):
         """
-        returns a decoded tensor of this image
+        Convenience wrapper for calling the appropriate decode_tensor method given training state.
         """
         if self.training:
             return self.decode_training_tensor()

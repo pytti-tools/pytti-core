@@ -284,6 +284,7 @@ class PixelImage(DifferentiableImage):
         )
         return pallet
 
+    # should really call this something else, right? want a consistent API here.
     def get_image_tensor(self):
         return torch.cat([self.value.unsqueeze(0), self.tensor])
 
