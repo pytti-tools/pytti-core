@@ -3,11 +3,11 @@ from pytti.image_models.differentiable_image import DifferentiableImage
 from pytti.LossAug.HSVLossClass import HSVLoss
 
 import numpy as np
-import torch, math
+import torch
 from torch import nn, optim
 from torch.nn import functional as F
 from torchvision.transforms import functional as TF
-from PIL import Image, ImageOps
+from PIL import Image
 
 from loguru import logger
 
