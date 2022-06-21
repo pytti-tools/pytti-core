@@ -20,7 +20,7 @@ class DifferentiableImage(nn.Module):
         if pixel_format not in SUPPORTED_MODES:
             raise ValueError(f"Pixel format {pixel_format} is not supported.")
         self.image_shape = (width, height)
-        self.pixel_format = format
+        self.pixel_format = pixel_format
         self.output_axes = ("x", "y", "s")
         self.lr = 0.02
         # TODO: 'latent_strength' shouldn't be a base class attribute.
