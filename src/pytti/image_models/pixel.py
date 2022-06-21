@@ -9,6 +9,8 @@ from torch.nn import functional as F
 from torchvision.transforms import functional as TF
 from PIL import Image, ImageOps
 
+from loguru import logger
+
 
 def break_tensor(tensor):
     """
@@ -413,13 +415,16 @@ class PixelImage(DifferentiableImage):
         (optional)
         :param device: The device to run the model on
         """
+        logger.debug(self.image_shape)
         width, height = self.image_shape
         if device is None:
             device = self.device
 
         scale = self.scale
-        color_ref = pil_image.resize((width // scale, height // scale), Image.LANCZOS)
-        color_ref = TF.to_tensor(color_ref).to(device)
+        color_ref_pil = pil_image.resize(
+            (width // scale, height // scale), Image.LANCZOS
+        )
+        color_ref = TF.to_tensor(color_ref_pil).to(device)
         with torch.no_grad():
             # https://alienryderflex.com/hsp.html
             magic_color = self.pallet.new_tensor([[[0.299]], [[0.587]], [[0.114]]])
@@ -430,7 +435,11 @@ class PixelImage(DifferentiableImage):
 
         # no embedder needed without any prompts
         if smart_encode:
-            comp = HSVLoss.make_comp(pil_image)
+            logger.debug("Smart encoding")
+            # logger.debug(pil_image.size) # [320, 240]
+            # comp = HSVLoss.make_comp(pil_image)
+            comp = HSVLoss.make_comp(color_ref_pil)
+            # logger.debug(comp.shape) # [1, 5, 240, 320]
             mse = HSVLoss(
                 comp=comp,
                 name="HSV loss",
