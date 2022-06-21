@@ -396,7 +396,7 @@ class OpticalFlowLoss(MSELoss):
 
         flow_forward = OpticalFlowLoss.get_flow(image1, image2, device=device)
         flow_backward = OpticalFlowLoss.get_flow(image2, image1, device=device)
-        unwarped_target_direct = img.decode_tensor()  # unused
+
         flow_target_direct = apply_flow(
             img, -flow_backward, border_mode=border_mode, sampling_mode=sampling_mode
         )
