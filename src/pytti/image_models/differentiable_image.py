@@ -31,22 +31,8 @@ class DifferentiableImage(nn.Module):
         """
         return self.decode_tensor()
 
-    # def get_image_tensor(self):
-    #     """
-    #     optional method: returns an [n x w_i x h_i] tensor representing the local image data
-    #     those data will be used for animation if afforded
-    #     """
-    #     raise NotImplementedError
-
     def clone(self):
         raise NotImplementedError
-
-    # def set_image_tensor(self, tensor):
-    #     """
-    #     optional method: accepts an [n x w_i x h_i] tensor representing the local image data
-    #     those data will be by the animation system
-    #     """
-    #     raise NotImplementedError
 
     def decode_tensor(self):
         """
@@ -79,15 +65,10 @@ class DifferentiableImage(nn.Module):
 
         return HSVLoss
 
-    # def decode_image_tensor(self):
     def get_image_tensor(self):
-        # TF.to_tensor(img.decode_image()).unsqueeze(0).to(device)
         tensor = self.decode_tensor()
         tensor = named_rearrange(tensor, self.output_axes, ("y", "x", "s"))
-        return (
-            tensor.mul(255).clamp(0, 255)
-            # .detach()
-        )
+        return tensor.mul(255).clamp(0, 255)
 
     def decode_image(self):
         """
