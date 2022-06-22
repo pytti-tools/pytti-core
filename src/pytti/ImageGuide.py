@@ -292,6 +292,9 @@ class DirectImageGuide:
         if self.embedder is not None:
             for mb_i in range(gradient_accumulation_steps):
                 # logger.debug(mb_i)
+                # logger.debug(self.image_rep.shape)
+                logger.debug(type(self.image_rep))
+                logger.debug(z.shape)
                 image_embeds, offsets, sizes = self.embedder(self.image_rep, input=z)
 
                 t = 1
@@ -317,6 +320,8 @@ class DirectImageGuide:
                     for prompt in prompts
                 }
 
+                # oh.. uh... image_losses and auglosses don't actually depend on an embedder being attached.
+                # Maybe this is why limited palette wasn't initializing properly?
                 losses, losses_raw = zip(
                     *map(unpack_dict, [prompt_losses, aug_losses, image_losses])
                     # *map(unpack_dict, [prompt_losses])

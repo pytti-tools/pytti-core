@@ -38,7 +38,7 @@ from pytti.Notebook import (
 )
 
 from pytti.rotoscoper import ROTOSCOPERS, get_frames
-from pytti.image_models import PixelImage, RGBImage, VQGANImage
+from pytti.image_models import PixelImage, RGBImage, VQGANImage, DeepImagePrior
 from pytti.ImageGuide import DirectImageGuide
 from pytti.Perceptor.Embedder import HDMultiClipEmbedder
 from pytti.Perceptor.Prompt import parse_prompt
@@ -316,6 +316,7 @@ def _main(cfg: DictConfig):
             "Limited Palette",
             "Unlimited Palette",
             "VQGAN",
+            "Deep Image Prior",
         )
         # set up image
         if params.image_model == "Limited Palette":
@@ -349,6 +350,9 @@ def _main(cfg: DictConfig):
                 params.width, params.height, params.pixel_size, device=_device
             )
             img.encode_random()
+        elif params.image_model == "Deep Image Prior":
+            img = DeepImagePrior(params.width, params.height, params.pixel_size)
+            img.encode_random()
         else:
             logger.critical(
                 "You should never see this message."
@@ -364,6 +368,8 @@ def _main(cfg: DictConfig):
         #####################
         # set up init image #
         #####################
+
+        logger.debug("configuring init image prompts")
 
         (
             init_augs,
@@ -383,16 +389,23 @@ def _main(cfg: DictConfig):
         )
 
         # other image prompts
+        logger.debug("configuring other image prompts")
 
         loss_augs.extend(
             type(img)
             .get_preferred_loss()
-            .TargetImage(p.strip(), img.image_shape, is_path=True)
+            .TargetImage(
+                p.strip(),
+                img.image_shape,
+                is_path=True,
+                # img_model=type(img)
+            )
             for p in params.direct_image_prompts.split("|")
             if p.strip()
         )
 
         # stabilization
+        logger.debug("configuring stabilization losses")
         (
             loss_augs,
             img,
@@ -455,6 +468,8 @@ def _main(cfg: DictConfig):
         #     last_frame_semantic,
         #     img,
         # ) = loss_orch.configure_losses()
+
+        logger.debug("losses configured.")
 
         # Phase 4 - setup outputs
         ##########################

@@ -9,6 +9,7 @@ verify_ssl = false
 name = "pytorch"
 
 [packages]
+tensorflow = "==2.7.0"
 transformers = "==4.15.0"
 gdown = "===4.2.0"
 ftfy = "==6.0.3"
@@ -30,6 +31,7 @@ jupyter = "*"
 imageio = "==2.4.1"
 PyGLM = "==2.5.7"
 adjustText = "*"
+
 Pillow = "*"
 torch = "*"
 torchvision = "*"
@@ -48,6 +50,9 @@ mmc = {git = "https://github.com/dmarx/Multi-Modal-Comparators"}
 pytest = "*"
 pre-commit = "*"
 click = "==8.0.4"
+#Pillow = "==7.1.2"
+#pyttitools-core = {editable = true, path = "."}
+deep-image-prior = {path = "./deep-image-prior"}
 black = "*"
 
 [requires]

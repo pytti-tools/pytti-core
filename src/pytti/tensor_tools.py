@@ -65,6 +65,7 @@ def format_module(module, dest, *args, **kwargs) -> torch.tensor:
     return format_input(output, module, dest)
 
 
+# https://pytorch.org/docs/stable/autograd.html#function
 class ReplaceGrad(torch.autograd.Function):
     """
     returns x_forward during forward pass, but evaluates derivates as though

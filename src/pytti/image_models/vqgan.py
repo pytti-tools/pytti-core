@@ -11,7 +11,11 @@ from taming.models import cond_transformer, vqgan
 from pytti import replace_grad, clamp_with_grad, vram_usage_mode
 import torch
 from torch.nn import functional as F
-from pytti.image_models import EMAImage
+
+# from pytti.image_models import EMAImage
+# from pytti.image_models.differentiable_image import LatentTensor
+# from pytti.image_models.differentiable_image import DifferentiableImage
+from pytti.image_models.ema import EMAImage
 from torchvision.transforms import functional as TF
 from PIL import Image
 from omegaconf import OmegaConf
@@ -185,20 +189,42 @@ class VQGANImage(EMAImage):
         self.vqgan_decode = model.decode
         self.vqgan_encode = model.encode
 
-    def clone(self):
+        #################################
+
+        # self.image_representation_parameters = LatentTensor(
+        #    width=width,
+        #    height=height,
+        #    z=z,
+        #    device=self.device,
+        # )
+
+    def clone(self) -> "VQGANImage":
+        # dummy = VQGANImage(*self.image_shape)
+        # with torch.no_grad():
+        #     dummy.representation_parameters.set_(self.representation_parameters.clone())
+        #     dummy.accum.set_(self.accum.clone())
+        #     dummy.biased.set_(self.biased.clone())
+        #     dummy.average.set_(self.average.clone())
+        #     dummy.decay = self.decay
+        # return dummy
         dummy = VQGANImage(*self.image_shape)
         with torch.no_grad():
-            dummy.tensor.set_(self.tensor.clone())
-            dummy.accum.set_(self.accum.clone())
-            dummy.biased.set_(self.biased.clone())
-            dummy.average.set_(self.average.clone())
-            dummy.decay = self.decay
+            # dummy.representation_parameters.set_(self.representation_parameters.clone())
+            dummy.image_representation_parameters.set_(
+                self.image_representation_parameters.clone()
+            )
         return dummy
+
+    @property
+    def representation_parameters(self):
+        return self.image_representation_parameters._container.get("z").tensor
 
     def get_latent_tensor(self, detach=False, device=None):
         if device is None:
             device = self.device
-        z = self.tensor
+        # z = self.representation_parameters._container.get("z")
+        # z = self.image_representation_parameters._container.get("z").tensor
+        z = self.representation_parameters
         if detach:
             z = z.detach()
         z_q = vector_quantize(z, self.vqgan_quantize_embedding).movedim(3, 1).to(device)
@@ -209,6 +235,15 @@ class VQGANImage(EMAImage):
         from pytti.LossAug.LatentLossClass import LatentLoss
 
         return LatentLoss
+
+    def decode_training_tensor(self):
+        return self.decode(self.representation_parameters)
+
+    def decode_tensor(self):
+        # return self.decode(self.average)
+        # return self.decode(self.representation_parameters.average)
+        # return self.decode(self.image_representation_parameters.average)
+        return self.decode(self.image_representation_parameters.average["z"])
 
     def decode(self, z, device=None):
         if device is None:
@@ -226,8 +261,9 @@ class VQGANImage(EMAImage):
         pil_image = pil_image.resize(self.image_shape, Image.LANCZOS)
         pil_image = TF.to_tensor(pil_image)
         z, *_ = self.vqgan_encode(pil_image.unsqueeze(0).to(device) * 2 - 1)
-        self.tensor.set_(z.movedim(1, 3))
-        self.reset()
+        self.representation_parameters.set_(z.movedim(1, 3))
+        # self.reset()
+        self.image_representation_parameters.reset()
 
     @torch.no_grad()
     def make_latent(self, pil_image, device=None):
@@ -245,8 +281,9 @@ class VQGANImage(EMAImage):
 
     @torch.no_grad()
     def encode_random(self):
-        self.tensor.set_(self.rand_latent())
-        self.reset()
+        self.representation_parameters.set_(self.rand_latent())
+        # self.reset()
+        self.image_representation_parameters.reset()
 
     def rand_latent(self, device=None, vqgan_quantize_embedding=None):
         if device is None:

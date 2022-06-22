@@ -1,5 +1,7 @@
 from typing import Tuple
 
+from loguru import logger
+
 import pytti
 from pytti import format_input, cat_with_pad, format_module, normalize
 
@@ -131,6 +133,10 @@ class HDMultiClipEmbedder(nn.Module):
                 mode=PADDING_MODES[self.border_mode],
             )
         for cut_size, perceptor in zip(self.cut_sizes, perceptors):
+            logger.debug(f"cut_size: {cut_size}")  # 224
+            logger.debug(input.shape)  # 1, 3, 512, 512
+            logger.debug(side_x)  # 2048
+            logger.debug(side_y)  # 2048
             cutouts, offsets, sizes = self.make_cutouts(input, side_x, side_y, cut_size)
             clip_in = normalize(cutouts)
             image_embeds.append(perceptor.encode_image(clip_in).float().unsqueeze(0))

@@ -9,3 +9,4 @@ from .ema import EMAImage
 from .pixel import PixelImage
 from .rgb_image import RGBImage
 from .vqgan import VQGANImage
+from .deep_image_prior import DeepImagePrior
