@@ -104,6 +104,7 @@ def zoom_2d(
     except NotImplementedError:
         tensor = TF.to_tensor(img.decode_image()).unsqueeze(0).to(device)
         fallback = True
+    logger.debug(tensor.requires_grad)
     height, width = tensor.shape[-2:]
     zy, zx = ((height - zoom[1]) / height, (width - zoom[0]) / width)
     ty, tx = (translate[1] * 2 / height, -translate[0] * 2 / width)
@@ -120,6 +121,7 @@ def zoom_2d(
     )
     grid = F.affine_grid(affine, tensor.shape, align_corners=True)
     tensor = apply_grid(tensor, grid, border_mode, sampling_mode)
+    logger.debug(tensor.requires_grad)
     if not fallback:
         img.set_image_tensor(tensor.squeeze(0))
     else:

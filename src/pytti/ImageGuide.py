@@ -277,7 +277,10 @@ class DirectImageGuide:
         z = self.image_rep.decode_training_tensor()
         # logger.debug(z.shape)  # [1, 3, height, width]
         losses = []
-
+        # logger.debug((len(z), type(z), ))
+        logger.debug(
+            (z.shape, z.requires_grad)
+        )  # if this isn't "true", something is wrong
         aug_losses = {
             aug: aug(format_input(z, self.image_rep, aug), self.image_rep)
             for aug in loss_augs
@@ -337,11 +340,13 @@ class DirectImageGuide:
             for v in prompt_losses.values():
                 v[0].mul_(t)
 
+            logger.debug(losses)
             total_loss_mb = sum(map(lambda x: sum(x.values()), losses)) + sum(
                 interp_losses
             )
 
             total_loss_mb /= gradient_accumulation_steps
+            logger.debug(total_loss_mb)
 
             # total_loss_mb.backward()
             total_loss_mb.backward(retain_graph=True)

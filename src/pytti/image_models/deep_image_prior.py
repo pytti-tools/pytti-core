@@ -93,7 +93,7 @@ class DeepImagePrior(DifferentiableImage):
         self.ema = EMA(
             self.net,
             # update_every=1,
-            update_every=1,
+            update_every=10000000000000,
             beta=0.99,
             update_after_step=1,
             param_or_buffer_names_no_ema=[name for name, _ in self.net.named_buffers()],
@@ -102,7 +102,10 @@ class DeepImagePrior(DifferentiableImage):
         self.scale = scale
         self.device = device
 
-        self._net_input = torch.randn([1, input_depth, width, height], device=device)
+        # self._net_input = nn.Parameter(torch.randn([1, input_depth, width, height], device=device))
+        self._net_input = torch.randn(
+            [1, input_depth, width, height], device=device, requires_grad=True
+        )
 
         self.lr = lr
         self.offset_lr_fac = offset_lr_fac
@@ -117,23 +120,33 @@ class DeepImagePrior(DifferentiableImage):
         # pass
 
     def _decode_with(self, net):
+        # logger.debug(net.requires_grad)
         with torch.cuda.amp.autocast():
             # out = net(net_input_noised * input_scale).float()
             # logger.debug(self.net)
-            # logger.debug(self._net_input.shape)
-            out = net(self._net_input).float()
+            logger.debug(self._net_input.requires_grad)  # true
+            logger.debug(net.training)  # true
+            net.requires_grad_(True)
+            out = net(self._net_input)  # ok, I'm officially at a loss here.
+            logger.debug(out.requires_grad)  # false???
+            out = out.float()
             # logger.debug(out.shape)
+            logger.debug(out.requires_grad)
         width, height = self.image_shape
         out = F.interpolate(out, (height, width), mode="nearest")
+        logger.debug(out.requires_grad)
         return clamp_with_grad(out, 0, 1)
 
     # def get_image_tensor(self):
     def decode_tensor(self):
+        logger.debug("not training")
         return self._decode_with(self.ema)
         # return self._decode_with(self.net)
 
     def decode_training_tensor(self):
-        return self._decode_with(self.net)
+        logger.debug("training")
+        # return self._decode_with(self.net)
+        return self._decode_with(self.net.requires_grad_(True))
         # return self._decode_with(self.ema)
 
     def get_latent_tensor(self, detach=False):
@@ -160,7 +173,9 @@ class DeepImagePrior(DifferentiableImage):
         #    dummy.biased.set_(self.biased.clone())
         #    dummy.average.set_(self.average.clone())
         #    dummy.decay = self.decay
+        logger.debug(self._net_input.requires_grad)
         dummy = deepcopy(self)  # maybe this is the issue? unlikely.
+        logger.debug(dummy._net_input.requires_grad)
         return dummy
 
     def encode_random(self):
