@@ -25,6 +25,8 @@ from deep_image_prior.models import (
     get_offset_params,
 )
 
+from ema_pytorch import EMA
+
 # from deep_image_prior import get_hq_skip_net, get_non_offset_params, get_offset_params
 
 # foo = deep_image_prior.models
@@ -77,6 +79,7 @@ class DeepImagePrior(DifferentiableImage):
             offset_groups=0 if disable_deformable_convolutions else 4,
             device=device,
         )
+
         # z = self.get_latent_tensor()
         # params = [
         #    {'params': get_non_offset_params(net), 'lr': lr},
@@ -87,6 +90,14 @@ class DeepImagePrior(DifferentiableImage):
         # super().__init__(width * scale, height * scale, z, ema_val)
         self.net = net
         # self.tensor = self.net.params()
+        self.ema = EMA(
+            self.net,
+            # update_every=1,
+            update_every=1,
+            beta=0.99,
+            update_after_step=1,
+            param_or_buffer_names_no_ema=[name for name, _ in self.net.named_buffers()],
+        )
         self.output_axes = ("n", "s", "y", "x")
         self.scale = scale
         self.device = device
@@ -100,18 +111,30 @@ class DeepImagePrior(DifferentiableImage):
         #    {'params': get_offset_params(net), 'lr': lr * offset_lr_fac}
         # ]
 
-    # def get_image_tensor(self):
-    def decode_tensor(self):
+    def update(self):
+        self.ema.update()
+        logger.debug(self.ema.get_current_decay())
+        # pass
+
+    def _decode_with(self, net):
         with torch.cuda.amp.autocast():
             # out = net(net_input_noised * input_scale).float()
             # logger.debug(self.net)
-            logger.debug(self._net_input.shape)
-            out = self.net(self._net_input).float()
-            logger.debug(out.shape)
+            # logger.debug(self._net_input.shape)
+            out = net(self._net_input).float()
+            # logger.debug(out.shape)
         width, height = self.image_shape
         out = F.interpolate(out, (height, width), mode="nearest")
         return clamp_with_grad(out, 0, 1)
-        # return out
+
+    # def get_image_tensor(self):
+    def decode_tensor(self):
+        return self._decode_with(self.ema)
+        # return self._decode_with(self.net)
+
+    def decode_training_tensor(self):
+        return self._decode_with(self.net)
+        # return self._decode_with(self.ema)
 
     def get_latent_tensor(self, detach=False):
         # pass
@@ -137,7 +160,7 @@ class DeepImagePrior(DifferentiableImage):
         #    dummy.biased.set_(self.biased.clone())
         #    dummy.average.set_(self.average.clone())
         #    dummy.decay = self.decay
-        dummy = deepcopy(self)
+        dummy = deepcopy(self)  # maybe this is the issue? unlikely.
         return dummy
 
     def encode_random(self):
@@ -145,9 +168,12 @@ class DeepImagePrior(DifferentiableImage):
 
     @classmethod
     def get_preferred_loss(cls):
-        from pytti.LossAug.LatentLossClass import LatentLoss
+        # from pytti.LossAug.LatentLossClass import LatentLoss
+        from pytti.LossAug.HSVLossClass import HSVLoss
 
-        return LatentLoss
+        return HSVLoss
+        # return LatentLoss # I think all that's special about this is regularizing the magnitude of the latent?
+        # return DipLoss
 
     def encode_image(self, pil_image, device="cuda"):
         """
@@ -158,10 +184,13 @@ class DeepImagePrior(DifferentiableImage):
         (optional)
         :param device: The device to run the model on
         """
+        from pytti.LossAug.HSVLossClass import HSVLoss
+
         width, height = self.image_shape
         scale = self.scale
 
-        mse = MSELoss.TargetImage("HSV loss", self.image_shape, pil_image)
+        # mse = MSELoss.TargetImage("HSV loss", self.image_shape, pil_image)
+        mse = HSVLoss.TargetImage("HSV loss", self.image_shape, pil_image)
 
         from pytti.ImageGuide import DirectImageGuide
 
@@ -169,4 +198,27 @@ class DeepImagePrior(DifferentiableImage):
             self, None, optimizer=optim.Adam(self.get_latent_tensor())
         )
         # why is there a magic number here?
-        guide.run_steps(201, [], [], [mse])
+        # guide.run_steps(201, [], [], [mse])
+        # guide.run_steps(501, [], [], [mse])
+        for _ in range(501):
+            guide.run_steps(1, [], [], [mse])
+            self.update()
+
+        # here's a weird idea... reset EMA here?
+
+
+from pytti.LossAug.LatentLossClass import LatentLoss
+import copy
+
+# class DipLoss(MSELoss):
+class DipLoss(LatentLoss):
+    def get_loss(self, input, img):
+        if not self.has_latent:
+            latent = img.make_latent(self.pil_image)
+            latent = torch.cat(*[d["params"] for d in latent])
+            with torch.no_grad():
+                self.comp.set_(latent.clone().flatten())
+            self.has_latent = True
+        l1 = super().get_loss(img.get_latent_tensor(), img) / 2
+        l2 = self.direct_loss.get_loss(input, img) / 10
+        return l1 + l2
