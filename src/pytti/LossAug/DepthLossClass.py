@@ -29,7 +29,6 @@ def init_AdaBins(device=None):
 class DepthLoss(MSELoss):
     @torch.no_grad()
     def set_comp(self, pil_image):
-        # pil_image = pil_image.resize(self.image_shape, Image.LANCZOS)
         self.comp.set_(DepthLoss.make_comp(pil_image))
         if self.use_mask and self.mask.shape[-2:] != self.comp.shape[-2:]:
             self.mask.set_(TF.resize(self.mask, self.comp.shape[-2:]))

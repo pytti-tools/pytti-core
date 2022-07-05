@@ -16,10 +16,8 @@ from torchvision.transforms import functional as TF
 import gma
 from gma.core.network import RAFTGMA
 
-# from gma.core.utils import flow_viz
 from gma.core.utils.utils import InputPadder
 
-# from pytti import fetch, to_pil, DEVICE, vram_usage_mode
 from pytti import fetch, vram_usage_mode
 from pytti.LossAug.MSELossClass import MSELoss
 from pytti.rotoscoper import Rotoscoper
@@ -65,7 +63,8 @@ def init_GMA(checkpoint_path=None, device=None):
         logger.debug(checkpoint_path)
     global GMA
     if device is None:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = torch.device(device)
     if GMA is None:
         with vram_usage_mode("GMA"):
             # migrate this to a hydra initialize/compose operation
@@ -97,10 +96,21 @@ def init_GMA(checkpoint_path=None, device=None):
                 "--mixed_precision", action="store_true", help="use mixed precision"
             )
             args = parser.parse_args([])
-            GMA = torch.nn.DataParallel(RAFTGMA(args), device_ids=[device])
-            # GMA = RAFTGMA(args)
-            GMA.load_state_dict(torch.load(checkpoint_path))
-            GMA.to(device)
+
+            # create new OrderedDict that does not contain `module.` prefix
+            state_dict = torch.load(checkpoint_path, map_location=device)
+            from collections import OrderedDict
+
+            new_state_dict = OrderedDict()
+            for k, v in state_dict.items():
+                if k.startswith("module."):
+                    k = k[7:]  # remove `module.`
+                new_state_dict[k] = v
+
+            GMA = RAFTGMA(args)
+            GMA.load_state_dict(new_state_dict)
+            logger.debug("gma state_dict loaded")
+            GMA.to(device)  # redundant?
             GMA.eval()
 
 
@@ -187,7 +197,6 @@ class TargetFlowLoss(MSELoss):
         if device is None:
             device = getattr(self, "device", self.device)
         init_GMA(
-            # "GMA/checkpoints/gma-sintel.pth"
             device=device,
         )  # update this to use model dir from config
         image1 = self.last_step
@@ -195,6 +204,9 @@ class TargetFlowLoss(MSELoss):
         padder = InputPadder(image1.shape)
         image1, image2 = padder.pad(image1, image2)
         _, flow = GMA(image1, image2, iters=3, test_mode=True)
+        logger.debug(device)
+        logger.debug((flow.shape, flow.device))
+        logger.debug((self.comp.shape, self.comp.device))
         flow = flow.to(device, memory_format=torch.channels_last)
         return super().get_loss(TF.resize(flow, self.comp.shape[-2:]), img) / self.mag
 
@@ -205,9 +217,9 @@ class OpticalFlowLoss(MSELoss):
     def motion_edge_map(
         flow_forward,
         flow_backward,
-        img,  # is this even being used anywhere here?
-        border_mode="smear",
-        sampling_mode="bilinear",
+        img,  # unused
+        border_mode="smear",  # unused
+        sampling_mode="bilinear",  # unused
         device=None,
     ):
         """
@@ -298,7 +310,6 @@ class OpticalFlowLoss(MSELoss):
         """
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
-        # init_GMA("GMA/checkpoints/gma-sintel.pth")
         init_GMA(
             device=device,
         )
@@ -359,11 +370,9 @@ class OpticalFlowLoss(MSELoss):
             )
         logger.debug(device)
         if path is not None:
-            # img = img.clone()
             img = img.clone().to(device)
             if not isinstance(device, torch.device):
                 device = torch.device(device)
-            # logger.debug(device)
             state_dict = torch.load(path, map_location=device)
             img.load_state_dict(state_dict)
 
@@ -385,13 +394,9 @@ class OpticalFlowLoss(MSELoss):
         image1.add_(noise)
         image2.add_(noise)
 
-        # flow_forward = OpticalFlowLoss.get_flow(image1, image2)
-        # flow_backward = OpticalFlowLoss.get_flow(image2, image1)
-        # flow_forward = self.get_flow(image1, image2, device=device)
-        # flow_backward = self.get_flow(image2, image1, device=device)
         flow_forward = OpticalFlowLoss.get_flow(image1, image2, device=device)
         flow_backward = OpticalFlowLoss.get_flow(image2, image1, device=device)
-        unwarped_target_direct = img.decode_tensor()
+        unwarped_target_direct = img.decode_tensor()  # unused
         flow_target_direct = apply_flow(
             img, -flow_backward, border_mode=border_mode, sampling_mode=sampling_mode
         )

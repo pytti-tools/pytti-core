@@ -86,3 +86,20 @@ def parse(string, split, defaults):
         tokens + defaults[len(tokens) :]
     )  # this is just a weird way to backfill defaults.
     return tokens
+
+
+from PIL import Image
+
+# cannibalized from TargetImage ... to do: make consistent with pytti.Prompt.parse_prompt()
+def parse_subprompt(prompt_string, is_path=False, pil_image=None):
+    text, weight, stop = parse(
+        prompt_string, r"(?<!^http)(?<!s):|:(?!/)", ["", "1", "-inf"]
+    )
+    weight, mask = parse(weight, r"_", ["1", ""])
+    text = text.strip()
+    mask = mask.strip()
+
+    if pil_image is None and text != "" and is_path:
+        pil_image = Image.open(fetch(text)).convert("RGB")
+
+    return text, weight, stop, mask, pil_image

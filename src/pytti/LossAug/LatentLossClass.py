@@ -25,36 +25,12 @@ class LatentLoss(MSELoss):
             TF.resize(comp.clone(), (h, w)), weight, stop, name, image_shape
         )
 
+    # Comp and mask should live on the image representation, not the loss class.
     @torch.no_grad()
     def set_comp(self, pil_image, device=DEVICE):
         self.pil_image = pil_image
         self.has_latent = False
         self.direct_loss.set_comp(pil_image.resize(self.image_shape, Image.LANCZOS))
-
-    @classmethod
-    @vram_usage_mode("Latent Image Loss")
-    @torch.no_grad()
-    def TargetImage(
-        cls, prompt_string, image_shape, pil_image=None, is_path=False, device=DEVICE
-    ):
-        text, weight, stop = parse(
-            prompt_string, r"(?<!^http)(?<!s):|:(?!/)", ["", "1", "-inf"]
-        )
-        weight, mask = parse(weight, r"_", ["1", ""])
-        text = text.strip()
-        mask = mask.strip()
-        if pil_image is None and text != "" and is_path:
-            pil_image = Image.open(fetch(text)).convert("RGB")
-        comp = (
-            MSELoss.make_comp(pil_image)
-            if pil_image is not None
-            else torch.zeros(1, 1, 1, 1, device=device)
-        )
-        out = cls(comp, weight, stop, text + " (latent)", image_shape)
-        if pil_image is not None:
-            out.set_comp(pil_image)
-        out.set_mask(mask)
-        return out
 
     def set_mask(self, mask, inverted=False):
         self.direct_loss.set_mask(mask, inverted)
