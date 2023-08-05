@@ -1,7 +1,10 @@
 #torch==1.10.1+cu113
 #torchvision==0.11.2+cu113
 #torchaudio==0.10.1+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
-tensorflow==2.7.0
+
+torch==1.13.1
+torchvision==0.14.1.
+tensorflow==2.7
 transformers==4.15.0
 gdown===4.2.0
 PyGLM==2.5.7
@@ -26,5 +29,5 @@ setuptools==59.5.0
 jupyter
 
 # Pinning versions for google colab
-Pillow==7.1.2
+Pillow==7.1
 imageio==2.4.1
