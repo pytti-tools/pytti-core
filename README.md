@@ -20,6 +20,26 @@
 
 Detailed setup and usage instructions can be found here: https://pytti-tools.github.io/pytti-book/intro.html
 
+# Setup
+
+(2023) this works for the moment
+
+```
+git clone --recurse-submodules -j8 https://github.com/pytti-tools/pytti-core
+pip install -r pytti-core/requirements.txt
+pip install ./pytti-core/vendor/AdaBins
+pip install ./pytti-core/vendor/CLIP
+pip install ./pytti-core/vendor/GMA
+pip install ./pytti-core/vendor/taming-transformers
+pip install ./pytti-core
+```
+
+you're probably gonna get an error about a missing adabins checkpoint now. Download that from here and put it in the file path corresponding to the error (should be an `adabins` subfolder of your user cache that you'll probably need to mkdir):
+
+```
+wget https://github.com/hithereai/deforum-for-automatic1111-webui/releases/download/AdaBins/AdaBins_nyu.pt
+```
+
 # Development
 
 * Rebuild, reinstall, and run tests:
