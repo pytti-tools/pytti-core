@@ -3,7 +3,7 @@
 #torchaudio==0.10.1+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
 
 torch==1.13.1
-torchvision==0.14.1.
+torchvision==0.14.1
 tensorflow==2.7
 transformers==4.15.0
 gdown===4.2.0
