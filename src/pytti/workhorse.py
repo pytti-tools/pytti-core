@@ -217,15 +217,15 @@ def _main(cfg: DictConfig):
     # @markdown check `restore` to restore from a previous run
     restore = params.get("restore") or False  # @param{type:"boolean"}
     # @markdown check `reencode` if you are restoring with a modified image or modified image settings
-    reencode = False  # @param{type:"boolean"}
+    reencode = params.get("reencode") or False  # @param{type:"boolean"}
     # @markdown which run to restore
     restore_run = latest  # @param{type:"raw"}
 
     # NB: `backup/` dir probably not working at present
     if restore and restore_run == latest:
         _, restore_run = get_last_file(
-            f"backup/{params.file_namespace}",
-            f"^(?P<pre>{re.escape(params.file_namespace)}\\(?)(?P<index>\\d*)(?P<post>\\)?_\\d+\\.bak)$",
+            f"images_out/{params.file_namespace}",
+            f"^(?P<pre>{re.escape(params.file_namespace)}\\(?)(?P<index>\\d*)(?P<post>\\)?_\\d+\\.png)$",
         )
 
     # I feel like there's probably no reason this is defined inside of _main()
